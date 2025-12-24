@@ -60,7 +60,9 @@ and guidance. Claude loads these skills automatically when relevant to your task
 - **memogarden-api-endpoint** - Workflow for creating new API endpoints
 - **memogarden-debugging** - Debugging workflows for database, API, and Core API issues
 - **memogarden-schema** - SQLite schema modification workflow, data model reference
-- **memogarden-update** - Task completion workflow: git commits, status updates, implementation plan updates
+- **process-improvement** - Review session errors/mistakes and propose systemic improvements (tests, tools, skills)
+- **change-reviewer** - Review changes against project plans before committing (pre-commit review)
+- **change-commit** - Commit changes to git repository (use AFTER change-reviewer)
 
 These skills allow AGENTS.md to focus on project context while providing detailed, task-specific
 guidance on-demand. See [Claude Code Skills documentation](https://code.claude.com/docs/en/skills)
@@ -135,9 +137,15 @@ For detailed guidance on working with the implementation plan, use the **memogar
 
 For comprehensive debugging workflows, use the **memogarden-debugging** skill.
 
+### Process Improvement
+
+For reviewing session errors/mistakes and proposing systemic improvements, use the **process-improvement** skill.
+
 ### Completing Work
 
-For task completion workflow (git commits, status updates, implementation plan updates), use the **memogarden-update** skill.
+For task completion workflow (git commits, status updates, implementation plan updates):
+1. Use **change-reviewer** skill to review changes against project plans
+2. After review and user confirmation, use **change-commit** skill to commit changes
 
 ## Communication Guidelines
 
