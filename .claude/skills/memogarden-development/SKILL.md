@@ -1,0 +1,342 @@
+---
+name: memogarden-development
+description: Development environment setup, running the API server, architectural constraints, anti-patterns to avoid, shell command best practices, and working with the implementation plan. Use when doing ANY development work on MemoGarden.
+---
+
+# MemoGarden Development
+
+## Starting Work on a Task
+
+When beginning work on any MemoGarden task:
+
+1. **Read the context**
+   ```bash
+   cd /home/kureshii/memogarden
+   cat plan/prd.md                    # Understand requirements
+   cat plan/implementation.md         # Check current step
+   ```
+
+2. **Navigate to working directory**
+   ```bash
+   cd memogarden-core                 # or memogarden-budget
+   ```
+
+3. **Check current state**
+   ```bash
+   git status
+   git log --oneline -10
+   ```
+
+## Setting Up the Development Environment
+
+### Install Poetry (if not present)
+
+```bash
+pip install poetry
+```
+
+### Install poetry shell plugin
+
+```bash
+poetry self add poetry-plugin-shell
+```
+
+### Navigate to project and install dependencies
+
+```bash
+cd /home/kureshii/memogarden/memogarden-core
+poetry install
+```
+
+### Activate poetry shell (optional)
+
+```bash
+poetry shell
+```
+
+This activates a virtual shell with all dependencies available. You can skip this step by using `poetry run` prefix for all commands.
+
+## Running the Core API Locally
+
+### Using the convenience script (recommended)
+
+```bash
+./scripts/run.sh
+```
+
+### Manual startup
+
+```bash
+cd /home/kureshii/memogarden/memogarden-core
+poetry run flask --app memogarden_core.main run --debug
+```
+
+The server runs at http://localhost:5000
+
+**Note**: MemoGarden Core uses Flask (not FastAPI). There are no auto-generated API docs.
+
+### Running in background
+
+To run the server in the background:
+```bash
+./scripts/run.sh &
+```
+
+Or use the Bash tool with `run_in_background=True` parameter (when available).
+
+## Running Tests
+
+### Using the convenience script (recommended)
+
+```bash
+# Run all tests
+./scripts/test.sh
+
+# Run specific test file
+./scripts/test.sh tests/api/test_transactions.py
+
+# Run specific test
+./scripts/test.sh tests/api/test_transactions.py::test_create_transaction
+```
+
+### With coverage
+
+```bash
+./scripts/test-coverage.sh
+```
+
+### Manual test execution
+
+```bash
+cd /home/kureshii/memogarden/memogarden-core
+poetry run pytest
+```
+
+For detailed testing philosophy and patterns, use the **memogarden-testing** skill.
+
+## Working with the Implementation Plan
+
+### Understanding Progress
+
+The implementation plan (`plan/implementation.md`) has this structure:
+
+```
+Step 1: Core Backend Foundation ⚡ CURRENT STEP
+  1.1 Project Setup & Structure
+    1.1.1 Clone and Initialize Repository
+    ...
+  1.2 SQLite Database Schema
+    ...
+
+Step 2: Authentication & Multi-User Support (brief)
+Step 3: Advanced Core Features (brief)
+...
+```
+
+- **Current step** is marked with ⚡
+- Current step has detailed substeps
+- Future steps have brief outlines only
+- Only expand detail when ready to implement
+
+### Updating Progress
+
+When completing work:
+
+1. ✅ Mark completed substeps in implementation.md
+2. Update "Next Actions" section
+3. Note any deviations or lessons learned
+4. Don't expand future steps until current step is done
+
+### Before Starting Work
+
+Always check:
+1. What's the current step? (look for ⚡ marker)
+2. What are the detailed substeps?
+3. Are there any blockers or dependencies?
+4. What's the context for this work?
+
+### After Completing Work
+
+Always update:
+1. Mark checkboxes as completed: `- [ ]` → `- [x]`
+2. Move current step marker (⚡) if advancing
+3. Update "Next Actions" with what's next
+4. Note any decisions or deviations
+
+## Project Structure Quick Reference
+
+```
+/home/kureshii/memogarden/
+├── plan/
+│   ├── prd.md                          # Product Requirements (source of truth)
+│   └── implementation.md               # Current step and progress
+├── memogarden-core/                    # Flask backend
+│   ├── memogarden_core/
+│   │   ├── api/                        # API endpoints
+│   │   ├── db/                         # Core API and database layer
+│   │   ├── schema/                     # Database schema and migrations
+│   │   └── utils/                      # Utility functions
+│   ├── tests/                          # Test suite
+│   └── docs/
+│       └── architecture.md             # Technical architecture
+├── scripts/
+│   ├── run.sh                          # Start development server
+│   ├── test.sh                         # Run tests
+│   └── test-coverage.sh                # Run tests with coverage
+├── .claude/
+│   └── skills/                         # Agent Skills
+└── AGENTS.md                           # This guide
+```
+
+## Common Workflows
+
+### Starting a new feature
+1. Check implementation.md for current step
+2. Read relevant PRD sections
+3. Review architecture.md for patterns
+4. Write tests first (use memogarden-testing skill)
+5. Implement feature
+6. Update implementation.md
+
+### Debugging an issue
+1. Use memogarden-debugging skill
+2. Check logs and error messages
+3. Verify assumptions against architecture.md
+4. Add tests to prevent regression
+
+### Adding a new API endpoint
+1. Use memogarden-api-endpoint skill
+2. Follow the workflow there
+3. Write tests before implementing
+4. Update schema if modifying database
+
+## Getting Help
+
+If stuck:
+1. Re-read PRD for context
+2. Check implementation.md for current scope
+3. Consult architecture.md for technical patterns
+4. Look at existing code patterns
+5. Use appropriate skill (testing, debugging, etc.)
+
+## Critical Architectural Constraints
+
+### 🚫 What NOT to Do
+
+1. **DO NOT use SQLAlchemy or any ORM**
+   - Use raw SQL queries with parameterized statements
+   - SQLite schema (`schema/schema.sql`) is the source of truth
+   - Pydantic is ONLY for API request/response validation
+
+2. **DO NOT add heavy dependencies**
+   - Keep the dependency list minimal
+   - Question every new package addition
+   - Prefer stdlib when possible (e.g., sqlite3 over aiosqlite)
+
+3. **DO NOT use PostgreSQL or other databases**
+   - SQLite only (lightweight, portable, minimal setup)
+   - Perfect for personal use and Raspberry Pi deployment
+
+4. **DO NOT use async/await unless truly needed**
+   - This is a personal system with low traffic
+   - Synchronous code is simpler, more deterministic, easier to debug
+   - Use Flask (not FastAPI) and built-in sqlite3 (not aiosqlite)
+
+5. **DO NOT skip testing**
+   - Write tests alongside features
+   - Target >80% coverage for core functionality
+   - Use pytest with pytest-flask
+
+6. **DO NOT over-engineer**
+   - Build what's needed for current step
+   - Defer complex features (see implementation.md)
+   - Simple > clever
+
+### ✅ What TO Do
+
+1. **Use UTC timestamps everywhere**
+   - Store as ISO 8601 text in SQLite: `2025-12-22T10:30:00Z`
+   - Transaction dates are DATE only: `2025-12-22`
+   - Never use local timezones in storage
+   - Use centralized utilities: `from utils import isodatetime`
+
+2. **Write raw SQL queries**
+   - Parameterized queries to prevent SQL injection
+   - Use query builders in `db/query.py` for common patterns
+
+3. **Follow the implementation plan**
+   - Check current step in `plan/implementation.md`
+   - Don't jump ahead to future steps
+
+4. **Test everything**
+   - Write tests before or alongside code
+   - Use in-memory SQLite for tests
+
+5. **Document as you go**
+   - Add docstrings to all functions
+   - Update implementation.md progress
+
+## Shell Command Best Practices
+
+### Background Execution
+
+**Use `run_in_background=True` instead of `&` and `2>&1`:**
+
+```python
+# ❌ AVOID - Triggers approval due to 2>&1 and &
+Bash(command="poetry run flask --app memogarden_core.main run --debug 2>&1 &")
+
+# ✅ PREFERRED - Use run_in_background parameter
+Bash(
+    command="poetry run flask --app memogarden_core.main run --debug",
+    run_in_background=True
+)
+```
+
+**Why:** `2>&1` redirects stderr which can hide destructive operations, triggering approval workflows. `run_in_background=True` is the proper pattern and doesn't require approvals for non-destructive commands.
+
+### Command Chaining
+
+**Use `&&` for dependent commands:**
+```python
+# Commands run sequentially, stops on first failure
+Bash(command="cd memogarden-core && poetry install && poetry run pytest")
+```
+
+**Use `;` for independent commands:**
+```python
+# Commands run regardless of failures
+Bash(command="mkdir -p data ; poetry run pytest")
+```
+
+### Approved Commands (No Approval Needed)
+
+The following commands are pre-approved in `.claude/settings.local.json` and won't trigger workflows:
+- `ln`, `ls`, `cat`, `tree` - File operations
+- `poetry --version`, `poetry self`, `poetry install`, `poetry run` - Poetry operations
+- `python`, `poetry run python`, `poetry run pytest` - Python execution
+- `git add`, `git commit`, `git config`, `git status`, `git log` - Git operations
+- `sqlite3`, `find`, `mkdir`, `touch` - Development utilities
+- `curl` - HTTP testing (read-only)
+- `./scripts/run.sh`, `./scripts/test.sh`, `./scripts/test-coverage.sh` - Project scripts
+
+## Anti-Patterns to Avoid
+
+❌ **Don't** create ORM models when schema exists
+❌ **Don't** add dependencies without discussion
+❌ **Don't** skip tests "for now"
+❌ **Don't** use local time zones
+❌ **Don't** over-engineer for future needs
+❌ **Don't** ignore the implementation plan
+❌ **Don't** batch multiple unrelated changes
+❌ **Don't** use `2>&1` in shell commands (triggers approval workflow unnecessarily)
+
+✅ **Do** write raw SQL queries
+✅ **Do** keep dependencies minimal
+✅ **Do** write tests alongside code
+✅ **Do** use UTC everywhere
+✅ **Do** build for current needs
+✅ **Do** follow the plan
+✅ **Do** make focused, atomic commits
+✅ **Do** use `run_in_background=True` for long-running server processes
+
