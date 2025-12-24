@@ -9,11 +9,180 @@ When you finish a development task, follow this workflow to update project docum
 
 ## Workflow Overview
 
+0. **[NEW] Review changes against /plan** (pre-commit check)
 1. Run tests to verify everything works
 2. Update plan/status.md with completed work
 3. Update plan/implementation.md if needed
-4. Create git commit with descriptive message
+4. Create git commit with descriptive message (with user confirmation)
 5. Document any deviations or lessons learned
+
+## Step 0: Pre-Commit Review (NEW)
+
+**Before creating any commit**, review the changes against project plans to ensure alignment:
+
+```bash
+# Check what changed
+git status
+git diff
+
+# Identify which files were modified
+```
+
+### Review Checklist
+
+Ask these questions about the changes:
+
+#### 1. Faithful to Stated Intention?
+
+**Check:** Do the changes align with the stated intention in relevant planning documents?
+
+**Actions:**
+- If changes implement features from [plan/implementation.md](../../plan/implementation.md): Verify they match the specified approach
+- If changes relate to PRD requirements: Check [plan/prd.md](../../plan/prd.md) for alignment
+- If changes are experimental/future work: Should they be documented in [plan/future/](../../plan/future/) instead?
+
+**Red flags:**
+- ⚠️ Changes deviate from implementation plan without documentation
+- ⚠️ Changes contradict PRD requirements
+- ⚠️ Changes implement features marked as "future work" or "out of scope"
+
+#### 2. Implementation Plan Update Needed?
+
+**Check:** Should [plan/implementation.md](../../plan/implementation.md) be updated?
+
+**Actions:**
+- Mark completed substeps with ✅
+- Move ⚡ (CURRENT STEP) marker if advancing to next step
+- Update "Next Actions" section with current state
+- Note any deviations or decisions made during implementation
+
+**When to update:**
+- ✅ Completed items from implementation plan
+- ✅ Skipped or modified substeps (document why)
+- ✅ Discovered new dependencies or blockers
+- ❌ Trivial changes (typos, comments) - skip
+
+#### 3. Status Updated?
+
+**Check:** Should [plan/status.md](../../plan/status.md) be updated?
+
+**Actions:**
+- Add completed work to "Completed Work" section
+- Update "Next Steps" with outstanding items
+- Update date at top of document
+
+**When to update:**
+- ✅ Completed meaningful features or milestones
+- ✅ Finished implementation plan steps
+- ❌ Minor bug fixes or refactorings - skip
+
+#### 4. Conflicts with Future Work?
+
+**Check:** Do changes conflict with documented future work?
+
+**Review areas:**
+- [plan/future/](../../plan/future/) - Schema extensions, migration mechanisms, Soil design
+- [plan/prd.md](../../plan/prd.md) "Out of Scope" section
+- [plan/implementation.md](../../plan/implementation.md) "Risk Mitigation" or future steps
+
+**Common conflicts:**
+- ⚠️ Implementing features planned for future phases
+- ⚠️ Adding mechanisms that future design documents should specify
+- ⚠️ Making assumptions that contradict PRD or future plans
+
+**Example conflicts:**
+- Adding custom extension mechanism before [schema-extension-design.md](../../plan/future/schema-extension-design.md) is finalized
+- Implementing Soil archival before [soil-design.md](../../plan/future/soil-design.md) specifies the approach
+
+### Alert User to Issues
+
+**If any red flags or conflicts are found:**
+
+1. **Alert the user** before proceeding with commit
+2. **Explain the concern** clearly with references to specific documents
+3. **Suggest actions** (e.g., "Update implementation.md step 1.5", "Move to plan/future/ instead")
+4. **Wait for user decision** - user may opt to:
+   - Fix issues before committing
+   - Commit as-is with acknowledgment of deviation
+   - Update plans first, then commit
+
+**Example alert:**
+```
+⚠️ PRE-COMMIT REVIEW ALERT
+
+Changes implement "tags table" feature, but this is marked as future work
+in plan/future/schema-extension-design.md.
+
+Concerns:
+- Tags extension not yet finalized in future design docs
+- Implementation may need to change when schema extension design is complete
+- plan/implementation.md Step 3.1 mentions "Recurrences" before "Relations"
+
+Options:
+1. Move tags implementation to plan/future/ as experimental work
+2. Update plan/implementation.md to reflect tags as current step
+3. Proceed with commit (acknowledging future refactoring may be needed)
+
+How would you like to proceed?
+```
+
+### User Confirmation Required
+
+**After completing the review checklist:**
+
+1. **Report findings** to user (even if no issues found)
+2. **Ask for confirmation** before creating git commit:
+   - "Review complete. No issues found. Proceed with commit?"
+   - Or: "Found X issues. Review above. How to proceed?"
+
+3. **Do NOT create commit** until user confirms
+
+**Rationale:** Commits are permanent and should be intentional. Pre-commit review ensures alignment with project direction.
+
+### Summary Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ User finishes development work                              │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ AGENT: Run pre-commit review (Step 0)                        │
+│  - Check git diff for changes                               │
+│  - Review against plan/prd.md, plan/implementation.md       │
+│  - Check for conflicts with plan/future/                    │
+│  - Identify needed plan updates                             │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ AGENT: Alert user to findings                               │
+│  - Report any issues or conflicts                           │
+│  - Suggest actions                                          │
+│  - Ask: "How to proceed?"                                   │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ USER: Decide                                                │
+│  Option A: Fix issues, update plans, then commit           │
+│  Option B: Commit as-is (acknowledging deviation)          │
+│  Option C: Update plans first, then commit                 │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ AGENT: Execute user's choice                                │
+│  - If A/C: Wait for plan updates, then proceed             │
+│  - If B: Proceed with commit (document deviation in msg)    │
+└─────────────────────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Continue with Steps 1-5 (tests, status update, commit, etc) │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## Step 1: Verify Changes
 
@@ -75,6 +244,13 @@ Step 1: Core Backend Foundation
 
 ## Step 4: Create Git Commit
 
+**IMPORTANT:** This step requires user confirmation from Step 0 (Pre-Commit Review).
+
+**Only proceed with commit after:**
+- User has reviewed findings from pre-commit review
+- User has confirmed how to proceed (fix issues, commit as-is, or update plans)
+- Any necessary plan updates have been completed (if user chose that option)
+
 Navigate to the appropriate directory and commit:
 
 ```bash
@@ -90,6 +266,11 @@ git status
 git add <files>
 git commit -m "<commit message>"
 ```
+
+**If committing with deviations from plan:**
+- Document the deviation in commit message body
+- Example: "Note: This implements tags table ahead of schema-extension-design.md finalization. May need refactoring."
+- Reference relevant planning documents
 
 ### Commit Message Format
 

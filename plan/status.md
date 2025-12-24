@@ -37,6 +37,26 @@
 - ✅ Created plan/status.md for project status tracking
 - ✅ Scripts pre-approved in .claude/settings.local.json
 
+### Schema Extension Design (2025-12-24)
+- ✅ Created plan/future/ directory for future design work
+- ✅ Documented schema extension system design (schema-extension-design.md)
+  - Base schema vs. Extensions philosophy
+  - Two extension mechanisms (structured SQL + JSON data)
+  - JSON Schema format and extension metadata
+  - Extension lifecycle and sharing
+- ✅ Documented migration mechanism (migration-mechanism.md)
+  - Complete migration workflow
+  - Deconfliction rules and validation
+  - Default value application and rollback strategy
+- ✅ Documented Memogarden Soil architecture (soil-design.md)
+  - Directory structure and archival workflow
+  - Fossilization mechanism (lossy compaction)
+  - Retrieval and reconstruction APIs
+- ✅ Enhanced memogarden-update skill with pre-commit review workflow
+  - Review changes against /plan before committing
+  - Check for faithfulness to intentions, plan updates, and conflicts
+  - Require user confirmation before creating commits
+
 ## Next Steps
 
 See [implementation.md](implementation.md) for detailed roadmap.
