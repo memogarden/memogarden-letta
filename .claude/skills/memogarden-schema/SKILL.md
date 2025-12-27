@@ -23,11 +23,11 @@ ALTER TABLE transactions ADD COLUMN tags TEXT;
 If the database already exists in production, create a migration script:
 
 ```bash
-# Create migrations directory if not exists
-mkdir -p /home/kureshii/memogarden/memogarden-core/memogarden_core/schema/migrations
+# Migrations are stored in db/migrations/
+mkdir -p /home/kureshii/memogarden/memogarden-core/memogarden_core/db/migrations
 ```
 
-Create migration file: `migrations/001_add_tags_to_transactions.sql`
+Create migration file: `db/migrations/001_add_tags_to_transactions.sql`
 
 ```sql
 -- Migration: Add tags column to transactions
@@ -35,6 +35,8 @@ Create migration file: `migrations/001_add_tags_to_transactions.sql`
 
 ALTER TABLE transactions ADD COLUMN tags TEXT;
 ```
+
+**Note:** For the complete migration framework with deconfliction, validation, and rollback strategies, see `/plan/future/migration-mechanism.md`.
 
 ### 3. Update Seed Data (if tables changed)
 
@@ -268,5 +270,27 @@ PRAGMA foreign_keys;
 3. **UTC timestamps**: Always store timestamps as ISO 8601 UTC: `2025-12-24T10:30:00Z`
 4. **Foreign keys**: Enabled via `PRAGMA foreign_keys = ON`
 5. **WAL mode**: Enabled for concurrent access: `PRAGMA journal_mode = WAL`
+
+## Future Design Reference
+
+For advanced schema topics and design decisions documented for future implementation:
+
+- **Schema Extension System**: `/plan/future/schema-extension-design.md`
+  - Base schema vs. extensions philosophy
+  - Two extension mechanisms (structured SQL + JSON data)
+  - Extension lifecycle and sharing between users
+
+- **Migration Framework**: `/plan/future/migration-mechanism.md`
+  - Complete migration workflow with validation
+  - Deconfliction rules and conflict resolution
+  - Default value application and rollback strategy
+  - Soil archival for schema history
+
+- **Memogarden Soil**: `/plan/future/soil-design.md`
+  - Immutable storage architecture for emails, invoices, statements
+  - Fossilization mechanism (lossy compaction)
+  - Retrieval and reconstruction APIs
+
+These documents are design references for when MemoGarden needs schema evolution, multi-user extensions, or document archival capabilities.
 
 For database architecture details, see [architecture.md](../../memogarden/memogarden-core/docs/architecture.md).

@@ -26,6 +26,8 @@ For detailed testing examples and patterns, see [memogarden-core/docs/architectu
 
 ## Running Tests
 
+**Important: Always run tests from the memogarden-core directory**
+
 Navigate to the memogarden-core directory first:
 
 ```bash

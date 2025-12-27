@@ -56,6 +56,14 @@ poetry shell
 
 This activates a virtual shell with all dependencies available. You can skip this step by using `poetry run` prefix for all commands.
 
+### Working Directory Reminder
+
+**Always verify your current directory before running commands:**
+- **memogarden-core work**: `/home/kureshii/memogarden/memogarden-core` (for `poetry run pytest`, etc.)
+- **Convenience scripts**: `/home/kureshii/memogarden/` (for `./scripts/run.sh`, `./scripts/test.sh`)
+
+Most Poetry commands should be run from `memogarden-core/`. Scripts are in the parent directory.
+
 ## Running the Core API Locally
 
 ### Using the convenience script (recommended)
@@ -218,6 +226,16 @@ If stuck:
 3. Consult architecture.md for technical patterns
 4. Look at existing code patterns
 5. Use appropriate skill (testing, debugging, etc.)
+
+## Future Design Reference
+
+The `/plan/future/` directory contains design documents for features not yet implemented but architecturally significant:
+
+- **schema-extension-design.md** - Schema extension system for multi-user compatibility
+- **migration-mechanism.md** - Complete migration framework with validation and rollback
+- **soil-design.md** - Immutable storage architecture for document archival
+
+When implementing related features or making architectural decisions, consult these documents to ensure alignment with the long-term design vision.
 
 ## Critical Architectural Constraints
 

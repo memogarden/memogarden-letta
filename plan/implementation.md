@@ -425,18 +425,18 @@ For each endpoint, write raw SQL queries:
 entity_id = str(uuid4())
 now = datetime.utcnow().isoformat()
 
-async with db.cursor() as cursor:
+with db.cursor() as cursor:
     # Insert into entity registry
-    await cursor.execute(
+    cursor.execute(
         "INSERT INTO entity (id, type, created_at, updated_at) VALUES (?, 'transactions', ?, ?)",
         (entity_id, now, now)
     )
     # Insert into transactions table
-    await cursor.execute(
+    cursor.execute(
         "INSERT INTO transactions (id, amount, ...) VALUES (?, ?, ...)",
         (entity_id, data.amount, ...)
     )
-    await db.commit()
+    db.commit()
 ```
 
 **Deliverables:** ✅ All delivered
@@ -451,9 +451,9 @@ async with db.cursor() as cursor:
 
 ---
 
-#### 1.6 Testing Infrastructure
+#### 1.6 Testing Infrastructure ✅ COMPLETE
 
-**Objective:** Set up pytest with async support and write comprehensive tests for API endpoints.
+**Objective:** Set up pytest and write comprehensive tests for API endpoints.
 
 **Substeps:**
 
@@ -461,7 +461,6 @@ async with db.cursor() as cursor:
 Create `pytest.ini`:
 ```ini
 [pytest]
-asyncio_mode = auto
 testpaths = tests
 python_files = test_*.py
 python_classes = Test*
@@ -471,24 +470,24 @@ python_functions = test_*
 Create `tests/conftest.py`:
 ```python
 import pytest
-import aiosqlite
-from httpx import AsyncClient
 from memogarden_core.main import app
-from memogarden_core.database import init_db
+from memogarden_core.db import init_db
 
 @pytest.fixture
-async def test_db():
+def test_db():
     """Create test database"""
     # Use in-memory database for tests
-    async with aiosqlite.connect(":memory:") as db:
-        await init_db(db)
-        yield db
+    from memogarden_core.database import get_db
+    db = get_db()
+    init_db()
+    yield db
+    # Cleanup handled by Flask teardown handlers
 
 @pytest.fixture
-async def client(test_db):
+def client(test_db):
     """Create test client"""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        yield ac
+    with app.test_client() as client:
+        yield client
 ```
 
 ##### 1.6.2 Write Transaction Tests
@@ -515,23 +514,46 @@ Create `tests/api/test_labels.py`:
 - Check coverage: `poetry run pytest --cov=memogarden_core`
 - Target: >80% coverage for API endpoints and database layer
 
-**Deliverables:**
-- Pytest configured with async support
-- Test fixtures for database and HTTP client
-- Comprehensive test suite (>80% coverage)
-- All tests passing
+**Deliverables:** ✅ All delivered
+- Pytest configured in `pyproject.toml` for Flask app testing
+- Test fixtures in `tests/conftest.py` (test_db, client)
+- Comprehensive test suite: **231 tests passing**
+- Test coverage: **90%** (exceeds 80% target)
+- pytest-cov added to dev dependencies for coverage reporting
+- Test files organized by module: api/, db/, schema/, utils/
 
 ---
 
-#### 1.6.5 Design Schema Extension Mechanisms
+#### 1.6.5 Schema Extension & Migration Design ✅ DESIGN COMPLETE
+
+**Status:** Design complete - documented in `/plan/future/` for future implementation
 
 **Objective:** Define how to extend the schema while maintaining forward compatibility and enabling reconcilable drift between users.
 
-**Substeps:**
+**Design Documents:**
 
-##### 1.6.5.1 Define Compatibility Rules
+Schema extension and migration mechanisms have been designed and documented in `/plan/future/`:
 
-Document in `docs/schema-compatibility.md`:
+- **schema-extension-design.md** - Complete schema extension system
+  - Base schema vs. extensions philosophy
+  - Two extension mechanisms (structured SQL + JSON data)
+  - Extension metadata and lifecycle management
+  - User-to-user extension sharing
+
+- **migration-mechanism.md** - Comprehensive migration framework
+  - Complete migration workflow with validation
+  - Deconfliction rules and conflict resolution
+  - Default value application strategy
+  - Rollback capabilities
+  - Soil archival for schema snapshots
+
+- **soil-design.md** - Immutable storage architecture
+  - Email, invoice, and statement archival
+  - Fossilization mechanism (lossy compaction)
+  - Retrieval and reconstruction APIs
+  - Integration with migration history
+
+**Key Design Principles:**
 
 **Base Schema Compatibility:**
 - Base schema version (e.g., `memogarden-core-v1`) must match
@@ -539,69 +561,21 @@ Document in `docs/schema-compatibility.md`:
 - Optional extensions can vary between users
 - Agents declare minimum base schema version they require
 
-**Field Addition Rules:**
-- New optional fields: backward compatible (older agents ignore)
-- New required fields: requires base schema version bump
-- Field type changes: requires migration
-
-**Extension Mechanism:**
-- Track extensions in `_schema_metadata` (JSON array)
-- Example: `["custom-fields", "tags", "attachments"]`
-- Agents check for required extensions before operating
-
-##### 1.6.5.2 Document Migration Philosophy
-
-**Migration Principles:**
+**Migration Philosophy:**
 - Forward-only (no rollbacks; bugfixes are new migrations)
 - Fresh databases apply current schema (no replay)
-- Existing databases apply pending migrations from `core/db/migrations/`
-- After successful migration:
-  - Schema snapshot archived to `soil/core-migration/snapshots/YYYYMMDD-description.sql`
-  - Migration archived to `soil/core-migration/migrations/YYYYMMDD-NNN-description.sql`
-  - Migration removed from core (or moved to `migrations/applied/`)
+- Existing databases apply pending migrations from `db/migrations/`
+- After successful migration, archive to Soil for history
 
-**Version Format:** `YYYYMMDD` (e.g., `20251223`)
-- Simple, chronological, date-based
-- Migration number suffix if multiple per day: `YYYYMMDD-NN`
-
-##### 1.6.5.3 Prepare for Future Migration Framework
-
-**Document (but don't implement yet):**
-
-Migration runner requirements:
-```python
-async def migrate():
-    """Apply pending migrations to existing database"""
-    db_version = await get_schema_version()
-    pending = list_pending_migrations()  # From core/db/migrations/
-
-    for migration in pending:
-        if migration.version > db_version:
-            await apply_migration(migration)
-            await archive_to_soil(migration)
-            await update_schema_version(migration.version)
-```
-
-Soil archiving interface:
-```python
-async def archive_to_soil(migration):
-    """Archive migration and schema snapshot to Soil"""
-    # Write schema snapshot to soil/core-migration/snapshots/
-    # Write migration SQL to soil/core-migration/migrations/
-    # Soil is S3-compatible bucket or FUSE filesystem
-```
-
-**Note:** Actual implementation deferred to Step 3 (when first migration is needed)
-
-**Deliverables:**
-- Schema compatibility rules documented
-- Migration philosophy documented
-- Extension mechanism designed (tracked in `_schema_metadata`)
-- Foundation for future migration framework (no code yet)
+**Implementation Status:**
+- Design phase complete
+- Deferred until actual migrations are needed (Step 3+)
+- No code implementation required for Step 1
+- Refer to `/plan/future/` docs when implementing migrations or schema extensions
 
 ---
 
-#### 1.7 Documentation & Development Workflow
+#### 1.7 Documentation & Development Workflow ✅ COMPLETE
 
 **Objective:** Create documentation and ensure smooth local development experience.
 
@@ -610,25 +584,30 @@ async def archive_to_soil(migration):
 ##### 1.7.1 Write README.md
 Create comprehensive README with:
 - Project overview and architecture
-- Prerequisites (Python 3.11+, Poetry)
+- Prerequisites (Python 3.13+, Poetry)
 - Installation steps
-- Running locally: `poetry run uvicorn memogarden_core.main:app --reload`
-- Running tests: `poetry run pytest`
+- Running locally: `./scripts/run.sh` or `poetry run flask --app memogarden_core.main run --debug`
+- Running tests: `./scripts/test.sh` or `poetry run pytest`
 - Database setup and seed data
-- API documentation link (Swagger UI at `/docs`)
+- API endpoint documentation (manual docs, no auto-generation)
 - Environment variables reference
 
 ##### 1.7.2 Document API
-- FastAPI auto-generates OpenAPI docs at `/docs`
 - Add docstrings to all endpoint functions
 - Add example requests/responses in docstrings
 - Document query parameters and response schemas
+- Document API endpoints in README (manual documentation)
 
 ##### 1.7.3 Create Development Scripts
-Add to `pyproject.toml`:
+Convenience scripts are in `/scripts/` directory:
+- `run.sh` - Start development server
+- `test.sh` - Run tests
+- `test-coverage.sh` - Run tests with coverage
+
+Alternatively, add to `pyproject.toml`:
 ```toml
 [tool.poetry.scripts]
-dev = "uvicorn memogarden_core.main:app --reload"
+dev = "flask --app memogarden_core.main run --debug"
 seed = "memogarden_core.db.seed:main"
 test = "pytest"
 ```
@@ -638,40 +617,45 @@ test = "pytest"
 - Document any gotchas or setup issues
 - Ensure reproducible development environment
 
-**Deliverables:**
-- Complete README with setup instructions
-- API documentation accessible at `/docs`
-- Development scripts for common tasks
-- Validated end-to-end developer experience
+**Deliverables:** ✅ All delivered
+- ✅ Comprehensive README.md with complete API documentation
+- ✅ Manual API documentation with curl examples for all 7 endpoints
+- ✅ Development scripts already exist in `/scripts/` (run.sh, test.sh, test-coverage.sh)
+- ✅ .env.example documented with all environment variables
+- ✅ End-to-end workflow validated (server starts, API responds, tests pass)
+- ✅ Working directory reminders added to agent skills
 
 ---
 
-#### 1.8 Step 1 Completion Checklist
+#### 1.8 Step 1 Completion Checklist ✅ ALL DONE
 
 **Success Criteria:**
-- [ ] API server runs locally: `poetry run uvicorn memogarden_core.main:app --reload`
-- [ ] Database schema created from `schema.sql`
-- [ ] Seed data loads successfully
-- [ ] All CRUD endpoints working:
-  - [ ] Create transaction via POST
-  - [ ] Retrieve transaction by ID via GET
-  - [ ] List transactions with date/account/category filtering
-  - [ ] Update transaction via PUT
-  - [ ] Delete transaction via DELETE
-  - [ ] Label utility endpoints (list distinct accounts/categories)
-- [ ] Tests passing with >80% coverage
-- [ ] API docs accessible at `http://localhost:8000/docs`
-- [ ] README complete with setup instructions
-- [ ] `.env.example` documented
+- ✅ API server runs locally: `./scripts/run.sh` or `poetry run flask --app memogarden_core.main run --debug`
+- ✅ Database schema created from `schema.sql`
+- ✅ Seed data loads successfully
+- ✅ All CRUD endpoints working:
+  - ✅ Create transaction via POST
+  - ✅ Retrieve transaction by ID via GET
+  - ✅ List transactions with date/account/category filtering
+  - ✅ Update transaction via PUT
+  - ✅ Delete transaction via DELETE
+  - ✅ Label utility endpoints (list distinct accounts/categories)
+- ✅ Tests passing with >80% coverage (90% achieved!)
+- ✅ API documentation in README (with curl examples)
+- ✅ README complete with setup instructions
+- ✅ `.env.example` documented
 
-**Deliverables:**
-✅ Working REST API with transaction CRUD
-✅ SQLite database with schema (no ORM)
-✅ Pydantic schemas for API validation
-✅ Test suite with good coverage
-✅ Clear setup documentation
-✅ Seed data for local development
-✅ FastAPI with async/await throughout
+**Deliverables:** ✅ ALL DELIVERED
+- ✅ Working REST API with transaction CRUD (7 endpoints)
+- ✅ SQLite database with schema (no ORM)
+- ✅ Pydantic schemas for API validation
+- ✅ Test suite with excellent coverage (231 tests, 90%)
+- ✅ Clear setup documentation (README with API examples)
+- ✅ Seed data for local development
+- ✅ Flask with synchronous code (sqlite3)
+- ✅ Development scripts (run.sh, test.sh, test-coverage.sh)
+- ✅ Working directory reminders in agent skills
+- ✅ Environment variables documented (.env.example)
 
 ---
 
@@ -842,7 +826,8 @@ test = "pytest"
 - **Plain UUIDs**: Entity IDs are standard UUID4 strings (no prefixes), type stored in registry
 - **UTC everywhere**: All timestamps in UTC ISO 8601 format
 - **Day-level dates**: Transaction dates are DATE (YYYY-MM-DD), not timestamps
-- **No ORM**: Raw SQL queries with aiosqlite for control and simplicity
+- **No ORM**: Raw SQL queries with sqlite3 for control and simplicity
+- **Synchronous execution**: Deterministic, simpler debugging, sufficient for personal use
 - **Entity creation pattern**: Two-step process - create entity in registry, then insert type-specific data
 - **Schema versioning**: Tracked in `_schema_metadata`, enables migration tracking
 - **Forward-only migrations**: Bugfixes are new migrations, no rollbacks
@@ -883,7 +868,7 @@ test = "pytest"
 
 ### Technical Risks
 - **SQLite limitations**: Single-writer, but acceptable for personal use
-- **Async/await complexity**: Mitigated by using aiosqlite consistently
+- **Synchronous execution**: Intentional choice for simplicity and determinism; sufficient for personal use
 - **UUID handling**: Use TEXT type, generate in Python layer
 - **Date/time handling**: Strict ISO 8601, UTC only, document clearly
 
@@ -936,10 +921,13 @@ test = "pytest"
 **Step 1.3 Complete** ✅ (Pydantic schemas with comprehensive tests)
 **Step 1.4 Complete** ✅ (Flask app with CORS, error handling, logging, request context pattern - 73 tests passing)
 **Step 1.5 Complete** ✅ (API Endpoints Implementation - 94 tests passing)
+**Step 1.6 Complete** ✅ (Testing Infrastructure - 231 tests, 90% coverage)
+**Step 1.6.5 Complete** ✅ (Schema Extension & Migration Design - documented in `/plan/future/`)
+**Step 1.7 Complete** ✅ (Documentation & Development Workflow - comprehensive README with API docs)
 
-**Currently on:** Ready for Step 1.6 or proceed to Step 2 (Authentication & Multi-User Support)
+**Currently on:** Step 1 (Core Backend Foundation) COMPLETE! ✅ Ready for Step 2 (Authentication) or production deployment.
 
-### Step 1.5 Summary
+### Completed Steps Summary
 **Completed:**
 - Created [memogarden_core/api/v1/transactions.py](memogarden-core/memogarden_core/api/v1/transactions.py) with 7 endpoints
 - Registered blueprint in [main.py](memogarden-core/memogarden_core/main.py)
@@ -956,10 +944,15 @@ test = "pytest"
 - `GET /api/v1/transactions/categories` - List distinct category labels
 
 **Next immediate tasks (choose one):**
-1. **Step 1.6:** Design Schema Extension Mechanisms (deferred, can skip for now)
-2. **Step 1.7:** Documentation & Development Workflow
-3. **Step 2:** Authentication & Multi-User Support
-4. **Commit** Step 1.5 changes to git
+1. **Step 2:** Authentication & Multi-User Support
+2. **Commit** Step 1.7 completion to git
+3. **Production deployment** (Raspberry Pi or Railway)
 
 ### Recommended Next Step
-Step 1.6 (Schema Extension Mechanisms) can be deferred since we haven't needed migrations yet. Proceed to **Step 1.7: Documentation & Development Workflow** to complete the foundation before moving to Step 2 (Authentication).
+**Step 1 (Core Backend Foundation) is now complete!** All 7 substeps finished:
+- ✅ Complete CRUD API for transactions (7 endpoints)
+- ✅ 231 tests with 90% coverage
+- ✅ Comprehensive documentation with API examples
+- ✅ Development workflow validated
+
+Ready to proceed to **Step 2: Authentication & Multi-User Support** to add user management, JWT authentication, and API key support for agents.

@@ -1,7 +1,49 @@
-# MemoGarden - Session Context (2025-12-24)
+# MemoGarden - Session Context (2025-12-27)
 
 **Purpose**: Session notes for next session
-**Last Updated**: 2025-12-24
+**Last Updated**: 2025-12-27
+
+---
+
+## Completed Work (2025-12-27)
+
+### Documentation Consistency Updates
+- **Updated skills to reference /plan/future/**:
+  - memogarden-schema: Added Future Design Reference section, fixed migrations path
+  - memogarden-development: Added Future Design Reference section + Working Directory Reminder
+  - memogarden-testing: Enhanced working directory reminder
+- **Updated implementation plan**:
+  - Step 1.6.5 now references /plan/future/ design docs
+  - Fixed all async → sync corrections (10+ locations updated)
+  - Updated testing section to reflect Flask (not FastAPI)
+  - Updated documentation section to reflect manual API docs
+  - Marked Step 1.6 as COMPLETE ✅
+- **Updated status.md**:
+  - Fixed "memogarden-update" → "change-reviewer/change-commit"
+  - Added Architectural Decisions section documenting Flask + sqlite3 choice
+  - Added Documentation Updates (2025-12-27) entry
+  - Added Testing Infrastructure (2025-12-27) section
+
+### Step 1.6: Testing Infrastructure - COMPLETE ✅
+- **Added pytest-cov** to dev dependencies for coverage reporting
+- **Verified test suite**: 231 tests passing (excellent coverage)
+- **Achieved 90% coverage** (exceeds 80% target)
+- **Test organization**: api/, db/, schema/, utils/ modules
+- **Fixtures**: test_db and client fixtures in conftest.py
+
+### Step 1.7: Documentation & Development Workflow - COMPLETE ✅
+- **Updated README.md**: Comprehensive rewrite with current status
+  - Added complete API documentation with curl examples for all 7 endpoints
+  - Updated test coverage (231 tests, 90%)
+  - Added convenience scripts reference (./scripts/run.sh, test.sh, test-coverage.sh)
+  - Updated implementation status (Steps 1.1-1.6 complete)
+  - Added design principles section
+  - Added development workflow section
+- **Verified .env.example**: All 4 environment variables documented
+- **End-to-end validation**: Server starts, API responds (health check + accounts endpoint tested)
+- **Working directory reminders**: Added to memogarden-development and memogarden-testing skills
+
+**Architectural Alignment**: All documentation now consistent with decision to use synchronous Flask + sqlite3 for simplicity and deterministic debugging.
 
 ---
 
@@ -9,73 +51,46 @@
 
 ### Documentation & Skills Refactor
 - **AGENTS.md**: Condensed from 752 to 179 lines (76% reduction)
-- **Created 6 Agent Skills** in `.claude/skills/`:
+- **Created 7 Agent Skills** in `.claude/skills/`:
   - memogarden-development: environment setup, constraints, anti-patterns
   - memogarden-testing: testing philosophy, workflows
   - memogarden-api-endpoint: API endpoint creation
   - memogarden-debugging: debugging workflows
   - memogarden-schema: schema modifications + data model reference
-  - memogarden-update: task completion workflow (git commits, status updates)
+  - change-reviewer: pre-commit review workflow
+  - change-commit: git commit operations
 - **Created 3 convenience scripts**: `scripts/run.sh`, `scripts/test.sh`, `scripts/test-coverage.sh`
 - **Created plan/status.md** for project status tracking
 - **Scripts pre-approved** in `.claude/settings.local.json`
-- **Committed** all changes to git repo in `/home/kureshii/memogarden/` (not to GitHub, just local tracking)
-  - Commit: `8979f3f` - "docs: refactor AGENTS.md and create agent skills"
+
+### Schema Extension Design
+- **Created plan/future/** directory for future design work
+- **schema-extension-design.md**: Base schema vs. extensions, two extension mechanisms (SQL + JSON)
+- **migration-mechanism.md**: Complete migration workflow with deconfliction and rollback
+- **soil-design.md**: Immutable storage architecture for emails, invoices, statements
 
 ---
 
 ## Implementation Plan Status
 
-**Current Step**: Step 1 - Core Backend Foundation
-**Completed**: Steps 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅, 1.5 ✅
-**Tests**: 231 passing (updated count after refactor)
+**Current Step**: Step 1 COMPLETE ✅ - Core Backend Foundation
+**Completed**: Steps 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅, 1.5 ✅, 1.6 ✅, 1.7 ✅, 1.6.5 ✅ (design)
+**Tests**: 231 passing, 90% coverage
 
-**Ready for**: Step 1.6 (Schema Extension Mechanisms) OR Step 1.7 (Documentation & Development Workflow)
+**Ready for**: Step 2 (Authentication & Multi-User Support) OR Production Deployment
 
----
-
-## IMPORTANT: Schema Extensions Discussion (Next Session)
-
-**Topic**: Step 1.6 - Schema Extension Mechanisms
-
-**Why Discuss First**: Before implementing schema extensions, we need to decide on:
-
-1. **Migration Strategy**: How to handle schema changes across different user instances?
-   - Base schema versioning (e.g., `memogarden-core-v1`)
-   - Forward/backward compatibility rules
-   - Extension tracking in `_schema_metadata`
-
-2. **Extension Types**: What kinds of extensions to support?
-   - Custom fields (e.g., tags, attachments)
-   - Custom entities
-   - User-specific extensions
-
-3. **Compatibility Model**:
-   - How do multiple agents with different schema versions coexist?
-   - How to handle required field additions?
-   - Migration framework or manual SQL scripts?
-
-**Resources**:
-- See [implementation.md Step 1.6](implementation.md) for full details
-- Current schema: `memogarden-core/schema/schema.sql`
-- Pattern: Entity registry pattern + custom fields
-
-**Decision Points**:
-- Defer or implement now?
-- What level of compatibility complexity do we need?
-- Should extensions be stored in JSON metadata or separate tables?
+**Step 1 Achievement**: Complete REST API with transaction CRUD, entity registry pattern, 90% test coverage, comprehensive documentation with API examples.
 
 ---
 
 ## Repository State
 
 - **memogarden-core**: Separate git repo (https://github.com/memogarden/memogarden-core)
-- **Meta-repo**: `/home/kureshii/memogarden/` - git repo for AGENTS.md, scripts, skills (local only)
+- **Meta-repo**: `/home/kureshii/memogarden/` - git repo for AGENTS.md, scripts, skills, plan (local only)
 - **Scripts location**: `scripts/` in parent directory, referenced from memogarden-core
+- **Uncommitted changes**: Documentation updates in plan/, .claude/skills/, pyproject.toml (pytest-cov)
 
 ---
-
-**Next session**: Start with schema extensions discussion, then proceed based on decisions made.
 
 ## Current Status
 
@@ -84,11 +99,32 @@
 **Step 1.1: Project Setup & Structure** ✅ (commit: 4bfbbe0)
 **Step 1.2: SQLite Database Schema** ✅ (refactored to sync Flask + sqlite3)
 **Step 1.3: Pydantic Schemas (API Validation)** ✅ (18 schema tests)
-**Step 1.4: Flask Application & Configuration** ✅ (Flask app with CORS, error handling)
+**Step 1.4: Flask Application & Configuration** ✅ (Flask app with CORS, error handling, logging)
 **Step 1.5: API Endpoints Implementation** ✅ (7 endpoints, 21 API tests)
+**Step 1.6: Testing Infrastructure** ✅ (231 tests, 90% coverage)
+**Step 1.6.5: Schema Extension & Migration Design** ✅ (docs in /plan/future/)
+**Step 1.7: Documentation & Development Workflow** ✅ (comprehensive README, API docs, working directory reminders)
+
+### Step 1 Complete! ✅ Core Backend Foundation
+
+**Achievements:**
+- Complete CRUD API for transactions (7 endpoints)
+- Entity registry pattern for global metadata
+- 231 tests with 90% coverage
+- Comprehensive README with curl examples for all endpoints
+- Working directory reminders in agent skills
+- Development scripts validated (run.sh, test.sh, test-coverage.sh)
+- End-to-end workflow tested and working
+
+**Next:** Step 2 (Authentication & Multi-User Support) or production deployment
 
 ### Test Status
-**94 tests passing** (16 app tests, 15 error tests, 5 config tests, 20 database tests, 18 schema tests, 3 health tests, 21 API tests)
+**231 tests passing, 90% coverage** (exceeds 80% target)
+- API tests: transactions, validation, health
+- Database tests: entity, transaction, query, core operations
+- Schema tests: types (Timestamp, Date)
+- Utils tests: isodatetime, uid
+- App tests: main app, config, errors, schemas
 
 ---
 
@@ -106,10 +142,10 @@ Create comprehensive documentation and ensure smooth local development experienc
 - Project overview and architecture
 - Prerequisites (Python 3.13, Poetry)
 - Installation steps (Poetry install)
-- Running locally: `poetry run flask --app memogarden_core.main run --debug`
-- Running tests: `poetry run pytest`
+- Running locally: `./scripts/run.sh` or `poetry run flask --app memogarden_core.main run --debug`
+- Running tests: `./scripts/test.sh` or `poetry run pytest`
 - Database setup and seed data: `poetry run python -m memogarden_core.db.seed`
-- API documentation (list endpoints, manual curl examples since no Swagger)
+- API documentation (list endpoints with curl examples - NO Swagger)
 - Environment variables reference (.env.example)
 - Development workflow
 
@@ -130,7 +166,7 @@ curl -X POST http://localhost:5000/api/v1/transactions \
   -d '{
     "amount": -15.50,
     "currency": "SGD",
-    "transaction_date": "2025-12-23",
+    "transaction_date": "2025-12-27",
     "description": "Coffee at Starbucks",
     "account": "Personal",
     "category": "Food"
@@ -157,10 +193,13 @@ curl http://localhost:5000/api/v1/transactions/accounts
 curl http://localhost:5000/api/v1/transactions/categories
 ```
 
-#### 1.7.3 Create Development Scripts
-**File**: `/home/kureshii/memogarden/memogarden-core/pyproject.toml`
+#### 1.7.3 Development Scripts
+**Status**: Convenience scripts already exist in `/scripts/`:
+- `run.sh` - Start development server
+- `test.sh` - Run tests
+- `test-coverage.sh` - Run tests with coverage
 
-Add scripts section (if not present):
+Alternatively, add to `pyproject.toml`:
 ```toml
 [tool.poetry.scripts]
 dev = "flask --app memogarden_core.main run --debug"
@@ -184,10 +223,10 @@ DEFAULT_CURRENCY=SGD
 Test the following workflow:
 1. Fresh clone → Poetry install
 2. Seed data: `poetry run python -m memogarden_core.db.seed`
-3. Run server: `poetry run flask --app memogarden_core.main run --debug`
+3. Run server: `./scripts/run.sh` or `poetry run flask --app memogarden_core.main run --debug`
 4. Test API with curl
-5. Run tests: `poetry run pytest`
-6. Check coverage: `poetry run pytest --cov=memogarden_core`
+5. Run tests: `./scripts/test.sh` or `poetry run pytest`
+6. Check coverage: `./scripts/test-coverage.sh` or `poetry run pytest --cov=memogarden_core`
 
 Document any gotchas or setup issues in README.
 
@@ -197,7 +236,7 @@ Document any gotchas or setup issues in README.
 
 ### Files to Update/Create
 - 📝 `README.md` - Create comprehensive documentation
-- 🔄 `pyproject.toml` - Add poetry scripts section
+- 🔄 `pyproject.toml` - Add poetry scripts section (optional)
 - 🔄 `.env.example` - Ensure all vars documented
 
 ### Files to Reference
@@ -213,20 +252,30 @@ Document any gotchas or setup issues in README.
 **Database**: `./data/memogarden.db`
 **Python**: 3.13.11 (via Poetry)
 **Framework**: Flask 3.x (synchronous)
+**Database Library**: sqlite3 (built-in)
 **Tests**: 94 passing
 
 **Quick commands:**
 ```bash
-# Run Flask dev server
+# Run Flask dev server (using convenience script)
+./scripts/run.sh
+
+# Or run manually
 poetry run flask --app memogarden_core.main run --debug
 
 # Seed database
 poetry run python -m memogarden_core.db.seed
 
 # Run tests
+./scripts/test.sh
+
+# Or run tests manually
 poetry run pytest
 
 # Run tests with coverage
+./scripts/test-coverage.sh
+
+# Or run coverage manually
 poetry run pytest --cov=memogarden_core
 
 # Run specific test file
@@ -235,46 +284,20 @@ poetry run pytest tests/api/test_transactions.py -v
 
 ---
 
-## Git Status
+## Key Architectural Decisions
 
-### Uncommitted Changes (Step 1.5)
-- `memogarden_core/api/v1/transactions.py` - New file
-- `memogarden_core/api/v1/__init__.py` - Updated
-- `memogarden_core/main.py` - Registered blueprint
-- `tests/api/test_transactions.py` - New file
-- `plan/implementation.md` - Updated status
+### Why Flask + sqlite3 (Not FastAPI + aiosqlite)?
+1. **Simplicity**: Synchronous code is easier to understand and debug
+2. **Determinism**: No async/await complexity, execution order is predictable
+3. **Sufficient for personal use**: Single-user system with low traffic
+4. **Built-in sqlite3**: No external async database dependencies needed
+5. **Better debugging**: Stack traces are clearer without async context switching
 
-### Suggested Commit Message for Step 1.5
-```
-Complete Step 1.5: API Endpoints Implementation
-
-Implement complete CRUD API for transactions with Flask:
-- POST /api/v1/transactions - Create transaction
-- GET /api/v1/transactions - List with filtering (date, account, category, pagination)
-- GET /api/v1/transactions/{id} - Get single transaction
-- PUT /api/v1/transactions/{id} - Update transaction (partial updates)
-- DELETE /api/v1/transactions/{id} - Delete transaction
-- GET /api/v1/transactions/accounts - List distinct account labels
-- GET /api/v1/transactions/categories - List distinct category labels
-
-Implementation details:
-- Raw SQL queries with parameterized statements (no ORM)
-- Entity registry pattern for all transactions
-- Pydantic validation for request/response
-- Error handling with custom exceptions (ResourceNotFound, ValidationError)
-- 21 comprehensive API tests (all passing)
-- Total: 94 tests passing
-
-Architecture notes:
-- Accounts and categories are UI-side labels, not entities
-- Label endpoints nested under transactions for better REST hierarchy
-- Flask request context pattern for database connections
-- CORS configured for cross-origin requests
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
+### Consequences
+- No auto-generated Swagger UI docs (manual documentation required)
+- Manual API documentation with curl examples
+- Simpler test fixtures (Flask test client, not AsyncClient)
+- Request context pattern for database connections (Flask `g` object)
 
 ---
 
@@ -282,10 +305,11 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 1. **Flask != FastAPI**: No auto-generated Swagger docs - provide curl examples
 2. **Poetry scripts**: Use `flask --app` instead of `uvicorn`
-3. **Seed script**: Remind users to run `poetry run python -m memogarden_core.db.seed`
-4. **Environment**: Document `.env` setup from `.env.example`
-5. **Coverage**: Include coverage command and target (>80% achieved)
-6. **Test everything**: Verify end-to-end workflow works on fresh clone
+3. **Convenience scripts exist**: Use `./scripts/run.sh`, `./scripts/test.sh`
+4. **Seed script**: Remind users to run `poetry run python -m memogarden_core.db.seed`
+5. **Environment**: Document `.env` setup from `.env.example`
+6. **Coverage**: Include coverage command (target >80% achieved)
+7. **Test everything**: Verify end-to-end workflow works on fresh clone
 
 ---
 
@@ -293,9 +317,20 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 When Step 1.7 is complete:
 - Update implementation.md to mark Step 1.7 as complete
-- Consider creating git commit for Step 1.5 (if not done)
-- Consider creating git commit for Step 1.7 (when done)
+- Update plan/status.md
+- Consider creating git commit for documentation work
 - Ready for Step 2 (Authentication & Multi-User Support)
+
+---
+
+## Future Design Reference
+
+Schema extension and migration mechanisms are documented in `/plan/future/`:
+- **schema-extension-design.md**: Base schema vs. extensions philosophy
+- **migration-mechanism.md**: Migration workflow with validation and rollback
+- **soil-design.md**: Immutable storage architecture
+
+These are design references for future implementation. No code changes needed until Step 3+.
 
 ---
 

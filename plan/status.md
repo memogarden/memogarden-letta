@@ -1,10 +1,19 @@
 # MemoGarden Project Status
 
-**Last Updated**: 2025-12-24
+**Last Updated**: 2025-12-27
 
 ## Active Step
 
-**Documentation and Skills Refactor Complete**
+**Step 1 COMPLETE - Core Backend Foundation ✅**
+
+All 7 substeps finished:
+- ✅ Project Setup & Structure
+- ✅ SQLite Database Schema (entity registry pattern)
+- ✅ Pydantic Schemas (API validation)
+- ✅ Flask Application & Configuration
+- ✅ API Endpoints Implementation (7 transaction endpoints)
+- ✅ Testing Infrastructure (231 tests, 90% coverage)
+- ✅ Documentation & Development Workflow (comprehensive README with API docs)
 
 ## Repository
 
@@ -26,13 +35,14 @@
 
 ### Documentation Refactor (2025-12-24)
 - ✅ AGENTS.md condensed from 752 to 179 lines (76% reduction)
-- ✅ Created 6 Agent Skills for task-specific workflows
+- ✅ Created 7 Agent Skills for task-specific workflows
   - memogarden-development: environment setup, constraints, anti-patterns
   - memogarden-testing: testing philosophy and workflows
   - memogarden-api-endpoint: API endpoint creation
   - memogarden-debugging: debugging workflows
   - memogarden-schema: schema modifications + data model reference
-  - memogarden-update: task completion workflow (git commits, status updates)
+  - change-reviewer: pre-commit review workflow
+  - change-commit: git commit operations
 - ✅ Created 3 convenience scripts (run.sh, test.sh, test-coverage.sh)
 - ✅ Created plan/status.md for project status tracking
 - ✅ Scripts pre-approved in .claude/settings.local.json
@@ -52,14 +62,61 @@
   - Directory structure and archival workflow
   - Fossilization mechanism (lossy compaction)
   - Retrieval and reconstruction APIs
-- ✅ Enhanced memogarden-update skill with pre-commit review workflow
-  - Review changes against /plan before committing
-  - Check for faithfulness to intentions, plan updates, and conflicts
-  - Require user confirmation before creating commits
+
+### Documentation Updates (2025-12-27)
+- ✅ Updated memogarden-schema skill to reference /plan/future/ design docs
+- ✅ Updated memogarden-development skill with Future Design Reference section
+- ✅ Updated memogarden-development skill with Working Directory Reminder
+- ✅ Updated memogarden-testing skill with enhanced working directory reminder
+- ✅ Updated implementation plan Step 1.6.5 to reference /plan/future/ docs
+- ✅ Fixed all async references in implementation plan (now consistent with sync Flask + sqlite3)
+- ✅ Updated testing infrastructure section to reflect Flask (not FastAPI)
+- ✅ Updated documentation section to reflect manual API docs (no auto-generated Swagger)
+- ✅ Completed Step 1.6: Testing Infrastructure (231 tests, 90% coverage)
+- ✅ Added pytest-cov to dev dependencies
+- ✅ Completed Step 1.7: Documentation & Development Workflow
+
+### Testing Infrastructure (2025-12-27)
+- ✅ 231 tests passing (excellent coverage across all modules)
+- ✅ 90% test coverage (exceeds 80% target)
+- ✅ Test fixtures in conftest.py (test_db, client)
+- ✅ pytest-cov configured for coverage reporting
+- ✅ Tests organized by module: api/, db/, schema/, utils/
+
+### Step 1 Completion: Core Backend Foundation (2025-12-27) ✅
+- ✅ **Complete CRUD API**: 7 transaction endpoints (create, read, update, delete, list, labels)
+- ✅ **Comprehensive Documentation**: README.md with curl examples for all API endpoints
+- ✅ **Working Directory Reminders**: Added to agent skills to prevent directory confusion
+- ✅ **End-to-End Validation**: Verified server startup, API responses, test execution
+- ✅ **Development Scripts**: run.sh, test.sh, test-coverage.sh in parent directory
+- ✅ **Environment Variables**: All documented in .env.example
+
+## Architectural Decisions
+
+### Tech Stack
+- **Backend**: Flask (synchronous) + sqlite3 (built-in Python module)
+- **Philosophy**: Deterministic synchronous execution for simplicity and debugging
+- **Rationale**: Personal system with low traffic; sync is simpler and more maintainable than async
+
+### Design Principles
+- **No ORM**: Raw SQL queries with parameterized statements
+- **Entity Registry**: Global metadata table for all entity types
+- **Labels not Entities**: Accounts and categories are user-defined strings
+- **UTC Everywhere**: All timestamps in ISO 8601 UTC format
+- **Test-Driven**: Comprehensive test suite (>80% coverage target)
 
 ## Next Steps
 
 See [implementation.md](implementation.md) for detailed roadmap.
+
+**Ready for**: Step 2 (Authentication & Multi-User Support) OR Production Deployment
+
+**Step 1 (Core Backend Foundation) is complete!** All major components implemented:
+- RESTful API with transaction CRUD
+- Entity registry pattern for global metadata
+- 90% test coverage (231 tests)
+- Comprehensive documentation
+- Development workflow validated
 
 ---
 
