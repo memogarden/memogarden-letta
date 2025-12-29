@@ -206,35 +206,64 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 ---
 
-#### 2.4 Authentication Endpoints
+#### 2.4 Authentication Endpoints ✅ COMPLETE (2025-12-29)
 
-**Implement admin registration (localhost only), login, logout, and profile endpoints.**
+**Commit:** (pending commit)
 
-**Endpoints:**
-- `GET /admin/register` - HTML setup page (localhost only, available only if no users exist)
+**Completed Tasks:**
+- ✅ Implemented auth service module with password hashing (bcrypt, work factor 12)
+- ✅ Implemented user CRUD operations (create, get by username, get by ID, count)
+- ✅ Implemented credential verification (password hashing and checking)
+- ✅ Added AuthenticationError exception class
+- ✅ Implemented GET /admin/register endpoint (HTML setup page, localhost only)
+- ✅ Implemented POST /admin/register endpoint (create admin account, localhost only, one-time)
+- ✅ Implemented POST /auth/login endpoint (authenticate and return JWT token)
+- ✅ Implemented POST /auth/logout endpoint (no-op, stateless tokens)
+- ✅ Implemented GET /auth/me endpoint (get current user info from token)
+- ✅ Added startup warning log when no admin exists
+- ✅ Added localhost check with configurable bypass for testing
+- ✅ Registered auth blueprint in main.py
+- ✅ Added AuthenticationError handler (401 status)
+- ✅ Created 49 comprehensive tests (20 service tests + 29 endpoint tests)
+
+**Auth Service Features:**
+- Password hashing with bcrypt (work factor 12)
+- User CRUD operations with entity registry integration
+- Case-insensitive username lookup (stored as lowercase)
+- Password verification with bcrypt.checkpw
+- Admin user detection (has_admin_user)
+
+**Authentication Endpoints:**
+- `GET /admin/register` - HTML setup page (localhost only, no users exist)
 - `POST /admin/register` - Create admin account (localhost only, one-time only)
-- `POST /auth/login` - Authenticate and return JWT token
-- `POST /auth/logout` - Revoke current token (optional blacklist)
-- `GET /auth/me` - Get current user info from token
+- `POST /auth/login` - Authenticate and return JWT token (30-day expiry)
+- `POST /auth/logout` - Logout (no-op, stateless JWT tokens)
+- `GET /auth/me` - Get current user info from JWT token
 
-**Admin registration constraints:**
-- Only accessible from localhost (127.0.0.1, localhost, ::1)
-- Only available when no users exist in database
-- Creates account with `is_admin=1` (admin role enforced)
-- No regular user registration endpoint in MVP (only admins allowed)
-- Server logs warning on startup if no admin exists: "Visit http://localhost:5000/admin/register to setup"
-- After first user created, /admin/register returns 403 Forbidden
+**Security Features:**
+- Admin registration only accessible from localhost (127.0.0.1, ::1)
+- Admin registration only available when no users exist in database
+- Password requirements: min 8 chars, at least one letter and digit
+- Username normalization to lowercase (case-insensitive lookup)
+- JWT token validation with HS256 algorithm
+- Configurable bypass_localhost_check for testing
 
-**Implementation notes:**
-- Check `request.remote_addr` against localhost aliases
-- Query user count on startup (cached or checked per request)
-- Return friendly error message if admin exists but accessed from non-localhost
-- Return friendly error message if accessed from localhost but admin already exists
+**Test Results:**
+- All 346 tests pass (including 49 new auth tests)
+- Coverage: password hashing, user CRUD, credential verification
+- Coverage: admin registration (localhost enforcement, one-time only)
+- Coverage: login flow (valid/invalid credentials, case sensitivity)
+- Coverage: logout endpoint
+- Coverage: /auth/me endpoint (valid token, invalid token, deleted user)
 
-**Features:**
-- Login accepts both JSON and form data (for HTML forms)
-- Return JWT token with 30-day expiry
-- No public user registration (security by design)
+**Files Modified:**
+- memogarden-core/memogarden_core/auth/service.py (265 lines, new file)
+- memogarden-core/memogarden_core/api/auth.py (370 lines, new file)
+- memogarden-core/memogarden_core/exceptions.py (added AuthenticationError)
+- memogarden-core/memogarden_core/config.py (added bypass_localhost_check)
+- memogarden-core/memogarden_core/main.py (auth blueprint, error handler, startup check)
+- memogarden-core/tests/auth/test_service.py (298 lines, new file)
+- memogarden-core/tests/auth/test_endpoints.py (360 lines, new file)
 
 ---
 
@@ -514,9 +543,11 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 **Step 2.3 COMPLETE** ✅ (JWT Token Service - 2025-12-29)
 
-**Currently on:** Step 2.4 (Authentication Endpoints)
+**Step 2.4 COMPLETE** ✅ (Authentication Endpoints - 2025-12-29)
 
-**Next:** Implement admin registration (localhost only), login, logout, and profile endpoints.
+**Currently on:** Step 2.5 (API Key Management Endpoints)
+
+**Next:** Implement programmatic API key CRUD operations (list, create, revoke).
 
 ---
 
