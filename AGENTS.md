@@ -49,6 +49,19 @@ The `/docs` folder contains detailed technical documentation:
 When working on database operations, API endpoints, or utilities, consult `architecture.md` for
 detailed implementation patterns and code examples.
 
+## Agent Subagents
+
+The `.claude/agents/` directory contains specialized subagents that autonomously handle complex,
+multi-step review tasks.
+
+**Available Subagents:**
+- **code-review** - Review code changes for implementation quality, style, patterns, and adherence to project guidelines (architecture.md patterns, coding standards, architectural constraints)
+- **change-reviewer** - Review changes against project requirements and plans (PRD alignment, implementation plan accuracy, documentation completeness)
+
+These subagents provide comprehensive review coverage with distinct focuses:
+- **code-review** focuses on code quality and technical implementation
+- **change-reviewer** focuses on project alignment and documentation
+
 ## Agent Skills
 
 The `.claude/skills/` directory contains task-specific skills that provide detailed workflows
@@ -62,8 +75,7 @@ and guidance. Claude loads these skills automatically when relevant to your task
 - **memogarden-schema** - SQLite schema modification workflow, data model reference
 - **memogarden-refactor** - Code refactoring and test optimization (duplication analysis, test profiling, mock audit, test cleanup)
 - **process-improvement** - Review session errors/mistakes and propose systemic improvements (tests, tools, skills)
-- **change-reviewer** - Review changes against project plans before committing (pre-commit review)
-- **change-commit** - Commit changes to git repository (use AFTER change-reviewer)
+- **change-commit** - Commit changes to git repository (use AFTER reviews)
 
 These skills allow AGENTS.md to focus on project context while providing detailed, task-specific
 guidance on-demand. See [Claude Code Skills documentation](https://code.claude.com/docs/en/skills)
@@ -154,8 +166,9 @@ For reviewing session errors/mistakes and proposing systemic improvements, use t
 ### Completing Work
 
 For task completion workflow (git commits, status updates, implementation plan updates):
-1. Use **change-reviewer** skill to review changes against project plans
-2. After review and user confirmation, use **change-commit** skill to commit changes
+1. Use **code-review** subagent to review code quality and technical implementation
+2. Use **change-reviewer** subagent to review changes against project plans and requirements
+3. After reviews and user confirmation, use **change-commit** skill to commit changes
 
 ## Communication Guidelines
 
