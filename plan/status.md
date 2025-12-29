@@ -1,19 +1,21 @@
 # MemoGarden Project Status
 
-**Last Updated**: 2025-12-27
+**Last Updated**: 2025-12-29
 
 ## Active Step
 
-**Step 1 COMPLETE - Core Backend Foundation ✅**
+**Step 2 ACTIVE - Authentication & Multi-User Support** 🚧
 
-All 7 substeps finished:
-- ✅ Project Setup & Structure
-- ✅ SQLite Database Schema (entity registry pattern)
-- ✅ Pydantic Schemas (API validation)
-- ✅ Flask Application & Configuration
-- ✅ API Endpoints Implementation (7 transaction endpoints)
-- ✅ Testing Infrastructure (231 tests, 90% coverage)
-- ✅ Documentation & Development Workflow (comprehensive README with API docs)
+Currently implementing authentication system:
+- 🚧 **2.1** - Database Schema: Users and API Keys (NEXT)
+- ⏳ **2.2** - Pydantic Schemas (User, APIKey, Auth)
+- ⏳ **2.3** - JWT Token Service
+- ⏳ **2.4** - Authentication Endpoints
+- ⏳ **2.5** - API Key Management Endpoints
+- ⏳ **2.6** - Authentication Middleware
+- ⏳ **2.7** - HTML UI Pages
+- ⏳ **2.8** - Testing Infrastructure
+- ⏳ **2.9** - Documentation & Integration
 
 ## Repository
 
@@ -117,6 +119,20 @@ See [implementation.md](implementation.md) for detailed roadmap.
 - 90% test coverage (231 tests)
 - Comprehensive documentation
 - Development workflow validated
+
+---
+
+## Next Steps
+
+See [implementation.md](implementation.md) for detailed roadmap.
+
+**Currently working on:** Step 2.1 (Database Schema: Users and API Keys)
+
+**Adding authentication infrastructure:**
+- User table with password hashing (bcrypt)
+- API keys table with hash and prefix storage
+- Foreign keys to entities table for metadata
+- Schema tests and validation
 
 ---
 

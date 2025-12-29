@@ -1,7 +1,7 @@
-# MemoGarden - Session Context (2025-12-27)
+# MemoGarden - Session Context (2025-12-29)
 
 **Purpose**: Session notes for next session
-**Last Updated**: 2025-12-27
+**Last Updated**: 2025-12-29
 
 ---
 
@@ -71,13 +71,77 @@
 
 ---
 
+## Completed Work (2025-12-29)
+
+### Auth Design Decisions
+**Step 2: Authentication & Multi-User Support** - ACTIVE 🚧
+
+#### Key Design Decisions
+1. **Admin-only registration**: No public user registration endpoint
+   - `/admin/register` (localhost only) for initial setup
+   - Only available when no users exist in database
+   - Creates account with `is_admin=1` (admin role enforced)
+
+2. **No public user registration**: MVP is single-admin system
+   - Future: Add household user creation (admin-managed)
+   - `is_admin` field in schema (0 = user, 1 = admin) future-proofs for multi-user
+
+3. **Two authentication mechanisms**:
+   - **JWT tokens** (30-day expiry) for device clients (Flutter app, web UI)
+   - **API keys** for agents and programmatic access
+
+4. **Server identification**: By URL
+   - Future: memogarden.net subdomain registry for discovery
+   - Registry is optional premium feature, not centralized auth
+
+5. **Agent types**:
+   - **Local agents** (Letta-based, run on server): Make internal HTTP calls
+   - **External agents** (future, mechanism TBD): Remote workflows
+
+#### URL Structure
+```
+# Authentication (unversioned)
+GET  /admin/register         # HTML setup (localhost only, no users)
+POST /admin/register         # Create admin (localhost only, one-time)
+POST /auth/login             # Get JWT token
+POST /auth/logout            # Revoke token
+GET  /auth/me                # Get current user info
+
+# API Keys (unversioned)
+GET  /api-keys/              # JSON: list keys
+POST /api-keys/              # JSON: create key
+DEL  /api-keys/:id           # JSON: revoke key
+GET  /api-keys               # HTML: management UI
+GET  /api-keys/new           # HTML: create form
+
+# HTML Pages
+GET  /login                  # Login form
+GET  /settings               # User profile
+GET  /                       # Redirect based on auth
+```
+
+#### Security Model
+- **Localhost enforcement**: `/admin/register` only from 127.0.0.1
+- **One-time admin setup**: Returns 403 after admin exists
+- **Server startup check**: Logs warning if no admin, points to /admin/register
+- **API key storage**: Hashed in database, full key shown only on creation
+
+#### Files Updated
+- [implementation.md](implementation.md) - Step 2 expanded with 9 sub-steps
+- [status.md](status.md) - Updated active step to Step 2
+- [prd.md](prd.md) - Added "Single-User/Household Context" principle
+
+#### Next Task
+**Step 2.1**: Database Schema - Add `users` and `api_keys` tables to schema.sql
+
+---
+
 ## Implementation Plan Status
 
-**Current Step**: Step 1 COMPLETE ✅ - Core Backend Foundation
-**Completed**: Steps 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅, 1.5 ✅, 1.6 ✅, 1.7 ✅, 1.6.5 ✅ (design)
+**Current Step**: Step 2 ACTIVE 🚧 - Authentication & Multi-User Support
+**Completed**: Step 1 ✅ (Core Backend Foundation)
+**Current Sub-step**: Step 2.1 (Database Schema: Users and API Keys)
 **Tests**: 231 passing, 90% coverage
-
-**Ready for**: Step 2 (Authentication & Multi-User Support) OR Production Deployment
 
 **Step 1 Achievement**: Complete REST API with transaction CRUD, entity registry pattern, 90% test coverage, comprehensive documentation with API examples.
 

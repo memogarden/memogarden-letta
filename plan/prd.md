@@ -13,19 +13,25 @@ This is **not** a budgeting or accounting product. It is a memory system for mon
 1. **Single Source of Truth**
    All transactions are written via MemoGarden Core. The Budget app and agents share the same API and data model.
 
-2. **Transactions Are Beliefs**
+2. **Single-User/Household Context**
+   MemoGarden Core is designed for single-user or household deployments. Data access is permitted through:
+   - **External apps** (Budget app, web UI) via JWT authentication
+   - **Local agents** (Letta-based, running on the same server) via API keys
+   - **External agents** (future, mechanism TBD) may be supported for remote workflows
+
+3. **Transactions Are Beliefs**
    A transaction represents the user's understanding at the time of payment, not the bank's ledger. Reconciliation is a later act of alignment, not mutation of history.
 
-3. **UI Simplicity, Core Completeness**
+4. **UI Simplicity, Core Completeness**
    The Budget app intentionally exposes a subset of fields. All metadata remains editable through Core APIs and agent/admin tooling.
 
-4. **Mutable Snapshot, Immutable Memory**
+5. **Mutable Snapshot, Immutable Memory**
    MemoGarden Core presents a current, human-queryable snapshot. All changes emit deltas, enabling partial reconstruction of the past.
 
-5. **Document-Centric Traceability**
+6. **Document-Centric Traceability**
    Every transaction may be linked to one or more immutable Soil artifacts (emails, invoices, statements) via relations.
 
-6. **Schema as Living Document**
+7. **Schema as Living Document**
    The data model evolves over time. Users may have different schema versions (reconcilable drift). Fresh databases use current schema; existing databases migrate forward-only. Schema history is preserved in Soil for agent understanding and data archaeology.
 
 ---
