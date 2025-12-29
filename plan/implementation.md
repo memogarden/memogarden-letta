@@ -523,6 +523,16 @@ auth with existing transaction endpoints.
 - Coverage: 91% (above 80% target)
 - Test suite runs in 1.14s (well under 2.8s target)
 
+**Code Quality Refactoring:**
+- ✅ Created `_authenticate_jwt()` helper function in auth/decorators.py
+- ✅ Refactored 4 functions in auth/api.py to use helper (removed ~120 lines of duplication)
+- ✅ Reduced auth/api.py from 530 to 431 lines (99 lines, 19% reduction)
+- ✅ Improved maintainability: JWT auth logic now in one place
+- Functions refactored: get_current_user(), list_api_keys(), create_api_key(), revoke_api_key()
+
+**Note:** Further refactoring opportunity exists - ADMIN_REGISTER_HTML in auth/ui.py (200+ line string)
+could be moved to templates/admin_register.html for consistency with other pages.
+
 ---
 
 ### Step 3: Advanced Core Features
