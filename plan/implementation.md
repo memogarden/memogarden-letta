@@ -67,11 +67,44 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
 
 ---
 
-#### 2.2 Pydantic Schemas (User, APIKey, Auth)
+#### 2.2 Pydantic Schemas (User, APIKey, Auth) ✅ COMPLETE (2025-12-29)
 
-**Create validation schemas for authentication and API key management.**
+**Commit:** 1a3729a - feat(auth): add Pydantic schemas for authentication
 
-Add to `schema/schema.sql`:
+**Completed Tasks:**
+- ✅ Created UserCreate, UserLogin, UserResponse schemas with password validation
+- ✅ Created APIKeyCreate, APIKeyResponse, APIKeyListResponse schemas
+- ✅ Created TokenPayload and TokenResponse JWT schemas
+- ✅ Created AdminRegistrationResponse for admin setup
+- ✅ Implemented password validation: min 8 chars, 1 letter, 1 digit
+- ✅ Implemented username validation: alphanumeric, underscore, hyphen only
+- ✅ Implemented username normalization to lowercase
+- ✅ Added auth module structure (memogarden_core/auth/)
+- ✅ Re-exported auth schemas in api/v1/schemas for convenience
+- ✅ Added 32 comprehensive tests for all auth schemas
+
+**Schema Features:**
+- Password requirements: min 8 chars, at least one letter and digit
+- Username: case-insensitive (normalized to lowercase), alphanumeric + underscore/hyphen
+- API keys: full key only shown on creation, prefix in list responses
+- JWT tokens: access_token, token_type, and user info in response
+- All timestamps in ISO 8601 UTC format
+- Pydantic v2 with modern Python 3.13 type hints
+
+**Test Results:**
+- All 32 tests pass (100% pass rate)
+- Coverage: user schemas, API key schemas, JWT token schemas
+- Validation tests for password complexity, username constraints, field types
+
+**Files Modified:**
+- memogarden-core/memogarden_core/auth/schemas/auth.py (316 lines)
+- memogarden-core/memogarden_core/auth/__init__.py
+- memogarden-core/memogarden_core/auth/schemas/__init__.py
+- memogarden-core/memogarden_core/api/v1/schemas/__init__.py
+- memogarden-core/tests/auth/test_schemas.py (519 lines)
+- memogarden-core/tests/auth/__init__.py
+
+**Schema Reference (Step 2.1):**
 
 ```sql
 -- Users table (humans, device clients)
@@ -443,12 +476,11 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 ## Critical Files Reference
 
-### Current Step Critical Files (Step 2.1)
+### Current Step Critical Files (Step 2.3)
 - `/home/kureshii/memogarden/plan/prd.md` - Requirements source of truth
-- `memogarden-core/schema/schema.sql` - Database schema (add users, api_keys tables)
-- `memogarden-core/tests/test_schema.py` - Schema validation tests
-- `memogarden-core/db/` - Core API (will need UserOperations, APIKeyOperations)
-- `memogarden-core/pyproject.toml` - Add bcrypt, PyJWT dependencies
+- `memogarden-core/memogarden_core/auth/` - Auth module (schemas, services, middleware)
+- `memogarden-core/memogarden_core/config.py` - JWT_SECRET_KEY, JWT_EXPIRY_DAYS
+- `memogarden-core/pyproject.toml` - bcrypt, PyJWT dependencies (already added)
 
 ---
 
@@ -456,9 +488,13 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 **Step 1 COMPLETE** ✅ (Core Backend Foundation - 2025-12-27)
 
-**Currently on:** Step 2.1 (Database Schema: Users and API Keys)
+**Step 2.1 COMPLETE** ✅ (Database Schema: Users and API Keys - 2025-12-29)
 
-**Next:** Add `users` and `api_keys` tables to `schema/schema.sql` with foreign keys to `entities` table.
+**Step 2.2 COMPLETE** ✅ (Pydantic Schemas: User, APIKey, Auth - 2025-12-29)
+
+**Currently on:** Step 2.3 (JWT Token Service)
+
+**Next:** Implement JWT token generation and validation service with secret key configuration and 30-day expiry.
 
 ---
 
