@@ -163,18 +163,6 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 ---
 
-#### 2.2 Pydantic Schemas (User, APIKey, Auth)
-
-**Create validation schemas for authentication and API key management.**
-
-**Components:**
-- User schemas: `UserCreate`, `UserLogin`, `UserResponse`
-- API key schemas: `APIKeyCreate`, `APIKeyResponse`, `APIKeyListResponse`
-- JWT schemas: `TokenResponse`, `TokenPayload`
-- Password validation: minimum length, complexity requirements
-
----
-
 #### 2.3 JWT Token Service ✅ COMPLETE (2025-12-29)
 
 **Commit:** (pending commit)
