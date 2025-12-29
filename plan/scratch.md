@@ -1,11 +1,13 @@
-# MemoGarden - Session Context (2025-12-29)
+# MemoGarden - Session Context (2025-12-30)
 
 **Purpose**: Session notes for next session
-**Last Updated**: 2025-12-29 22:58 UTC
+**Last Updated**: 2025-12-30
 
 ---
 
 ## Current Status
+
+**Platform Architecture Update**: Adopting lean MVP approach from PRD v4
 
 **Step 2 COMPLETE** ✅ (Authentication & Multi-User Support)
 
@@ -25,41 +27,55 @@ All 10 substeps completed:
 
 ## Key Accomplishments This Session
 
-### 1. Test Suite Optimization (Step 2.10)
-**Result**: 47.95s → 1.14s (97.6% faster, 42x speedup)
+### 1. Platform Architecture Analysis (2025-12-30)
 
-**Optimizations:**
-- Reduced bcrypt work factor from 12 to 4 for tests (configurable)
-- Removed unnecessary DELETE operations in test_transactions.py teardown
-- All 396 tests passing with 91% coverage maintained
+**Delta Analysis Complete:**
+- Analyzed differences between current Budget PRD and PRD v4
+- PRD v4 is complete platform specification (Soil + Core + applications)
+- Current implementation only builds Budget app (one application on platform)
 
-**Commits:**
-- ab00788 - "perf: optimize test suite from 47.95s to 1.14s (97.6% faster)"
+**Key Finding:**
+- Budget app can be built with **lean MVP platform approach**
+- Implement minimal Soil and Core features to support Budget MVP
+- Grow platform iteratively rather than building full platform upfront
 
-### 2. Code Quality Refactoring
-**Result**: Removed ~120 lines of authentication duplication
+**Created:**
+- `plan/budget_prd_update_analysis.md` - Comprehensive feasibility analysis
+- `plan/budget_implementation.md` - Updated implementation plan (renamed from implementation.md)
 
-**Changes:**
-- Created `_authenticate_jwt()` helper in auth/decorators.py
-- Refactored 4 functions in auth/api.py (get_current_user, list_api_keys, create_api_key, revoke_api_key)
-- Reduced auth/api.py from 530 to 431 lines (99 lines, 19% reduction)
+### 2. Updated Implementation Plan (2025-12-30)
 
-**Benefits:**
-- Single source of truth for JWT authentication
-- Easier to maintain and fix bugs
-- More consistent error handling
+**New Steps Added:**
+- **Step 2.5**: Soil MVP Foundation (filesystem-based immutable storage)
+- **Step 2.6**: Core Refactor to Item Type (migrate entity → item table)
+- **Step 3**: Updated to include Soil integration
 
-**Commits:**
-- b2f64c6 - "refactor: extract JWT authentication helper to reduce duplication"
+**Platform Foundation Decisions Made:**
+- Soil MVP: Filesystem storage, simple Python API
+- Item Type: Adopt now (reduce future migration debt)
+- Reference format: `artifact:{type}-{uuid}`
+- Relation types (MVP): source, reconciliation, artifact (defer Project System types)
+- Delta tracking: Field-level, stored in DB + Soil JSON files
 
-### 3. Documentation Improvements
-**Implementation Plan Compacted**: 60% reduction (~750 → 304 lines)
-- Keep only pertinent details (what was accomplished)
-- Move technical details to docs and skill files
-- Focus on outcomes, not implementation
+**Documentation Updated:**
+- `plan/budget_implementation.md` - Complete plan with new steps
+- `plan/status.md` - Project status with architecture update
+- `plan/scratch.md` - This file (session context)
 
-**Commits:**
-- 0a14686 - "docs: compact Step 2 in implementation plan (60% reduction)"
+### 3. Previous Session Accomplishments (2025-12-29)
+
+**Test Suite Optimization (Step 2.10)**
+- 47.95s → 1.14s (97.6% faster, 42x speedup)
+- Reduced bcrypt work factor for tests
+- All 396 tests passing with 91% coverage
+
+**Code Quality Refactoring**
+- Removed ~120 lines of auth duplication
+- Created `_authenticate_jwt()` helper
+- Reduced auth/api.py by 99 lines (19% reduction)
+
+**Documentation Compacting**
+- Implementation plan reduced 60% (~750 → 304 lines)
 
 ---
 
@@ -67,6 +83,7 @@ All 10 substeps completed:
 
 ### Database
 **Location**: `/home/kureshii/memogarden/memogarden-core/data/memogarden.db`
+**Schema Version**: 20251229 (entity-based, pre-Item migration)
 **Admin User**: `admin` (created 2025-12-29)
 **To reset**: `sqlite3 .../data/memogarden.db "DELETE FROM users WHERE username='admin';"`
 
@@ -75,37 +92,114 @@ All 10 substeps completed:
 - **Coverage**: 91% (exceeds 80% target)
 - **No test mocks** (uses real dependencies)
 
-### Commits Today
-- ab00788 - Test optimization (bcrypt work factor, cleanup removal)
-- b2f64c6 - Auth refactoring (_authenticate_jwt helper)
-- 96242a9 - Updated implementation plan with code quality details
-- 0a14686 - Compacted implementation plan (60% reduction)
+### Architecture State
+- **Current**: Entity-based schema (entity table + type-specific tables)
+- **Target**: Item-based schema (item table with dual timestamps)
+- **Pending**: Entity → Item migration (Step 2.6)
 
 ---
 
-## Ready for Step 3
+## Ready for Platform Foundation
 
-**Next**: Advanced Core Features (Recurrences, Relations, Delta Tracking)
+**Next**: Steps 2.5-2.6 (Platform Foundation)
 
-**Step 3 Overview:**
-- 3.1 Recurrences (iCal rrule, recurring transactions)
-- 3.2 Relations (entity linking to Soil artifacts)
-- 3.3 Delta Tracking (all changes logged)
+### Step 2.5: Soil MVP Foundation
+**Objective**: Minimal immutable storage layer
+**Components**:
+- Filesystem storage API (`memogarden_core/soil/`)
+- Artifact management (emails, PDFs, statements)
+- Delta storage (JSON files)
+- Schema snapshots (SQL dumps)
+**Estimate**: 1-2 days
 
-**Prerequisites Met:**
-- ✅ Core Backend Foundation (Step 1)
-- ✅ Authentication & Multi-User Support (Step 2)
-- ✅ Test suite fast (1.14s)
-- ✅ Codebase refactored and clean
+### Step 2.6: Core Refactor to Item Type
+**Objective**: Migrate to platform Item base type
+**Components**:
+- Create `item` table with dual timestamps
+- Migration script (entity → item)
+- Update all foreign keys
+- Refactor entity operations
+- Test migration (all 396 tests must pass)
+**Estimate**: 2-3 days
 
-**Status**: Clean handoff at 100% context. Ready to start Step 3 fresh.
+### Step 3: Advanced Core Features (Updated)
+**Objective**: Recurrences, Relations, Deltas with Soil integration
+**Components**:
+- Recurrences (extends Item)
+- Relations (links Items + Soil artifacts)
+- Deltas (DB + Soil archival)
+- Reference resolution
+**Estimate**: 3-4 days
+
+**Total Platform Foundation**: 6-9 days
 
 ---
 
-## Repository URLs
+## Reference Documents
 
-- **Core API**: https://github.com/memogarden/memogarden-core
-- **Main Repo**: https://github.com/memogarden/memogarden-budget
+### Planning Documents
+- `plan/budget_implementation.md` - **PRIMARY** - Updated implementation plan
+- `plan/budget_prd.md` - Budget app requirements
+- `plan/memogarden_prd_v4.md` - Complete platform specification
+- `plan/budget_prd_update_analysis.md` - Feasibility analysis (DELETE after planning complete)
+
+### Architecture References
+- `plan/future/soil-design.md` - Soil storage architecture
+- `plan/future/schema-extension-design.md` - Schema versioning system
+- `plan/future/migration-mechanism.md` - Database migration workflow
+- `memogarden-core/docs/architecture.md` - Core API design patterns
+
+### Status Tracking
+- `plan/status.md` - Project status overview
+- `plan/scratch.md` - This file (session context)
+
+---
+
+## Platform Foundation Decisions
+
+The following decisions are finalized and documented in budget_implementation.md:
+
+### Soil MVP
+- Storage: Filesystem (no database)
+- API: `memogarden_core/soil/` module
+- Location: `SOIL_PATH` env var (default: `./soil`)
+- Artifact types: emails, pdfs, statements
+
+### Item Type Migration
+- Approach: Forward migration with rollback
+- Dual timestamps: realized_at (system) + canonical_at (user)
+- Data preservation: All existing data migrated, no loss
+- Schema archival: Soil snapshot before migration
+- Test requirement: All 396 tests must pass
+
+### Relations (MVP)
+- Types: source, reconciliation, artifact
+- Format: `artifact:{type}-{uuid}`
+- Single table (defer UniqueRelation/MultiRelation split)
+
+### Deltas
+- Granularity: Field-level
+- Storage: DB table + JSON files in Soil
+- Timing: After database commit
+
+### Deferred Features
+- Fragment system (Project System)
+- Conversation structures (Project System)
+- Fossilization (Soil compaction)
+- Extension archival
+- Tool call tracking
+
+---
+
+## Open Questions (Resolved)
+
+All open questions from budget_prd_update_analysis.md have been answered:
+
+1. ✅ Item type migration: Forward migration with rollback
+2. ✅ Reference format: `artifact:{type}-{uuid}`
+3. ✅ Soil location: `SOIL_PATH` env var (default: `./soil`)
+4. ✅ Delta granularity: Field-level
+5. ✅ Recurrence generation: On-demand via API (no background worker)
 
 ---
 
@@ -127,5 +221,12 @@ poetry run pytest --durations=10
 
 ---
 
-**Last Updated**: 2025-12-29 22:58 UTC
-**Session Focus**: Step 2.10 completion, test optimization, code refactoring, documentation cleanup
+## Repository URLs
+
+- **Core API**: https://github.com/memogarden/memogarden-core
+- **Main Repo**: https://github.com/memogarden/memogarden-budget
+
+---
+
+**Last Updated**: 2025-12-30
+**Session Focus**: Platform architecture analysis, implementation plan update, ready for Soil MVP and Item type refactor

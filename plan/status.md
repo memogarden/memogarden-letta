@@ -1,15 +1,29 @@
 # MemoGarden Project Status
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2025-12-30
 
 ## Active Step
 
-**Step 3 NEXT - Advanced Core Features** 🚀
+**Step 2.5-2.6 NEXT - Platform Foundation** 🚀
+
+Architecture update: Adopting lean MVP platform approach from PRD v4.
 
 Ready to implement:
-- 🚧 **3.1** - Recurrences (iCal rrule, recurring transaction templates)
-- 🚧 **3.2** - Relations (entity linking to Soil artifacts)
-- 🚧 **3.3** - Delta Tracking (all changes logged, immutable history)
+- 🚧 **2.5** - Soil MVP Foundation (filesystem-based immutable storage)
+- 🚧 **2.6** - Core Refactor to Item Type (migrate entity → item table)
+- 🚧 **3.0** - Advanced Core Features with Soil integration (Recurrences, Relations, Deltas)
+
+## Architecture Update
+
+**Platform-First Lean Approach:**
+- **Soil MVP**: Minimal immutable storage (artifacts, deltas, schema snapshots)
+- **Core MVP**: Item-based entity system with dual timestamps
+- **Budget MVP**: Financial transactions on platform foundations
+
+**Reference Documents:**
+- [plan/memogarden_prd_v4.md](memogarden_prd_v4.md) - Complete platform specification
+- [plan/budget_implementation.md](budget_implementation.md) - Updated implementation plan
+- [plan/budget_prd_update_analysis.md](budget_prd_update_analysis.md) - Feasibility analysis (to be deleted after planning complete)
 
 ## Repository
 
@@ -66,14 +80,20 @@ Ready to implement:
 
 ## Architectural Decisions
 
+### Platform Architecture (from PRD v4)
+- **Item-based entities**: All entities extend `item` base type with dual timestamps
+- **Two-layer storage**: Soil (immutable facts) + Core (mutable state)
+- **Document-centric**: Transactions linked to artifacts via relations
+- **Lean MVP**: Minimal platform features to support Budget app
+
 ### Tech Stack
 - **Backend**: Flask (synchronous) + sqlite3 (built-in Python module)
+- **Storage**: SQLite for Core, filesystem for Soil
 - **Philosophy**: Deterministic synchronous execution for simplicity and debugging
-- **Rationale**: Personal system with low traffic; sync is simpler and more maintainable than async
 
 ### Design Principles
 - **No ORM**: Raw SQL queries with parameterized statements
-- **Entity Registry**: Global metadata table for all entity types
+- **Item base type**: Platform metadata (uuid, _type, realized_at, canonical_at) in item table
 - **Labels not Entities**: Accounts and categories are user-defined strings
 - **UTC Everywhere**: All timestamps in ISO 8601 UTC format
 - **Test-Driven**: Comprehensive test suite (>80% coverage target)
@@ -84,11 +104,37 @@ Ready to implement:
 - **Code Duplication**: Removed ~120 lines of auth duplication
 - **Coverage**: 91% maintained across refactoring
 
+## Platform Foundation Decisions
+
+### Soil MVP Scope
+- **Storage**: Filesystem-based (no database)
+- **API**: Simple Python module (`memogarden_core/soil/`)
+- **Artifact types**: emails, pdfs, statements (MVP)
+- **Reference format**: `artifact:{type}-{uuid}`
+- **Location**: Configurable via `SOIL_PATH` (default: `./soil`)
+
+### Item Type Migration Strategy
+- **Approach**: Forward migration with rollback script
+- **Dual timestamps**: `realized_at` (system) + `canonical_at` (user)
+- **Data preservation**: All existing data migrated, no loss
+- **Schema archival**: Snapshot stored in Soil before migration
+- **Test requirement**: All 396 existing tests must pass after migration
+
+### Relation Types (MVP)
+- **Implemented**: `source`, `reconciliation`, `artifact`
+- **Deferred**: Project System relations (triggers, replies_to, mentions, etc.)
+- **Single table**: Use `relations` table for MVP (defer UniqueRelation/MultiRelation split)
+
+### Delta Tracking
+- **Granularity**: Field-level (one delta per field changed)
+- **Storage**: Database table + JSON files in Soil
+- **Timing**: After database commit (transactional consistency)
+
 ## Next Steps
 
-See [implementation.md](implementation.md) for detailed roadmap.
+See [budget_implementation.md](budget_implementation.md) for detailed roadmap.
 
-**Ready for**: Step 3 (Advanced Core Features)
+**Ready for**: Platform Foundation (Steps 2.5-2.6)
 
 **Step 2 (Authentication & Multi-User Support) is complete!** All major components implemented:
 - User authentication with JWT and API keys
@@ -97,6 +143,8 @@ See [implementation.md](implementation.md) for detailed roadmap.
 - All API endpoints protected by default
 - Test suite optimized (1.14s)
 - Code refactored and deduplicated
+
+**Next phase**: Platform foundation (Soil MVP + Item type refactor) before continuing with Step 3 (Advanced Core Features).
 
 ---
 
