@@ -175,15 +175,46 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 ---
 
-#### 2.3 JWT Token Service
+#### 2.3 JWT Token Service ✅ COMPLETE (2025-12-29)
 
-**Implement JWT token generation and validation.**
+**Commit:** (pending commit)
 
-**Components:**
-- Token generation with user identity (user_id, username, exp)
-- Token validation and decoding
-- Token revocation (optional blacklist or short expiry)
-- Configuration: secret key, expiry duration (30 days)
+**Completed Tasks:**
+- ✅ Added JWT configuration to config.py (jwt_secret_key, jwt_expiry_days)
+- ✅ Implemented JWT token generation with user identity claims (sub, username, is_admin, iat, exp)
+- ✅ Implemented JWT token validation and decoding with HS256 algorithm
+- ✅ Implemented token introspection (get_token_expiry_remaining, is_token_expired)
+- ✅ Added decode_token_no_validation for debugging/inspection
+- ✅ Created 19 comprehensive tests for JWT token service
+- ✅ Updated auth module to export token service
+
+**Token Service Features:**
+- Token claims: sub (user_id), username, is_admin, iat (issued at), exp (expires)
+- 30-day default expiry (configurable via JWT_EXPIRY_DAYS)
+- HS256 algorithm for signature verification
+- Timezone-aware datetime handling (UTC)
+- Returns TokenPayload with decoded claims
+- Raises jwt.InvalidTokenError for invalid/expired tokens
+- Helper functions: get_token_expiry_remaining(), is_token_expired()
+
+**Configuration:**
+- `JWT_SECRET_KEY`: Secret key for signing tokens (default: "change-me-in-production-use-env-var")
+- `JWT_EXPIRY_DAYS`: Token expiry in days (default: 30)
+
+**Dependency Confinement:**
+- Only `memogarden_core.auth.token` imports PyJWT directly
+- All token operations go through the token service module
+- Clean public API: generate_access_token(), validate_access_token(), is_token_expired()
+
+**Test Results:**
+- All 297 tests pass (including 19 new JWT token service tests)
+- Coverage: token generation, validation, expiry handling, error cases
+
+**Files Modified:**
+- memogarden-core/memogarden_core/config.py (added jwt_secret_key, jwt_expiry_days)
+- memogarden-core/memogarden_core/auth/token.py (205 lines, new file)
+- memogarden-core/memogarden_core/auth/__init__.py (export token module)
+- memogarden-core/tests/auth/test_token.py (376 lines, new file)
 
 ---
 
@@ -476,11 +507,12 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 ## Critical Files Reference
 
-### Current Step Critical Files (Step 2.3)
+### Current Step Critical Files (Step 2.4)
 - `/home/kureshii/memogarden/plan/prd.md` - Requirements source of truth
 - `memogarden-core/memogarden_core/auth/` - Auth module (schemas, services, middleware)
-- `memogarden-core/memogarden_core/config.py` - JWT_SECRET_KEY, JWT_EXPIRY_DAYS
-- `memogarden-core/pyproject.toml` - bcrypt, PyJWT dependencies (already added)
+- `memogarden-core/memogarden_core/auth/token.py` - JWT token generation and validation
+- `memogarden-core/memogarden_core/db/` - Database operations (users table)
+- `memogarden-core/memogarden_core/api/v1/` - API endpoints (or top-level routes for auth)
 
 ---
 
@@ -492,9 +524,11 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 **Step 2.2 COMPLETE** ✅ (Pydantic Schemas: User, APIKey, Auth - 2025-12-29)
 
-**Currently on:** Step 2.3 (JWT Token Service)
+**Step 2.3 COMPLETE** ✅ (JWT Token Service - 2025-12-29)
 
-**Next:** Implement JWT token generation and validation service with secret key configuration and 30-day expiry.
+**Currently on:** Step 2.4 (Authentication Endpoints)
+
+**Next:** Implement admin registration (localhost only), login, logout, and profile endpoints.
 
 ---
 

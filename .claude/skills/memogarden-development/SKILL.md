@@ -223,9 +223,17 @@ Always update:
 If stuck:
 1. Re-read PRD for context
 2. Check implementation.md for current scope
-3. Consult architecture.md for technical patterns
-4. Look at existing code patterns
-5. Use appropriate skill (testing, debugging, etc.)
+3. Consult **dev-guide.md** for code patterns and conventions
+4. Consult architecture.md for technical patterns
+5. Look at existing code patterns
+6. Use appropriate skill (testing, debugging, etc.)
+
+### Key References
+
+- **[dev-guide.md](memogarden-core/docs/dev-guide.md)** - Code patterns, utilities, conventions (READ THIS)
+- **[architecture.md](memogarden-core/docs/architecture.md)** - Technical architecture and design
+- **[prd.md](plan/prd.md)** - Product requirements
+- **[implementation.md](plan/implementation.md)** - Current step and progress
 
 ## Future Design Reference
 
@@ -272,25 +280,44 @@ When implementing related features or making architectural decisions, consult th
 
 ### ✅ What TO Do
 
-1. **Use UTC timestamps everywhere**
+1. **Use centralized utilities (no loose datetime/uuid imports)**
+   - **Date/time**: `from memogarden_core.utils import isodatetime`
+     - `isodatetime.now()` - Current UTC as ISO string
+     - `isodatetime.now_unix()` - Current UTC as Unix timestamp (for JWT)
+     - `isodatetime.to_timestamp(dt)` - Convert datetime to ISO string
+     - `isodatetime.to_datetime(ts)` - Convert ISO string to datetime
+   - **UUIDs**: `from memogarden_core.utils import uid`
+     - `uid.generate_uuid()` - Generate UUID v4 (ONLY place that imports uuid4)
+   - **Domain types**: `from memogarden_core.schema.types import Timestamp, Date`
+     - Use for type safety in API schemas and domain logic
+   - See: `memogarden-core/docs/dev-guide.md` for complete patterns
+
+2. **Use UTC timestamps everywhere**
    - Store as ISO 8601 text in SQLite: `2025-12-22T10:30:00Z`
    - Transaction dates are DATE only: `2025-12-22`
    - Never use local timezones in storage
-   - Use centralized utilities: `from utils import isodatetime`
+   - All datetime operations go through `isodatetime` utility
 
-2. **Write raw SQL queries**
+3. **Write raw SQL queries**
    - Parameterized queries to prevent SQL injection
    - Use query builders in `db/query.py` for common patterns
 
-3. **Follow the implementation plan**
+4. **Confine external dependencies to single modules**
+   - Create abstraction layers for complex third-party libraries
+   - Only one module imports the external package directly
+   - Rest of codebase uses the abstraction
+   - Example: JWT tokens (only `auth/token.py` imports PyJWT)
+
+5. **Follow the implementation plan**
    - Check current step in `plan/implementation.md`
    - Don't jump ahead to future steps
 
-4. **Test everything**
+6. **Test everything**
    - Write tests before or alongside code
    - Use in-memory SQLite for tests
+   - Use `isodatetime` for current time assertions in tests
 
-5. **Document as you go**
+7. **Document as you go**
    - Add docstrings to all functions
    - Update implementation.md progress
 
@@ -348,6 +375,9 @@ The following commands are pre-approved in `.claude/settings.local.json` and won
 ❌ **Don't** ignore the implementation plan
 ❌ **Don't** batch multiple unrelated changes
 ❌ **Don't** use `2>&1` in shell commands (triggers approval workflow unnecessarily)
+❌ **Don't** import `datetime` directly in business logic (use `isodatetime`)
+❌ **Don't** import `uuid4` directly (use `uid.generate_uuid()`)
+❌ **Don't** scatter external library imports across modules (confine to one place)
 
 ✅ **Do** write raw SQL queries
 ✅ **Do** keep dependencies minimal
@@ -357,4 +387,7 @@ The following commands are pre-approved in `.claude/settings.local.json` and won
 ✅ **Do** follow the plan
 ✅ **Do** make focused, atomic commits
 ✅ **Do** use `run_in_background=True` for long-running server processes
+✅ **Do** use centralized utilities (`isodatetime`, `uid`, domain types)
+✅ **Do** confine external dependencies to single modules
+
 

@@ -7,10 +7,10 @@
 **Step 2 ACTIVE - Authentication & Multi-User Support** 🚧
 
 Currently implementing authentication system:
-- 🚧 **2.1** - Database Schema: Users and API Keys (NEXT)
-- ⏳ **2.2** - Pydantic Schemas (User, APIKey, Auth)
-- ⏳ **2.3** - JWT Token Service
-- ⏳ **2.4** - Authentication Endpoints
+- ✅ **2.1** - Database Schema: Users and API Keys (2025-12-29)
+- ✅ **2.2** - Pydantic Schemas (User, APIKey, Auth) (2025-12-29)
+- ✅ **2.3** - JWT Token Service (2025-12-29)
+- 🚧 **2.4** - Authentication Endpoints (NEXT)
 - ⏳ **2.5** - API Key Management Endpoints
 - ⏳ **2.6** - Authentication Middleware
 - ⏳ **2.7** - HTML UI Pages
@@ -93,6 +93,15 @@ Currently implementing authentication system:
 - ✅ **Development Scripts**: run.sh, test.sh, test-coverage.sh in parent directory
 - ✅ **Environment Variables**: All documented in .env.example
 
+### Authentication Foundation (2025-12-29)
+- ✅ **Database Schema**: Users and API Keys tables with migration support
+- ✅ **Pydantic Schemas**: User, APIKey, and Token validation schemas (32 tests)
+- ✅ **JWT Token Service**: Token generation and validation (19 tests)
+- ✅ **Development Guide**: Created docs/dev-guide.md with code patterns and conventions
+- ✅ **Utility Improvements**: Extended isodatetime with Unix timestamp support
+- ✅ **Dependency Confinement**: PyJWT confined to auth/token.py module
+- ✅ **Test Results**: 297 tests passing (including 51 auth tests)
+
 ## Architectural Decisions
 
 ### Tech Stack
@@ -126,13 +135,13 @@ See [implementation.md](implementation.md) for detailed roadmap.
 
 See [implementation.md](implementation.md) for detailed roadmap.
 
-**Currently working on:** Step 2.1 (Database Schema: Users and API Keys)
+**Currently working on:** Step 2.4 (Authentication Endpoints)
 
-**Adding authentication infrastructure:**
-- User table with password hashing (bcrypt)
-- API keys table with hash and prefix storage
-- Foreign keys to entities table for metadata
-- Schema tests and validation
+**Implementing admin registration, login, logout, and profile endpoints:**
+- Admin registration (localhost only, one-time setup)
+- Login endpoint with JWT token return
+- Logout endpoint
+- Profile/me endpoint for current user info
 
 ---
 
