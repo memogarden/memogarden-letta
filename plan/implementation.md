@@ -44,9 +44,32 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
 
 **Objective:** Add user management, JWT authentication for device clients, and API key support for agents.
 
-#### 2.1 Database Schema: Users and API Keys
+#### 2.1 Database Schema: Users and API Keys ✅ COMPLETE (2025-12-29)
 
-**Create tables for user accounts and API key management.**
+**Commit:** 0744b9d - feat(auth): add users and api_keys database schema with migration support
+
+**Completed Tasks:**
+- ✅ Added users and api_keys tables to schema/schema.sql
+- ✅ Created migration script (migrate_20251223_to_20251229.sql)
+- ✅ Added bcrypt and pyjwt dependencies to pyproject.toml
+- ✅ Implemented automatic migration runner in db/__init__.py
+- ✅ Added 15 tests for users, api_keys, and migration functionality
+- ✅ Schema version updated to 20251229
+
+**Migration Design:**
+- Runs automatically on app startup via init_db()
+- Forward compatible with newer database versions
+- Supports 20251223 → 20251229 migration path
+- Uses file-based migration SQL scripts
+
+**Test Results:**
+- All 246 tests pass (including 15 new auth schema tests)
+
+---
+
+#### 2.2 Pydantic Schemas (User, APIKey, Auth)
+
+**Create validation schemas for authentication and API key management.**
 
 Add to `schema/schema.sql`:
 
