@@ -241,7 +241,8 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
 ## Critical Files Reference
 
 ### Current Step Critical Files (Step 2.4)
-- `/home/kureshii/memogarden/plan/prd.md` - Requirements source of truth
+- `/home/kureshii/memogarden/plan/budget_prd.md` - Budget app requirements (current focus)
+- `/home/kureshii/memogarden/plan/memogarden_prd_v4.md` - Platform architecture reference
 - `memogarden-core/memogarden_core/auth/` - Auth module (schemas, services, middleware)
 - `memogarden-core/memogarden_core/auth/token.py` - JWT token generation and validation
 - `memogarden-core/memogarden_core/db/` - Database operations (users table)

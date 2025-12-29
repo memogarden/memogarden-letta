@@ -12,7 +12,8 @@ When beginning work on any MemoGarden task:
 1. **Read the context**
    ```bash
    cd /home/kureshii/memogarden
-   cat plan/prd.md                    # Understand requirements
+   cat plan/memogarden_prd_v4.md      # Understand platform architecture
+   cat plan/budget_prd.md             # Understand budget app (when needed)
    cat plan/implementation.md         # Check current step
    ```
 
@@ -176,7 +177,8 @@ Always update:
 ```
 /home/kureshii/memogarden/
 ├── plan/
-│   ├── prd.md                          # Product Requirements (source of truth)
+│   ├── budget_prd.md                   # Budget App Requirements (financial focus)
+│   ├── memogarden_prd_v4.md            # Complete Platform PRD (Soil + Core + apps)
 │   └── implementation.md               # Current step and progress
 ├── memogarden-core/                    # Flask backend
 │   ├── memogarden_core/
@@ -232,7 +234,8 @@ If stuck:
 
 - **[dev-guide.md](memogarden-core/docs/dev-guide.md)** - Code patterns, utilities, conventions (READ THIS)
 - **[architecture.md](memogarden-core/docs/architecture.md)** - Technical architecture and design
-- **[prd.md](plan/prd.md)** - Product requirements
+- **[memogarden_prd_v4.md](plan/memogarden_prd_v4.md)** - Complete platform architecture
+- **[budget_prd.md](plan/budget_prd.md)** - Budget app requirements (when needed)
 - **[implementation.md](plan/implementation.md)** - Current step and progress
 
 ## Future Design Reference

@@ -510,5 +510,5 @@ See [soil-design.md](./soil-design.md) for:
 **Related Documents:**
 - [migration-mechanism.md](./migration-mechanism.md) - How to migrate between extensions
 - [soil-design.md](./soil-design.md) - Memogarden Soil architecture
-- [../prd.md](../prd.md) - Product Requirements Document
+- [../memogarden_prd_v4.md](../memogarden_prd_v4.md) - Platform Requirements Document
 - [../implementation.md](../implementation.md) - Implementation Plan

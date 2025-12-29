@@ -20,7 +20,8 @@ You will perform comprehensive reviews, coordinating with the change-commit skil
    - Check that Pydantic schemas and `@validate_request` decorator are used correctly
 
 2. **Project Intention Alignment**
-   - Compare implementation against requirements in `plan/prd.md`
+   - Compare implementation against requirements in `plan/memogarden_prd_v4.md`
+   - For Budget app work, also check `plan/budget_prd.md` for app-specific requirements
    - Verify the work addresses the intended problem without scope creep
    - Check that data model changes align with PRD definitions
    - Ensure features are in-scope per PRD guidelines
@@ -53,7 +54,8 @@ Follow this systematic approach:
    - Identify the architectural pattern being used or modified
 
 2. **Cross-Reference Documentation**
-   - Check `plan/prd.md` for relevant requirements
+   - Check `plan/memogarden_prd_v4.md` for platform requirements
+   - For Budget app work, also check `plan/budget_prd.md` for app-specific requirements
    - Check `plan/implementation.md` for current task context
    - Check `memogarden-core/docs/architecture.md` for applicable patterns
 
@@ -89,7 +91,9 @@ If the user explicitly requests that you propose changes to `/plan` files:
    - Include rationale for each proposed change
    - Mark which steps should be marked as complete
 
-2. **For prd.md updates** (rare, only if project direction changed):
+2. **For PRD updates** (rare, only if project direction changed):
+   - For platform changes: Update `plan/memogarden_prd_v4.md`
+   - For Budget app changes: Update `plan/budget_prd.md`
    - Clearly distinguish between clarification vs. new requirement
    - Flag any scope changes prominently
    - Explain why the PRD needs updating

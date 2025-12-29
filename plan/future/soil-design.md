@@ -572,4 +572,4 @@ secret_key = "${AWS_SECRET_ACCESS_KEY}"
 **Related Documents:**
 - [schema-extension-design.md](./schema-extension-design.md) - Extension system architecture
 - [migration-mechanism.md](./migration-mechanism.md) - Migration workflow
-- [../prd.md](../prd.md) - Product Requirements Document
+- [../memogarden_prd_v4.md](../memogarden_prd_v4.md) - Platform Requirements Document

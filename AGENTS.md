@@ -19,7 +19,8 @@ This document provides context and guidelines for AI assistants (Claude, GPT, et
 ```
 /home/kureshii/memogarden/
 ├── plan/
-│   ├── prd.md                          # Product Requirements Document (source of truth)
+│   ├── budget_prd.md                   # Budget App Product Requirements (financial focus)
+│   ├── memogarden_prd_v4.md            # Complete Platform PRD (Soil + Core + applications)
 │   └── implementation.md               # Implementation plan (read this!)
 ├── memogarden-core/                    # Flask backend (SQLite, no ORM)
 │   └── docs/
@@ -85,12 +86,17 @@ for how skills work.
 
 Before working on any task, read these documents in order:
 
-1. **[plan/prd.md](plan/prd.md)** - Product Requirements Document
-   - Understand the "why" behind design decisions
-   - Data model definitions
-   - In-scope vs out-of-scope features
+1. **[plan/memogarden_prd_v4.md](plan/memogarden_prd_v4.md)** - Platform Requirements Document
+   - Complete platform architecture (Soil + Core)
+   - All applications (Budget app, Project system)
+   - Data model and entity definitions
 
-2. **[plan/implementation.md](plan/implementation.md)** - Implementation Plan
+2. **[plan/budget_prd.md](plan/budget_prd.md)** - Budget App Requirements (optional)
+   - Budget app specific requirements
+   - Financial transaction model
+   - Read only when working on Budget app features
+
+3. **[plan/implementation.md](plan/implementation.md)** - Implementation Plan
    - Current step and progress
    - Detailed substeps for active work
    - Architecture decisions and rationale
