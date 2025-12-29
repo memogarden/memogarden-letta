@@ -1,401 +1,245 @@
 # MemoGarden - Session Context (2025-12-29)
 
 **Purpose**: Session notes for next session
-**Last Updated**: 2025-12-29
+**Last Updated**: 2025-12-29 20:45 UTC
 
 ---
 
-## Completed Work (2025-12-27)
+## Completed Work (2025-12-29 - Part 3: UI Fixes & Optimization)
 
-### Documentation Consistency Updates
-- **Updated skills to reference /plan/future/**:
-  - memogarden-schema: Added Future Design Reference section, fixed migrations path
-  - memogarden-development: Added Future Design Reference section + Working Directory Reminder
-  - memogarden-testing: Enhanced working directory reminder
-- **Updated implementation plan**:
-  - Step 1.6.5 now references /plan/future/ design docs
-  - Fixed all async → sync corrections (10+ locations updated)
-  - Updated testing section to reflect Flask (not FastAPI)
-  - Updated documentation section to reflect manual API docs
-  - Marked Step 1.6 as COMPLETE ✅
-- **Updated status.md**:
-  - Fixed "memogarden-update" → "change-reviewer/change-commit"
-  - Added Architectural Decisions section documenting Flask + sqlite3 choice
-  - Added Documentation Updates (2025-12-27) entry
-  - Added Testing Infrastructure (2025-12-27) section
+### Session Summary: Fixed admin registration UX, added Step 2.10 refactoring task
 
-### Step 1.6: Testing Infrastructure - COMPLETE ✅
-- **Added pytest-cov** to dev dependencies for coverage reporting
-- **Verified test suite**: 231 tests passing (excellent coverage)
-- **Achieved 90% coverage** (exceeds 80% target)
-- **Test organization**: api/, db/, schema/, utils/ modules
-- **Fixtures**: test_db and client fixtures in conftest.py
+#### Key Accomplishments
 
-### Step 1.7: Documentation & Development Workflow - COMPLETE ✅
-- **Updated README.md**: Comprehensive rewrite with current status
-  - Added complete API documentation with curl examples for all 7 endpoints
-  - Updated test coverage (231 tests, 90%)
-  - Added convenience scripts reference (./scripts/run.sh, test.sh, test-coverage.sh)
-  - Updated implementation status (Steps 1.1-1.6 complete)
-  - Added design principles section
-  - Added development workflow section
-- **Verified .env.example**: All 4 environment variables documented
-- **End-to-end validation**: Server starts, API responds (health check + accounts endpoint tested)
-- **Working directory reminders**: Added to memogarden-development and memogarden-testing skills
+**1. Step 2.9 COMPLETED ✅**
+- Moved authentication to ApiV1 blueprint level (all `/api/v1/*` protected by default)
+- Updated all 21 transaction tests to use authentication
+- Added comprehensive manual testing section to README
+- All 394 tests passing with 91% coverage
+- README updated with authentication examples
 
-**Architectural Alignment**: All documentation now consistent with decision to use synchronous Flask + sqlite3 for simplicity and deterministic debugging.
+**2. Admin Registration UX Improvements**
+- Fixed form submission: Added JavaScript to submit as JSON (was using form-encoded POST)
+- Fixed UX: Now redirects to `/login?existing=true` when admin already exists
+- Added helpful messages on login page when redirected from registration
+- Updated test to expect 302 redirect instead of 200 with error
 
----
+**3. Step 2.10 Created: Refactor & Test Profiling**
+- New task added to implementation plan
+- Created memogarden-refactor skill with guidelines
+- Target: Optimize test suite from ~49s to <2.8s
+- Tasks: code duplication analysis, test profiling, mock audit, test cleanup
 
-## Completed Work (2025-12-24)
+**4. Validation Error Logging (IN PROGRESS)**
+- Added logging import to `api/validation.py`
+- Started improving validation error messages for admin registration
 
-### Documentation & Skills Refactor
-- **AGENTS.md**: Condensed from 752 to 179 lines (76% reduction)
-- **Created 7 Agent Skills** in `.claude/skills/`:
-  - memogarden-development: environment setup, constraints, anti-patterns
-  - memogarden-testing: testing philosophy, workflows
-  - memogarden-api-endpoint: API endpoint creation
-  - memogarden-debugging: debugging workflows
-  - memogarden-schema: schema modifications + data model reference
-  - change-reviewer: pre-commit review workflow
-  - change-commit: git commit operations
-- **Created 3 convenience scripts**: `scripts/run.sh`, `scripts/test.sh`, `scripts/test-coverage.sh`
-- **Created plan/status.md** for project status tracking
-- **Scripts pre-approved** in `.claude/settings.local.json`
+#### Files Modified This Session
 
-### Schema Extension Design
-- **Created plan/future/** directory for future design work
-- **schema-extension-design.md**: Base schema vs. extensions, two extension mechanisms (SQL + JSON)
-- **migration-mechanism.md**: Complete migration workflow with deconfliction and rollback
-- **soil-design.md**: Immutable storage architecture for emails, invoices, statements
+**Authentication Architecture:**
+- `memogarden-core/memogarden_core/api/v1/__init__.py` - Added ApiV1-level `@before_request` authentication
+- `memogarden-core/memogarden_core/api/v1/transactions.py` - Removed blueprint-level auth
 
----
+**Admin Registration UI:**
+- `memogarden-core/memogarden_core/auth/ui.py`:
+  - Added JavaScript form submission (sends JSON instead of form-encoded)
+  - Redirects to `/login?existing=true` when admin exists
+  - Form includes error handling and success redirect
+- `memogarden-core/memogarden_core/templates/login.html`:
+  - Added query param handling for `?registered=true` and `?existing=true`
+  - Shows helpful messages when redirected from admin registration
 
-## Completed Work (2025-12-29)
+**Tests:**
+- `memogarden-core/tests/auth/test_endpoints.py`:
+  - Updated `test_admin_register_page_admin_exists` to expect 302 redirect
+- `memogarden-core/tests/api/test_transactions.py`:
+  - All 21 tests now use `auth_headers` fixture
+  - Tests verify 401 without auth, proper author field set
 
-### Auth Design Decisions
-**Step 2: Authentication & Multi-User Support** - ACTIVE 🚧
+**Documentation:**
+- `memogarden-core/README.md`:
+  - Added Step 2.9 to completed section
+  - Added Step 2.10 as current work
+  - Added manual testing section with checklist
+- `plan/implementation.md`:
+  - Marked Step 2.9 complete
+  - Added Step 2.10 details
+- `plan/scratch.md` - Updated with session context
+- `.claude/skills/memogarden-refactor/SKILL.md` - Created new refactoring skill
+- `AGENTS.md` - Added memogarden-refactor to available skills
 
-#### Key Design Decisions
-1. **Admin-only registration**: No public user registration endpoint
-   - `/admin/register` (localhost only) for initial setup
-   - Only available when no users exist in database
-   - Creates account with `is_admin=1` (admin role enforced)
+#### Test Results
 
-2. **No public user registration**: MVP is single-admin system
-   - Future: Add household user creation (admin-managed)
-   - `is_admin` field in schema (0 = user, 1 = admin) future-proofs for multi-user
+**All 394 tests passing** ✅
+- Coverage: 91% (exceeds 80% target)
+- Auth tests: 20/20 passing
+- Transaction tests: 21/21 passing (with authentication)
 
-3. **Two authentication mechanisms**:
-   - **JWT tokens** (30-day expiry) for device clients (Flutter app, web UI)
-   - **API keys** for agents and programmatic access
+#### Current Admin Credentials
 
-4. **Server identification**: By URL
-   - Future: memogarden.net subdomain registry for discovery
-   - Registry is optional premium feature, not centralized auth
+**Database:** `/home/kureshii/memogarden/memogarden-core/data/memogarden.db`
+**Admin User:** `admin` (created 2025-12-29 11:19 UTC)
+**Password:** Unknown (was set during manual testing)
 
-5. **Agent types**:
-   - **Local agents** (Letta-based, run on server): Make internal HTTP calls
-   - **External agents** (future, mechanism TBD): Remote workflows
+**To reset:** `sqlite3 /home/kureshii/memogarden/memogarden-core/data/memogarden.db "DELETE FROM users WHERE username='admin';"`
 
-#### URL Structure
-```
-# Authentication (unversioned)
-GET  /admin/register         # HTML setup (localhost only, no users)
-POST /admin/register         # Create admin (localhost only, one-time)
-POST /auth/login             # Get JWT token
-POST /auth/logout            # Revoke token
-GET  /auth/me                # Get current user info
+#### Pending Work
 
-# API Keys (unversioned)
-GET  /api-keys/              # JSON: list keys
-POST /api-keys/              # JSON: create key
-DEL  /api-keys/:id           # JSON: revoke key
-GET  /api-keys               # HTML: management UI
-GET  /api-keys/new           # HTML: create form
+**Step 2.10: Refactor & Test Profiling**
+- Profile test suite to identify slowest tests
+- Target: <2.8 seconds (currently ~49s)
+- Analyze code duplication patterns
+- Audit tests for interface vs implementation testing
+- Mock audit and removal
+- Test cleanup and consolidation
 
-# HTML Pages
-GET  /login                  # Login form
-GET  /settings               # User profile
-GET  /                       # Redirect based on auth
-```
+**Validation Error Improvements (NEXT SESSION)**
+- Add logging statement to `_validate_request_body()` function
+- Update frontend JavaScript to display field-specific validation errors
+- Test validation error messages with weak passwords, missing fields
 
-#### Security Model
-- **Localhost enforcement**: `/admin/register` only from 127.0.0.1
-- **One-time admin setup**: Returns 403 after admin exists
-- **Server startup check**: Logs warning if no admin, points to /admin/register
-- **API key storage**: Hashed in database, full key shown only on creation
+**Files to modify for validation:**
+1. `memogarden-core/memogarden_core/api/validation.py` - Add logger.warning for validation errors
+2. `memogarden-core/memogarden_core/auth/ui.py` - Update JS to display field errors from response.error.details
 
-#### Files Updated
-- [implementation.md](implementation.md) - Step 2 expanded with 9 sub-steps
-- [status.md](status.md) - Updated active step to Step 2
-- [prd.md](prd.md) - Added "Single-User/Household Context" principle
+#### Code Quality
 
-#### Next Task
-**Step 2.1**: Database Schema - Add `users` and `api_keys` tables to schema.sql
+**Duplications to Address in Step 2.10:**
+- Authentication logic already DRY (shared `_authenticate_request()`)
+- Look for: repeated database query patterns, validation logic, error handling
+- Consider: utility modules for common operations, composition over inheritance
+
+**Potential Test Optimizations:**
+- Fixture scopes (module vs function)
+- Database setup optimization
+- Auth token caching
+- Parallel test execution
+
+#### Ready for Next Session
+
+**Priority 1:** Complete validation error improvements
+- Add logging to `_validate_request_body()`
+- Update frontend to display field errors
+- Test with admin registration
+
+**Priority 2:** Begin Step 2.10 profiling
+- Run `pytest --durations=10` to identify slowest tests
+- Profile auth fixtures (bcrypt is slow with work factor 12)
+- Analyze fixture setup costs
+
+**Status:** Clean handoff at 83% context. All tests passing, auth system fully functional.
 
 ---
 
-## Implementation Plan Status
+#### Key Accomplishments
 
-**Current Step**: Step 2 ACTIVE 🚧 - Authentication & Multi-User Support
-**Completed**: Step 1 ✅ (Core Backend Foundation)
-**Current Sub-step**: Step 2.1 (Database Schema: Users and API Keys)
-**Tests**: 231 passing, 90% coverage
+1. **Renamed decorator** (following Flask conventions):
+   - `require_auth` → `auth_required` (like Flask-Login's `@login_required`)
+   - `require_auth_for_transactions()` → `authenticate()`
 
-**Step 1 Achievement**: Complete REST API with transaction CRUD, entity registry pattern, 90% test coverage, comprehensive documentation with API examples.
+2. **Created shared authentication function** (avoid code duplication):
+   - `_authenticate_request()` in `auth/decorators.py`
+   - Both `@auth_required` decorator and `authenticate()` before_request call this shared function
 
----
+3. **Exported decorator from auth module**:
+   - Added `from .decorators import auth_required` in `auth/__init__.py`
+   - Added to `__all__` list for `from auth import auth_required`
 
-## Repository State
+4. **Protected transaction endpoints**:
+   - Blueprint-level `@transactions_bp.before_request` handler
+   - All 7 transaction endpoints now require authentication
+   - Transactions created with `author` field set to authenticated username
 
-- **memogarden-core**: Separate git repo (https://github.com/memogarden/memogarden-core)
-- **Meta-repo**: `/home/kureshii/memogarden/` - git repo for AGENTS.md, scripts, skills, plan (local only)
-- **Scripts location**: `scripts/` in parent directory, referenced from memogarden-core
-- **Uncommitted changes**: Documentation updates in plan/, .claude/skills/, pyproject.toml (pytest-cov)
+5. **Updated test fixtures**:
+   - Created `test_user`, `jwt_token`, `auth_headers` fixtures
+   - Created `api_key` and `api_key_headers` fixtures
+   - Created `authenticated_client` fixture (tuple of client, user, auth_headers)
 
----
+6. **Updated documentation**:
+   - README.md with comprehensive authentication flow and API key usage
+   - .env.example with JWT_SECRET_KEY and JWT_EXPIRY_DAYS
+   - All transaction endpoints now show "401 Unauthorized" without auth
 
-## Current Status
+#### Files Modified
 
-### Completed Steps
+**Auth Module:**
+- `auth/__init__.py`: Exported `auth_required` from auth module
+- `auth/decorators.py`:
+  - Created `_authenticate_request()` shared function
+  - Renamed `require_auth` → `auth_required`
+  - Decorator now calls `_authenticate_request()` instead of duplicating logic
 
-**Step 1.1: Project Setup & Structure** ✅ (commit: 4bfbbe0)
-**Step 1.2: SQLite Database Schema** ✅ (refactored to sync Flask + sqlite3)
-**Step 1.3: Pydantic Schemas (API Validation)** ✅ (18 schema tests)
-**Step 1.4: Flask Application & Configuration** ✅ (Flask app with CORS, error handling, logging)
-**Step 1.5: API Endpoints Implementation** ✅ (7 endpoints, 21 API tests)
-**Step 1.6: Testing Infrastructure** ✅ (231 tests, 90% coverage)
-**Step 1.6.5: Schema Extension & Migration Design** ✅ (docs in /plan/future/)
-**Step 1.7: Documentation & Development Workflow** ✅ (comprehensive README, API docs, working directory reminders)
+**Transactions Module:**
+- `api/v1/transactions.py`:
+  - Added `@transactions_bp.before_request` handler
+  - Removed individual `@require_auth` decorators from endpoints
+  - Updated imports (removed api_keys, service, token imports)
+  - Added `from ...auth.decorators import _authenticate_request`
+  - `authenticate()` function just calls `_authenticate_request()`
 
-### Step 1 Complete! ✅ Core Backend Foundation
+**Tests:**
+- `tests/conftest.py`: Added authentication fixtures:
+  - `test_user` (creates test user in test_db)
+  - `jwt_token` (generates JWT for test user)
+  - `auth_headers` (returns dict with Authorization header)
+  - `api_key` (creates API key in test_db)
+  - `api_key_headers` (returns dict with X-API-Key header)
+  - `authenticated_client` (complete auth setup with client)
 
-**Achievements:**
-- Complete CRUD API for transactions (7 endpoints)
-- Entity registry pattern for global metadata
-- 231 tests with 90% coverage
-- Comprehensive README with curl examples for all endpoints
-- Working directory reminders in agent skills
-- Development scripts validated (run.sh, test.sh, test-coverage.sh)
-- End-to-end workflow tested and working
+- `tests/auth/test_decorators.py`:
+  - Renamed `TestRequireAuthDecorator` → `TestAuthRequiredDecorator`
+  - Updated docstrings to reference `@auth_required`
+  - Updated test class name to match decorator name
 
-**Next:** Step 2 (Authentication & Multi-User Support) or production deployment
+**Documentation:**
+- `README.md`: Added authentication section with:
+  - JWT token login and usage examples
+  - API key creation and usage
+  - Environment variables documentation
+  - All transaction endpoints now require auth headers in examples
 
-### Test Status
-**231 tests passing, 90% coverage** (exceeds 80% target)
-- API tests: transactions, validation, health
-- Database tests: entity, transaction, query, core operations
-- Schema tests: types (Timestamp, Date)
-- Utils tests: isodatetime, uid
-- App tests: main app, config, errors, schemas
+- `.env.example`: Added auth configuration vars
 
----
+#### Technical Decisions
 
-## Step 1.7: Documentation & Development Workflow
+1. **Blueprint-level authentication**: Uses `before_request` handler instead of per-endpoint decorators (cleaner for entire API modules)
 
-### Objective
-Create comprehensive documentation and ensure smooth local development experience.
+2. **Shared authentication logic**: `_authenticate_request()` function avoids code duplication between decorator and before_request
 
-### Substeps to Complete
+3. **Author tracking**: Transaction `author` field now set to `g.username` (authenticated user)
 
-#### 1.7.1 Write README.md
-**File**: `/home/kureshii/memogarden/memogarden-core/README.md`
+4. **Flask naming conventions**:
+   - `@auth_required` (like Flask-Login's `@login_required`)
+   - `authenticate()` for before_request handlers
 
-**Content needed**:
-- Project overview and architecture
-- Prerequisites (Python 3.13, Poetry)
-- Installation steps (Poetry install)
-- Running locally: `./scripts/run.sh` or `poetry run flask --app memogarden_core.main run --debug`
-- Running tests: `./scripts/test.sh` or `poetry run pytest`
-- Database setup and seed data: `poetry run python -m memogarden_core.db.seed`
-- API documentation (list endpoints with curl examples - NO Swagger)
-- Environment variables reference (.env.example)
-- Development workflow
+#### Current State
 
-**Note**: Flask does NOT auto-generate Swagger docs like FastAPI. Provide curl examples for each endpoint.
+✅ **Completed:**
+- All transaction endpoints protected (401 without auth)
+- Test fixtures for authenticated clients ready to use
+- Auth system fully integrated with transactions
+- Documentation updated with auth examples
 
-#### 1.7.2 Document API Endpoints
-Add comprehensive docstrings to all endpoint functions in `memogarden_core/api/v1/transactions.py` (already mostly done).
+🔄 **Remaining:**
+- Update 21 transaction tests to use authentication (currently all fail with 401)
+- Run all tests to verify >80% coverage (currently transaction tests failing)
 
-Create API documentation section in README with curl examples:
+#### Code Quality
+- No code duplication - shared `_authenticate_request()` function
+- Clean Flask naming conventions
+- All tests for auth decorators passing (9/9)
+- Blueprint-level authentication (DRY principle)
 
-```bash
-# Health check
-curl http://localhost:5000/health
+#### Ready for Next Session
 
-# Create transaction
-curl -X POST http://localhost:5000/api/v1/transactions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": -15.50,
-    "currency": "SGD",
-    "transaction_date": "2025-12-27",
-    "description": "Coffee at Starbucks",
-    "account": "Personal",
-    "category": "Food"
-  }'
+**Next task:** Update transaction tests to use authentication fixtures
+**Tests affected:** All 21 transaction tests in `tests/api/test_transactions.py`
 
-# List transactions
-curl http://localhost:5000/api/v1/transactions
+**Approach:** Add `auth_headers` parameter to test functions, or use `authenticated_client` fixture
 
-# Get single transaction
-curl http://localhost:5000/api/v1/transactions/{id}
-
-# Update transaction
-curl -X PUT http://localhost:5000/api/v1/transactions/{id} \
-  -H "Content-Type: application/json" \
-  -d '{"amount": -16.00}'
-
-# Delete transaction
-curl -X DELETE http://localhost:5000/api/v1/transactions/{id}
-
-# List accounts
-curl http://localhost:5000/api/v1/transactions/accounts
-
-# List categories
-curl http://localhost:5000/api/v1/transactions/categories
-```
-
-#### 1.7.3 Development Scripts
-**Status**: Convenience scripts already exist in `/scripts/`:
-- `run.sh` - Start development server
-- `test.sh` - Run tests
-- `test-coverage.sh` - Run tests with coverage
-
-Alternatively, add to `pyproject.toml`:
-```toml
-[tool.poetry.scripts]
-dev = "flask --app memogarden_core.main run --debug"
-seed = "python -m memogarden_core.db.seed"
-test = "pytest"
-test-cov = "pytest --cov=memogarden_core"
-```
-
-#### 1.7.4 Update .env.example
-**File**: `/home/kureshii/memogarden/memogarden-core/.env.example`
-
-Ensure all environment variables are documented:
-```
-DATABASE_PATH=./data/memogarden.db
-API_V1_PREFIX=/api/v1
-CORS_ORIGINS=["http://localhost:3000"]
-DEFAULT_CURRENCY=SGD
-```
-
-#### 1.7.5 Validate End-to-End Workflow
-Test the following workflow:
-1. Fresh clone → Poetry install
-2. Seed data: `poetry run python -m memogarden_core.db.seed`
-3. Run server: `./scripts/run.sh` or `poetry run flask --app memogarden_core.main run --debug`
-4. Test API with curl
-5. Run tests: `./scripts/test.sh` or `poetry run pytest`
-6. Check coverage: `./scripts/test-coverage.sh` or `poetry run pytest --cov=memogarden_core`
-
-Document any gotchas or setup issues in README.
+**Status:** Ready to implement in next session. Clean handoff with clear TODO list.
 
 ---
 
-## File Checklist
 
-### Files to Update/Create
-- 📝 `README.md` - Create comprehensive documentation
-- 🔄 `pyproject.toml` - Add poetry scripts section (optional)
-- 🔄 `.env.example` - Ensure all vars documented
-
-### Files to Reference
-- `memogarden_core/api/v1/transactions.py` - API endpoints (docstrings)
-- `memogarden_core/db/seed.py` - Seed data script
-- `tests/conftest.py` - Test fixtures
-
----
-
-## Development Environment
-
-**Working directory**: `/home/kureshii/memogarden/memogarden-core`
-**Database**: `./data/memogarden.db`
-**Python**: 3.13.11 (via Poetry)
-**Framework**: Flask 3.x (synchronous)
-**Database Library**: sqlite3 (built-in)
-**Tests**: 94 passing
-
-**Quick commands:**
-```bash
-# Run Flask dev server (using convenience script)
-./scripts/run.sh
-
-# Or run manually
-poetry run flask --app memogarden_core.main run --debug
-
-# Seed database
-poetry run python -m memogarden_core.db.seed
-
-# Run tests
-./scripts/test.sh
-
-# Or run tests manually
-poetry run pytest
-
-# Run tests with coverage
-./scripts/test-coverage.sh
-
-# Or run coverage manually
-poetry run pytest --cov=memogarden_core
-
-# Run specific test file
-poetry run pytest tests/api/test_transactions.py -v
-```
-
----
-
-## Key Architectural Decisions
-
-### Why Flask + sqlite3 (Not FastAPI + aiosqlite)?
-1. **Simplicity**: Synchronous code is easier to understand and debug
-2. **Determinism**: No async/await complexity, execution order is predictable
-3. **Sufficient for personal use**: Single-user system with low traffic
-4. **Built-in sqlite3**: No external async database dependencies needed
-5. **Better debugging**: Stack traces are clearer without async context switching
-
-### Consequences
-- No auto-generated Swagger UI docs (manual documentation required)
-- Manual API documentation with curl examples
-- Simpler test fixtures (Flask test client, not AsyncClient)
-- Request context pattern for database connections (Flask `g` object)
-
----
-
-## Key Reminders for Step 1.7
-
-1. **Flask != FastAPI**: No auto-generated Swagger docs - provide curl examples
-2. **Poetry scripts**: Use `flask --app` instead of `uvicorn`
-3. **Convenience scripts exist**: Use `./scripts/run.sh`, `./scripts/test.sh`
-4. **Seed script**: Remind users to run `poetry run python -m memogarden_core.db.seed`
-5. **Environment**: Document `.env` setup from `.env.example`
-6. **Coverage**: Include coverage command (target >80% achieved)
-7. **Test everything**: Verify end-to-end workflow works on fresh clone
-
----
-
-## After Step 1.7
-
-When Step 1.7 is complete:
-- Update implementation.md to mark Step 1.7 as complete
-- Update plan/status.md
-- Consider creating git commit for documentation work
-- Ready for Step 2 (Authentication & Multi-User Support)
-
----
-
-## Future Design Reference
-
-Schema extension and migration mechanisms are documented in `/plan/future/`:
-- **schema-extension-design.md**: Base schema vs. extensions philosophy
-- **migration-mechanism.md**: Migration workflow with validation and rollback
-- **soil-design.md**: Immutable storage architecture
-
-These are design references for future implementation. No code changes needed until Step 3+.
-
----
-
-Ready to implement Step 1.7: Documentation & Development Workflow!
+## Completed Work (2025-12-29 - Part 1: Auth System Foundation)

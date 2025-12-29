@@ -417,9 +417,7 @@ auth with existing transaction endpoints.
 
 ---
 
-#### 2.8 Testing Infrastructure
-
-**Write tests for authentication and API key management.**
+#### 2.8 Testing Infrastructure ✅ COMPLETE (2025-12-29)
 
 **Test coverage:**
 - Admin registration (localhost only, no users exist, username uniqueness, is_admin=1 enforced)
@@ -437,24 +435,87 @@ auth with existing transaction endpoints.
 
 ---
 
-#### 2.9 Documentation & Integration
+#### 2.9 Documentation & Integration ✅ COMPLETE (2025-12-29)
 
-**Update documentation and integrate auth into existing endpoints.**
+**Commit:** (pending commit)
 
-**Components:**
-- Update README.md with authentication flow and examples
-- Document API key creation and usage
-- Add `@require_auth` to existing transaction endpoints
-- Update test fixtures to include authenticated users
-- Environment variables: JWT_SECRET_KEY, JWT_EXPIRY_DAYS
-- Add .env.example entries for auth configuration
+**Completed Tasks:**
+- ✅ Refactored authentication to ApiV1 blueprint level (all API endpoints protected by default)
+- ✅ Updated all 21 transaction tests to use authentication fixtures
+- ✅ Added comprehensive manual testing section to README.md
+- ✅ Updated README with authentication flow and examples
+- ✅ Documented API key creation and usage
+- ✅ Updated test fixtures (auth_headers, api_key_headers, authenticated_client)
+- ✅ Environment variables documented (JWT_SECRET_KEY, JWT_EXPIRY_DAYS)
+- ✅ All 394 tests passing with 91% coverage
+
+**Authentication Architecture:**
+- ApiV1 blueprint-level `@before_request` handler protects all API endpoints
+- Shared `_authenticate_request()` function avoids code duplication
+- JWT tokens via `Authorization: Bearer <token>` header
+- API keys via `X-API-Key: <api_key>` header
+- Transactions created with `author` field set to authenticated username
+
+**Documentation Updates:**
+- README.md with complete authentication flow examples
+- Manual testing checklist for web UI and API testing
+- API key creation and usage instructions
+- Environment variables in .env.example
+
+**Test Results:**
+- All 394 tests pass (including 21 updated transaction tests)
+- Coverage: 91% (exceeds 80% target)
+- Transaction endpoints require authentication (401 without auth)
+- Health check remains public (no auth required)
+
+**Files Modified:**
+- memogarden-core/memogarden_core/api/v1/__init__.py (added ApiV1-level authentication)
+- memogarden-core/memogarden_core/api/v1/transactions.py (removed blueprint-level auth)
+- memogarden-core/tests/api/test_transactions.py (added auth_headers to all 21 tests)
+- memogarden-core/README.md (added manual testing section, updated status)
+
+---
+
+#### 2.10 Refactor & Test Profiling
+
+**Objective:** Clean up codebase and optimize test suite before adding complex features.
+
+**Tasks:**
+
+1. **Code Duplication Analysis**
+   - Scan codebase for duplicated logic patterns
+   - Identify opportunities for abstraction
+   - Refactor to reduce duplication (DRY principle)
+   - Improve code clarity and maintainability
+
+2. **Test Profiling**
+   - Profile test suite to identify slowest tests
+   - Target: reduce test run time to <2.8 seconds (currently ~49 seconds)
+   - Identify bottlenecks (database setup, fixture loading, etc.)
+
+3. **Test Interface vs Implementation**
+   - Audit tests: are they testing public interface or implementation?
+   - Prioritize interface testing (public functions/classes doing what they promise)
+   - Consider refactoring implementation if difficult to test at interface level
+   - Remove unnecessary implementation-detail tests
+
+4. **Mock Audit**
+   - Identify tests using mocks
+   - Question necessity: can test run without mocks?
+   - Refactor to avoid mocks if possible (following project philosophy)
+   - Remove tests that require unnecessary mocking
+
+5. **Test Cleanup**
+   - Remove redundant or low-value tests
+   - Consolidate similar test cases
+   - Improve test organization and clarity
 
 **Deliverables:**
-- Complete auth system with JWT and API keys
-- HTML UI for user and API key management
-- Protected transaction endpoints
-- Comprehensive test coverage
-- Updated documentation with auth examples
+- Refactored codebase with reduced duplication
+- Optimized test suite running in <2.8 seconds
+- Tests focused on interface behavior, not implementation
+- Minimal or no use of mocks
+- Clean, maintainable codebase ready for Step 3
 
 ---
 
@@ -646,11 +707,11 @@ auth with existing transaction endpoints.
 
 **Step 2.5 COMPLETE** ✅ (API Key Management Endpoints - 2025-12-29)
 
-**Step 2.6 COMPLETE** ✅ (Authentication Decorators - 2025-12-29)
+**Step 2.9 COMPLETE** ✅ (Documentation & Integration - 2025-12-29)
 
-**Currently on:** Step 2.8 (Testing Infrastructure)
+**Currently on:** Step 2.10 (Refactor & Test Profiling)
 
-**Next:** Write tests for authentication and API key management.
+**Next:** Complete refactoring and test optimization, then Step 3
 
 ---
 

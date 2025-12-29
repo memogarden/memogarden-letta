@@ -60,6 +60,7 @@ and guidance. Claude loads these skills automatically when relevant to your task
 - **memogarden-api-endpoint** - Workflow for creating new API endpoints
 - **memogarden-debugging** - Debugging workflows for database, API, and Core API issues
 - **memogarden-schema** - SQLite schema modification workflow, data model reference
+- **memogarden-refactor** - Code refactoring and test optimization (duplication analysis, test profiling, mock audit, test cleanup)
 - **process-improvement** - Review session errors/mistakes and propose systemic improvements (tests, tools, skills)
 - **change-reviewer** - Review changes against project plans before committing (pre-commit review)
 - **change-commit** - Commit changes to git repository (use AFTER change-reviewer)
@@ -137,6 +138,15 @@ For detailed guidance on working with the implementation plan, use the **memogar
 
 For comprehensive debugging workflows, use the **memogarden-debugging** skill.
 
+### Code Refactoring
+
+For code refactoring and test optimization, use the **memogarden-refactor** skill. This includes:
+- Code duplication analysis and DRY refactoring
+- Test profiling and optimization (target: <2.8s)
+- Interface vs implementation testing
+- Mock audit and removal
+- Test cleanup and consolidation
+
 ### Process Improvement
 
 For reviewing session errors/mistakes and proposing systemic improvements, use the **process-improvement** skill.
@@ -182,6 +192,6 @@ For current project status and completed work, see [plan/status.md](plan/status.
 
 ---
 
-**Last Updated**: 2025-12-24
+**Last Updated**: 2025-12-29
 **For**: AI agents working on MemoGarden
 **Maintained by**: Project contributors
