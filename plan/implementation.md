@@ -267,19 +267,65 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 ---
 
-#### 2.5 API Key Management Endpoints
+#### 2.5 API Key Management Endpoints ✅ COMPLETE (2025-12-29)
 
-**Implement programmatic API key CRUD operations.**
+**Commit:** (pending commit)
 
-**Endpoints:**
-- `GET /api-keys/` - List all API keys for current user (JSON)
-- `POST /api-keys/` - Create new API key (returns full key once)
-- `DELETE /api-keys/:id` - Revoke API key (soft delete: set revoked_at)
+**Completed Tasks:**
+- ✅ Implemented API key service module (generate, hash, verify, CRUD operations)
+- ✅ Implemented GET /api-keys/ endpoint (list all API keys for current user)
+- ✅ Implemented POST /api-keys/ endpoint (create new API key, returns full key once)
+- ✅ Implemented DELETE /api-keys/:id endpoint (revoke API key, soft delete)
+- ✅ Full API key only shown on creation (never in list)
+- ✅ API key prefix extraction for display (mg_sk_agent_)
+- ✅ Update last_seen timestamp when API key is used
+- ✅ Refactored: created utils/secret.py for all secret generation
+- ✅ Updated dev-guide with utils.secret pattern
 
-**Features:**
-- Full API key only shown on creation (never in list)
-- List shows: id, name, prefix, created_at, expires_at, last_seen, revoked_at
-- Update `last_seen` timestamp when API key is used
+**API Key Service Features:**
+- API key generation: mg_sk_agent_<random> (76 characters total)
+- Bcrypt hashing (reusing password hashing for consistency)
+- API key CRUD operations with entity registry integration
+- API key verification (validates full key against hash)
+- User authorization check (only list/revoke own API keys)
+- Soft delete with revoked_at timestamp
+
+**API Key Endpoints:**
+- GET /api-keys/ - List all API keys for current user (without full keys)
+- POST /api-keys/ - Create new API key (returns full key once only)
+- DELETE /api-keys/:id - Revoke API key (soft delete: set revoked_at)
+
+**Security Features:**
+- Full API key only shown on creation (never in list or GET by ID)
+- Bcrypt hashing (same security as passwords)
+- User authorization (can only access own API keys)
+- Soft delete (revoked_at timestamp, key still in database)
+
+**Refactoring: utils/secret Module:**
+- Created centralized utils/secret.py for all secret generation
+- API key generation: secret.generate_api_key()
+- UUID generation: secret.generate_uuid()
+- Random tokens: secret.generate_token()
+- Password generation: secret.generate_password()
+- Confines third-party imports (uuid, secrets) to one module
+- Updated dev-guide with new pattern
+- Backward compatibility: utils.uid maintained for existing code
+
+**Test Results:**
+- All 378 tests pass (32 new API key tests)
+- Coverage: API key generation, hashing, CRUD, verification
+- Coverage: API key endpoints (list, create, revoke)
+- Coverage: User authorization checks
+- Coverage: Revoked key verification
+
+**Files Modified:**
+- memogarden-core/memogarden_core/auth/api_keys.py (370 lines, new file)
+- memogarden-core/memogarden_core/api/auth.py (+370 lines for API key endpoints)
+- memogarden-core/memogarden_core/utils/secret.py (180 lines, new file)
+- memogarden-core/memogarden_core/utils/__init__.py (added secret)
+- memogarden-core/tests/auth/test_api_keys.py (355 lines, new file)
+- memogarden-core/tests/auth/test_api_key_endpoints.py (230 lines, new file)
+- memogarden-core/docs/dev-guide.md (added utils.secret section)
 
 ---
 
@@ -297,24 +343,51 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 ---
 
-#### 2.7 HTML UI Pages
+#### 2.7 HTML UI Pages ✅ COMPLETE (2025-12-29)
 
-**Implement HTML pages for admin setup, auth, and API key management.**
+**Commit:** (pending commit)
 
-**Pages:**
-- `GET /admin/register` - Admin setup form (localhost only, shown only if no users exist)
-- `GET /login` - Login form (POSTs to /auth/login)
-- `GET /settings` - User profile and settings
-- `GET /api-keys` - API key management UI (list, create, revoke)
-- `GET /api-keys/new` - Create new API key form
-- `GET /` - Redirect to /api-keys or /login (based on auth)
+**Completed Tasks:**
+- ✅ Created base template with TailwindCSS styling
+- ✅ Implemented GET /admin/register page (localhost only, inline HTML)
+- ✅ Implemented GET /login page with JWT token storage
+- ✅ Implemented GET /settings page with user profile
+- ✅ Implemented GET /api-keys page with list and revoke functionality
+- ✅ Implemented GET /api-keys/new page with create form and success modal
+- ✅ Implemented GET / redirect (shows login page)
+- ✅ Blueprint reorganization: Split auth endpoints into api.py (JSON) and ui.py (HTML)
+- ✅ Created ApiV1 blueprint in api/v1/ with proper URL prefix
+- ✅ All templates use TailwindCSS CDN for mobile-friendly design
+- ✅ Client-side authentication check via localStorage
+- ✅ API key management UI with copy-to-clipboard functionality
 
 **Features:**
-- Simple Jinja2 templates (minimal CSS, mobile-friendly)
+- Simple Jinja2 templates with TailwindCSS (mobile-friendly)
 - Display API keys with metadata (no full keys after creation)
-- Revoke button for each API key
-- Show JWT token expiry (if available)
+- Revoke button for each API key with confirmation
+- Show JWT token expiry in settings page
 - Admin registration page only accessible from localhost
+- XSS protection with HTML escaping helpers
+- Copy-to-clipboard for new API keys
+- One-time display of full API key with security warning
+
+**Test Results:**
+- All 378 tests pass (existing tests remain passing)
+- HTML pages render correctly (manual testing)
+- API endpoints work with HTML forms
+- Client-side authentication redirects work
+
+**Files Modified:**
+- memogarden-core/memogarden_core/templates/base.html (48 lines)
+- memogarden-core/memogarden_core/templates/login.html (121 lines)
+- memogarden-core/memogarden_core/templates/api_keys.html (217 lines)
+- memogarden-core/memogarden_core/templates/api_key_new.html (236 lines)
+- memogarden-core/memogarden_core/templates/settings.html (185 lines)
+- memogarden-core/memogarden_core/auth/api.py (536 lines, moved from api/auth.py)
+- memogarden-core/memogarden_core/auth/ui.py (263 lines, new file)
+- memogarden-core/memogarden_core/api/v1/__init__.py (updated for ApiV1 blueprint)
+- memogarden-core/memogarden_core/api/v1/transactions.py (added url_prefix)
+- memogarden-core/memogarden_core/main.py (updated blueprint registration)
 
 ---
 
@@ -545,9 +618,11 @@ CREATE INDEX idx_api_keys_active ON api_keys(revoked_at) WHERE revoked_at IS NUL
 
 **Step 2.4 COMPLETE** ✅ (Authentication Endpoints - 2025-12-29)
 
-**Currently on:** Step 2.5 (API Key Management Endpoints)
+**Step 2.5 COMPLETE** ✅ (API Key Management Endpoints - 2025-12-29)
 
-**Next:** Implement programmatic API key CRUD operations (list, create, revoke).
+**Currently on:** Step 2.6 (Authentication Middleware)
+
+**Next:** Implement @require_auth decorator for protected endpoints.
 
 ---
 
