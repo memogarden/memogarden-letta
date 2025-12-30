@@ -103,7 +103,7 @@ For now, Budget app manages schema migrations manually without archival.
 
 ---
 
-### Step 4: Advanced Core Features 🔄 IN PLANNING
+### Step 4: Recurrences 🔄 IN PLANNING
 
 **Objective:** Implement recurrences for Budget app.
 
@@ -112,11 +112,15 @@ For now, Budget app manages schema migrations manually without archival.
 - **Deltas** are NOT part of Budget MVP (deferred to future when Soil integration needed)
 - Recurrences are user-managed, not agent-driven
 
+**Dependencies:**
+- `python-dateutil` - iCal RFC 5545 RRULE parsing
+- All datetime/recurrence logic confined to `memogarden_core/utils/recurrence.py`
+
 **Components:**
 
 #### 4.1 Recurrences (Entity-based)
 - Create `recurrences` table (Entity type)
-- iCal rrule parsing library integration
+- iCal rrule parsing library integration (`python-dateutil`)
 - Recurrence template → transaction generation
 - CRUD endpoints for recurrences
 - UI in Budget app for managing recurring transactions
@@ -136,7 +140,15 @@ CREATE TABLE recurrences (
 
 **Note:** Recurrences are Entities (mutable, in Core), not Items.
 
-#### ~~4.2 Relations~~ ~~4.3 Deltas~~ ~~4.4 Reference Resolution~~
+**4.2 Recurrence Utils Module**
+- Create `memogarden_core/utils/recurrence.py`
+- Confine all `python-dateutil` imports to this module
+- Parse RRULE strings and generate occurrences
+- Validate RRULE syntax
+- Convert between RRULE and human-readable descriptions
+- Helper functions for next occurrence, occurrences in range
+
+#### ~~4.3 Relations~~ ~~4.4 Deltas~~ ~~4.5 Reference Resolution~~
 
 **NOT PART OF BUDGET MVP** - These features require:
 - Email parsing and triage
@@ -149,6 +161,7 @@ These will be considered in future iterations after Budget MVP is complete.
 **Deliverables:**
 - Recurrence system with iCal compatibility
 - CRUD API endpoints for recurrences
+- `utils/recurrence.py` module with all datetime/recurrence logic
 - Budget app UI for managing recurring transactions
 
 ---
@@ -331,11 +344,11 @@ These will be considered in future iterations after Budget MVP is complete.
 - 2.9: Documentation & Integration ✅
 - 2.10: Refactor & Test Profiling ✅
 
-**Currently Planning:** Advanced Core Features (Step 4)
+**Currently Planning:** Step 4 - Recurrences
 
 **Next:**
 - ~~**Step 3** (Soil MVP Foundation)~~ - REMOVED (not needed for Budget)
-- **Step 4** (Advanced Core Features) - Recurrences only (Relations/Deltas deferred)
+- **Step 4** (Recurrences) - Entity-based recurring transactions
 - **Step 5** (Flutter App Foundation) - Budget app UI and API integration
 
 ---
@@ -358,7 +371,7 @@ These will be considered in future iterations after Budget MVP is complete.
 - No value in archiving schema this early
 - Will be implemented when agent workflows are added
 
-**Step 4 (Advanced Core Features - Recurrences)** comes now because:
+**Step 4 (Recurrences)** comes now because:
 - User needs recurring transaction management in Budget app
 - Recurrences are Entities (no Item refactor needed)
 - Relations and Deltas deferred to future agent workflows
