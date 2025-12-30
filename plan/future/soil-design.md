@@ -1,7 +1,7 @@
 # Memogarden Soil Design
 
 > **Status:** Future Design Work
-> **Last Updated:** 2025-12-24
+> **Last Updated:** 2025-12-30
 > **Related Documents:** [schema-extension-design.md](./schema-extension-design.md) | [migration-mechanism.md](./migration-mechanism.md)
 
 ---
@@ -14,8 +14,19 @@
 - Schema snapshots
 - Extension migrations
 - Entity deltas (change history)
-- Documents (emails, PDFs, statements)
+- Items (emails, PDFs, statements)
 - Archived extensions
+
+**Implementation Status:**
+- **DEFERRED**: Soil is not implemented in Budget MVP
+- **Future trigger**: Soil will be implemented when agent workflows are added (email parsing, statement reconciliation)
+- **Budget app**: Uses Core database only, no Soil integration yet
+
+**Architecture:**
+- **Raw files**: Stored in `soil/artifacts/` (emails, PDFs, statements)
+- **Metadata**: SQLite database (`soil/soil.db`) with Item table
+- **Snapshots**: SQL dumps in `soil/core-migration/snapshots/`
+- **UUID prefix**: `item_` for all Items in Soil (vs `entity_` for Core Entities)
 
 ### Key Concepts
 
@@ -25,6 +36,41 @@
 | **Fossilize** | Lossy compaction of long-unused archived documents (future mechanism) |
 | **TTF** | Time to Fossilization (undetermined, future design work) |
 | **Fossil** | Compacted document in Soil (lossy, may not allow full reconstruction) |
+| **Item** | Immutable entity with metadata in SQLite + raw file in filesystem |
+| **Entity** | Mutable shared belief in Core (transactions, recurrences, users) |
+
+**UUID Prefixes:**
+- `entity_` - Entities in Core database (mutable, shared beliefs)
+- `item_` - Items in Soil database (immutable, archival facts)
+- **Separate databases**: Core DB (`data/memogarden.db`) vs Soil DB (`soil/soil.db`)
+- **No collision risk**: Different prefixes prevent UUID conflicts
+- **One-way flow**: Agents create Entities based on Items, never reverse
+
+### Soil Storage Architecture
+
+**Two-tier design:**
+
+1. **Raw files** (`soil/artifacts/`):
+   - Emails: `.eml` files
+   - PDFs: `.pdf` files
+   - Statements: `.pdf` files
+   - Write-once, read-only (by special `soil` user)
+
+2. **Metadata database** (`soil/soil.db`):
+   - SQLite for Item metadata
+   - Fast querying by type, date, attributes
+   - References to raw file paths
+   - All Items use `item_` UUID prefix
+
+**Why filesystem + SQLite?**
+- **Filesystem**: Efficient for large binary files (PDFs, emails)
+- **SQLite**: Fast queries and joins without loading files
+- **Separation**: Metadata accessible without loading raw files
+- **Simplicity**: No complex document database needed
+
+**Implementation Status:**
+- **DEFERRED**: Soil not implemented in Budget MVP
+- **Future**: Will be implemented when agent workflows are added
 
 ### Design Principles
 
@@ -36,69 +82,138 @@
 
 ---
 
+## Soil SQLite Schema (Future)
+
+**Status:** Design complete, implementation deferred until agent workflows are added
+
+```sql
+-- Items table (metadata only, raw files in filesystem)
+CREATE TABLE item (
+    uuid TEXT PRIMARY KEY,         -- Format: item_<uuid4>
+    _type TEXT NOT NULL,           -- 'EmailItem', 'PdfItem', 'StatementItem'
+    realized_at TEXT NOT NULL,     -- ISO 8601 - when system recorded this
+    canonical_at TEXT NOT NULL,    -- ISO 8601 - user-controlled time
+    data JSON NOT NULL,            -- Type-specific metadata
+    file_path TEXT NOT NULL,       -- Path to raw file in soil/artifacts/
+    created_at TEXT NOT NULL       -- Audit timestamp
+);
+
+CREATE INDEX idx_item_type ON item(_type);
+CREATE INDEX idx_item_realized ON item(realized_at);
+CREATE INDEX idx_item_canonical ON item(canonical_at);
+```
+
+**Note:** All UUIDs in Soil use `item_` prefix (e.g., `item_a1b2c3d4-e5f6-7890-abcd-ef1234567890`)
+
+**Type-specific data (stored in `data` JSON field):**
+
+```json
+// EmailItem example
+{
+  "message_id": "<msg-123@example.com>",
+  "from": "merchant@example.com",
+  "to": "user@example.com",
+  "subject": "Receipt #12345",
+  "timestamp": "2025-04-11T10:30:00Z",
+  "has_attachments": true
+}
+
+// PdfItem example
+{
+  "filename": "invoice-12345.pdf",
+  "title": "Invoice #12345",
+  "vendor": "Acme Corp",
+  "amount": 150.00,
+  "currency": "SGD",
+  "document_date": "2025-04-11"
+}
+
+// StatementItem example
+{
+  "account": "Chase Credit Card",
+  "period_start": "2025-04-01",
+  "period_end": "2025-04-30",
+  "statement_date": "2025-05-01"
+}
+```
+
+**API Operations:**
+```python
+# Archive Item (creates metadata + stores raw file)
+def archive_item(item: Item) -> str:
+    """
+    Archive an Item to Soil.
+
+    1. Store raw file in soil/artifacts/{type}/{uuid}.{ext}
+    2. Insert metadata into soil.db item table
+    3. Return Item UUID
+    """
+    pass
+
+# Retrieve Item metadata
+def get_item(uuid: str) -> Item:
+    """Get Item metadata from soil.db."""
+    pass
+
+# Query Items by type/date
+def query_items(_type: str, start_date: str, end_date: str) -> list[Item]:
+    """Query Items by type and date range."""
+    pass
+```
+
+---
+
 ## Directory Structure
 
 ```
-memogarden-soil/
+soil/
 │
-├── core-migration/              # Schema and extension history
+├── artifacts/                   # Raw file storage
+│   ├── emails/                  # .eml files
+│   │   └── {uuid}.eml           # Uses item_ prefix
+│   ├── pdfs/                    # PDF files
+│   │   └── {uuid}.pdf           # Uses item_ prefix
+│   ├── statements/              # Statement PDFs
+│   │   └── {uuid}.pdf           # Uses item_ prefix
+│   └── images/                  # Extracted images (future)
+│       └── {uuid}.png           # Uses item_ prefix
+│
+├── soil.db                      # SQLite for Item metadata
+│                               # CREATE TABLE item (uuid, _type, realized_at, canonical_at, data, file_path, created_at)
+│                               # All UUIDs use item_ prefix
+│
+├── core-migration/              # Core schema and extension history
 │   ├── snapshots/               # Full schema snapshots
-│   │   ├── 20251223-initial-schema.sql
-│   │   ├── 20250411-add-tags.sql
-│   │   ├── 20250415-add-workflows.sql
-│   │   └── ...
+│   │   ├── 20251227-initial-schema.sql
+│   │   ├── 20251229-add-users-auth.sql
+│   │   └── {date}-{description}.sql
 │   │
-│   ├── extensions/              # Archived extensions
+│   ├── extensions/              # Archived extensions (future)
 │   │   ├── 20250411/
 │   │   │   ├── extension.sql
 │   │   │   ├── extension.schema.json
 │   │   │   └── extension.notes.md (optional)
-│   │   ├── 20250415/
-│   │   │   ├── extension.sql
-│   │   │   ├── extension.schema.json
-│   │   │   └── extension.notes.md
-│   │   ├── 20250420/
 │   │   └── fossilized/          # Compacted extensions (future)
-│   │       ├── 20250408/
-│   │       │   └── summary.json  # Lossy summary
-│   │       └── 20250411/
+│   │       └── {date}/
 │   │           └── summary.json
 │   │
-│   └── migrations/              # Migration scripts
+│   └── migrations/              # Migration scripts (future)
 │       ├── 20250411-to-20250415/
 │       │   ├── migrate.sql
-│       │   ├── transform.py (optional)
-│       │   └── rollback.sql (optional)
-│       ├── 20250415-to-20250420/
-│       └── 20250420-to-20250425/
+│       │   └── rollback.sql
+│       └── ...
 │
-├── core-delta/                  # Entity change history
-│   └── YYYYMMDD/
-│       └── {entity_id}/
-│           └── {delta_id}.json
+├── core-delta/                  # Entity change history (future)
+│   └── {entity_uuid}/           # Uses entity_ prefix
+│       └── {delta_uuid}.json
 │
-├── documents/                   # Mutable docs with ongoing changes
-│   ├── user-manual.md
-│   ├── api-reference.md
-│   └── ...
-│
-├── artifacts/                   # Immutable objects
-│   ├── emails/
-│   │   └── {message_id}.eml
-│   ├── pdfs/
-│   │   └── {document_id}.pdf
-│   ├── statements/
-│   │   └── {statement_id}.pdf
-│   └── images/
-│       └── {image_id}.png
-│
-└── fossils/                     # Compacted/archived artifacts (future)
+└── fossils/                     # Compacted/archived items (future)
     ├── emails/
     │   └── compacted/
-    │       └── 2025-01-emails-summary.json  # Lossy summary
+    │       └── 2025-01-emails-summary.json
     ├── pdfs/
     │   └── thumbnails/
-    │       └── {document_id}-thumb.png
+    │       └── {uuid}-thumb.png
     └── statements/
         └── aggregated/
             └── 2025-01-statement-summary.json
@@ -108,13 +223,15 @@ memogarden-soil/
 
 | Directory | Purpose | Mutable? |
 |-----------|---------|----------|
+| `artifacts/` | Raw file storage | No (append-only) |
+| `soil.db` | Item metadata (SQLite) | No (append-only) |
 | `core-migration/snapshots/` | Full schema snapshots | No (append-only) |
 | `core-migration/extensions/` | Archived extensions | No (append-only) |
 | `core-migration/migrations/` | Migration scripts | No (append-only) |
 | `core-delta/` | Entity change history | No (append-only) |
-| `documents/` | Ongoing documentation | Yes (mutable) |
-| `artifacts/` | Immutable source documents | No (append-only) |
-| `fossils/` | Compacted artifacts | No (append-only) |
+| `fossils/` | Compacted items | No (append-only) |
+
+**Implementation Status:** DEFERRED until agent workflows are implemented
 
 ---
 

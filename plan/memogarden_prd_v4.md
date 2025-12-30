@@ -27,6 +27,31 @@ MemoGarden Project System provides an artifact-first collaborative workspace for
 
 MemoGarden uses a two-layer storage model separating immutable facts from mutable state.
 
+### UUID Systems
+
+MemoGarden uses **two separate UUID namespaces** to prevent collisions between Soil and Core:
+
+| System | UUID Prefix | Database | Mutability | Examples |
+|--------|-------------|----------|------------|----------|
+| **Core** | `entity_` | Core DB | Mutable | `entity_abc123...`, `entity_def456...` |
+| **Soil** | `item_` | Soil DB | Immutable | `item_xyz789...`, `item_uvw012...` |
+
+**Why separate prefixes?**
+- **Separate databases**: Core and Soil use different SQLite databases
+- **No collision risk**: Even if raw UUIDs collide, prefixed identifiers remain unique
+- **Clear provenance**: `entity_` prefix immediately indicates mutable shared belief; `item_` indicates immutable fact
+- **One-way bridge**: Agents create Entities based on Items, never the reverse
+
+**UUID Format:**
+```
+entity_<uuid4>    # e.g., entity_a1b2c3d4-e5f6-7890-abcd-ef1234567890
+item_<uuid4>      # e.g., item_fedcba98-7654-3210-fedc-ba9876543210
+```
+
+**Migration Direction:**
+- Items (Soil) → Entities (Core): Agents create/update Entities based on immutable Items
+- Entities (Core) → Items (Soil): Never migrate mutable Entities to Soil
+
 ### Soil (Immutable Facts)
 
 **Purpose:** Ground truth timeline of what happened

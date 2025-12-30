@@ -38,6 +38,19 @@ This is **not** a budgeting or accounting product. It is a memory system for mon
 
 ## In Scope
 
+### UUID System
+
+MemoGarden uses **separate UUID namespaces** for different systems:
+
+| System | Prefix | Database | Mutability |
+|--------|--------|----------|------------|
+| **Core Entities** | `entity_` | Core DB | Mutable |
+| **Soil Items** | `item_` | Soil DB | Immutable (future) |
+
+**Budget MVP** uses `entity_` prefix only (e.g., `entity_a1b2c3d4-e5f6-7890-abcd-ef1234567890`).
+
+**Future**: When Soil is implemented for agent workflows, `item_` prefix will be used for archived documents.
+
 ### Daily Workflows
 
 * Add transactions quickly
@@ -47,12 +60,20 @@ This is **not** a budgeting or accounting product. It is a memory system for mon
 * Review spending by day / month / year
 * Create and maintain recurring transactions
 
-### Agent-Assisted Workflows
+### Agent-Assisted Workflows - **Future Feature**
 
 * Digest bank and credit card statements
 * Reconcile statements against logged transactions
 * Scan emails/invoices and propose transactions
 * Flag missing, duplicated, or unreconciled items
+
+**Note:** Agent-assisted workflows are **NOT part of Budget MVP**. They require:
+- Soil Items (email, PDF archival)
+- Relations (document linking)
+- Deltas (change tracking)
+- Email parsing and classification
+
+Budget MVP is user-manual only. Agents will be considered in future iterations.
 
 ---
 
@@ -111,45 +132,59 @@ Notes:
 
 ---
 
-### Relations (MemoGarden Core)
+### Relations (MemoGarden Core) - **Backend Feature**
+
+**Note:** Relations are a **backend agent feature**, not managed through the Budget app UI.
 
 ```
 id
-core_id                -- e.g. transaction_id
-ref_id                 -- Soil artifact ID
+core_id                -- e.g. transaction_id (entity_ prefix)
+ref_id                 -- Soil Item ID (item_ prefix)
 ref_type               -- source | reconciliation | other
 notes?
 created_at
 revoked_on?
 ```
 
-Notes:
+**Scope:**
+- **Backend**: Agents create Relations to link invoices/emails to transactions
+- **Budget app**: Does NOT expose Relations management UI
+- **Purpose**: Document provenance tracking, statement reconciliation
 
-* Enables linking invoices, emails, and statements without embedding document logic into Core tables.
+**User Experience:**
+- User adds transactions manually in Budget app
+- Agent (running on backend/server) processes emails and PDFs
+- Agent creates Relations between Items (emails) and Entities (transactions)
+- User sees reconciliation results, not Relations directly
 
 ---
 
-### Artifacts (MemoGarden Soil)
+### Items (MemoGarden Soil)
 
-* Immutable documents (emails, PDFs, statements, OCR outputs)
+* **Immutable documents** (emails, PDFs, statements, OCR outputs)
+* **Not used in Budget MVP** - Future agent workflows will bridge Items → Entities
 * Append-only, lossy over long horizons by design
 * Organized into buckets by fixity level:
   * `artifacts/` - Immutable objects (emails, PDFs, statements)
   * `core-migration/` - Schema snapshots and applied migrations (for agent reference and data archaeology)
-  * `core-delta/` - Transaction change history
-  * `documents/` - Mutable docs with ongoing changes
-  * `fossils/` - Compacted/archived artifacts
+  * `core-delta/` - Transaction change history (future)
+  * `documents/` - Mutable docs with ongoing changes (future, Project System)
+  * `fossils/` - Compacted/archived items (future)
 * Read-only to agents and humans; written by special `soil` user
 * Enables historical reconstruction without cluttering Core implementation
 
+**Note:** Budget MVP uses user-inputted Entities only. Items will be integrated when agent-assisted workflows are added (email parsing, statement reconciliation).
+
 ---
 
-### Deltas (MemoGarden Memory Log)
+### Deltas (MemoGarden Memory Log) - **Future Feature**
 
 * Record all mutations to Core snapshot
 * Field-level changes with rationale
 * Atomic grouping (e.g. transaction split)
 * Not optimized for querying; optimized for reconstruction
+
+**Note:** Deltas are **NOT part of Budget MVP**. They will be implemented when audit trail/history reconstruction features are needed. Budget MVP uses Core database directly without change tracking.
 
 ---
 
@@ -195,9 +230,10 @@ These are accessible via agent tooling or admin interfaces only.
 ## Success Criteria
 
 * Transaction capture remains sub-5 seconds
-* Agents can reconcile a full monthly statement without schema workarounds
-* Users can review past spending without caring about reconciliation mechanics
-* Schema tolerates future extensions without retroactive rewrites
+* Users can review past spending by day/month/year
+* Recurring transactions work correctly
+* Schema tolerates future extensions (Items, Relations, Deltas) without retroactive rewrites
+* Clean separation between user-manual workflows (MVP) and future agent-assisted workflows
 
 ---
 

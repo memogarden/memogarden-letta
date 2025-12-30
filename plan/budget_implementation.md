@@ -83,131 +83,39 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
 
 See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md) for authentication architecture details.
 
-### Step 3: Soil MVP Foundation 🔄 IN PLANNING
+### ~~Step 3: Soil MVP Foundation~~ ~~🔄 IN PLANNING~~
 
-**Objective:** Implement minimal immutable storage layer for artifact archival, delta tracking, and schema snapshots.
+**REMOVED**: Not needed for Budget MVP.
 
-**Approach:** Lean MVP - filesystem-based storage (no database), simple Python API
+**Rationale:**
+- Schema is tentative and will see drastic changes
+- No value in archiving schema this early
+- Budget app is simple enough that schema snapshots aren't needed yet
+- Soil (schema snapshots, Item archival) will be implemented when agent workflows are added
 
-#### Components:
+**Future Consideration**: Soil will be implemented when we add:
+- Email parsing and archival
+- Statement reconciliation
+- Document linking (Relations)
+- Agent-assisted workflows
 
-**3.1 Soil Storage API**
-- Create `memogarden_core/soil/` module
-- Filesystem storage with UUID-based artifact IDs
-- Environment variable `SOIL_PATH` (default: `./soil`)
-- Directory structure:
-  ```
-  soil/
-  ├── artifacts/
-  │   ├── emails/
-  │   ├── pdfs/
-  │   └── statements/
-  ├── core-delta/
-  │   └── {entity_uuid}/
-  │       └── {delta_uuid}.json
-  └── core-migration/
-      └── snapshots/
-          └── {date}-schema.sql
-  ```
-
-**3.2 Artifact Management**
-- `archive_artifact(artifact_type, content) -> artifact_id`
-- `get_artifact(artifact_id) -> content`
-- Artifact types: `emails`, `pdfs`, `statements`
-- UUID-based IDs with type prefix (e.g., `email-a7f3e2b1...`)
-
-**3.3 Delta Storage**
-- `write_delta(entity_uuid, delta_dict) -> delta_id`
-- `get_deltas(entity_uuid) -> list[delta_dict]`
-- JSON format per delta record
-- Append-only (never modify existing deltas)
-
-**3.4 Schema Snapshots**
-- `snapshot_schema() -> snapshot_path`
-- Automatic SQL dump before migrations
-- Date-stamped filenames
-- Integration with `_schema_metadata` table
-
-**3.5 Testing & Documentation**
-- Filesystem operation tests (use pytest tmpdir)
-- Soil API documentation
-- Integration examples for Core
-
-**Deliverables:**
-- Soil storage API module (~200 lines)
-- 50+ tests for filesystem operations
-- Documentation and usage examples
-- Integration hooks for Core mutations
+For now, Budget app manages schema migrations manually without archival.
 
 ---
 
-### Step 4: Core Refactor to Item Type 🔄 IN PLANNING
+### Step 4: Advanced Core Features 🔄 IN PLANNING
 
-**Objective:** Refactor existing schema to use Item base type from PRD v4 platform architecture.
+**Objective:** Implement recurrences for Budget app.
 
-**Rationale:** PRD v4 is the complete platform specification. Adopting Item type now enables Soil integration and reduces future migration debt.
-
-#### Migration Strategy:
-
-**4.1 Create Item Table**
-```sql
-CREATE TABLE item (
-    uuid TEXT PRIMARY KEY,
-    _type TEXT NOT NULL,           -- 'Transaction', 'Recurrence', 'User', etc.
-    realized_at TEXT NOT NULL,     -- System time (when recorded)
-    canonical_at TEXT NOT NULL,    -- User time (when it happened)
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-);
-
-CREATE INDEX idx_item_type ON item(_type);
-CREATE INDEX idx_item_realized ON item(realized_at);
-```
-
-**4.2 Migration Script**
-- Create migration: `entity` → `item`
-- Migrate data:
-  - `entity.type` → `item._type`
-  - `entity.created_at` → `item.realized_at` AND `item.canonical_at`
-  - Keep `entity.created_at`, `entity.updated_at` as-is
-- Update foreign keys:
-  - `transactions.id` → references `item.uuid`
-  - `users.id` → references `item.uuid`
-  - `api_keys.id` → references `item.uuid`
-- Archive old schema snapshot to Soil before migration
-- Rollback script (drop `item`, restore `entity`)
-
-**4.3 Update Entity Operations**
-- Refactor `db/entity.py` to use `item` table
-- Update all `get_entity()`, `create_entity()`, etc. calls
-- Add `realized_at` / `canonical_at` to Pydantic schemas
-- Update foreign key constraints in schema.sql
-
-**4.4 Testing & Validation**
-- Migration test suite (before/after data validation)
-- Run all 396 existing tests (must still pass)
-- Add tests for dual timestamp behavior
-- Test rollback script
-
-**Deliverables:**
-- Migration script (forward + rollback)
-- Updated schema with Item base type
-- All tests passing with new schema
-- Schema snapshot archived to Soil
-- Migration documentation
-
----
-
-### Step 5: Advanced Core Features (Updated)
-
-**Objective:** Implement recurrences, relations, and delta tracking with Soil integration.
-
-**Note:** All entities now use Item base type (from Step 4). Relations reference both Items and Soil artifacts.
+**Note:**
+- **Relations** are NOT part of Budget MVP (deferred to future agent workflows)
+- **Deltas** are NOT part of Budget MVP (deferred to future when Soil integration needed)
+- Recurrences are user-managed, not agent-driven
 
 **Components:**
 
-#### 5.1 Recurrences (extends Item)
-- Create `recurrences` table (extends `item` with rrule, entities)
+#### 4.1 Recurrences (Entity-based)
+- Create `recurrences` table (Entity type)
 - iCal rrule parsing library integration
 - Recurrence template → transaction generation
 - CRUD endpoints for recurrences
@@ -216,82 +124,36 @@ CREATE INDEX idx_item_realized ON item(realized_at);
 **Schema:**
 ```sql
 CREATE TABLE recurrences (
-    uuid TEXT PRIMARY KEY,
+    uuid TEXT PRIMARY KEY,         -- References entity.uuid
     rrule TEXT NOT NULL,           -- iCal rrule string
     entities TEXT NOT NULL,        -- JSON: transaction templates
     valid_from TEXT NOT NULL,
     valid_until TEXT,
 
-    FOREIGN KEY (uuid) REFERENCES item(uuid) ON DELETE CASCADE
+    FOREIGN KEY (uuid) REFERENCES entity(uuid) ON DELETE CASCADE
 );
 ```
 
-#### 5.2 Relations (with Soil integration)
-- Create `relations` table (links Items to Items or Soil artifacts)
-- Link Core entities to Soil artifacts (emails, PDFs, statements)
-- CRUD endpoints for relations
-- Reference resolution: `artifact:{uuid}` format
-- Support relation types: `source`, `reconciliation`, `artifact`
+**Note:** Recurrences are Entities (mutable, in Core), not Items.
 
-**Schema:**
-```sql
-CREATE TABLE relations (
-    id TEXT PRIMARY KEY,
-    core_id TEXT NOT NULL,         -- Item UUID
-    ref_id TEXT NOT NULL,          -- Item UUID OR Soil artifact ID
-    ref_type TEXT NOT NULL,        -- 'source', 'reconciliation', 'artifact'
-    notes TEXT,
-    created_at TEXT NOT NULL,
-    revoked_on TEXT,
+#### ~~4.2 Relations~~ ~~4.3 Deltas~~ ~~4.4 Reference Resolution~~
 
-    FOREIGN KEY (core_id) REFERENCES item(uuid)
-);
-```
+**NOT PART OF BUDGET MVP** - These features require:
+- Email parsing and triage
+- Agent-assisted classification and extraction
+- Statement reconciliation workflows
+- Document linking to transactions
 
-#### 5.3 Deltas (Audit Log + Soil Archival)
-- Create `deltas` table (field-level change tracking)
-- Emit deltas on all mutations (INSERT/UPDATE/DELETE)
-- Delta tracking middleware/decorator
-- Automatic archival to Soil (`soil/core-delta/{entity_uuid}/{delta_uuid}.json`)
-- Query endpoints for audit history
-
-**Schema:**
-```sql
-CREATE TABLE deltas (
-    id TEXT PRIMARY KEY,
-    entity_type TEXT NOT NULL,     -- Item._type
-    entity_id TEXT NOT NULL,       -- Item UUID
-    field TEXT NOT NULL,
-    old_value TEXT,
-    new_value TEXT,
-    rationale TEXT,
-    author TEXT NOT NULL,
-    timestamp TEXT NOT NULL,
-
-    FOREIGN KEY (entity_id) REFERENCES item(uuid)
-);
-```
-
-**Soil Integration:**
-- After database commit, write delta JSON to Soil
-- Delta format: `{id, entity_type, entity_id, field, old_value, new_value, rationale, author, timestamp}`
-- Stored as: `soil/core-delta/{entity_uuid}/{delta_uuid}.json`
-
-#### 5.4 Reference Resolution
-- Parse artifact references (format: `artifact:{type}-{uuid}`)
-- Validate artifacts exist in Soil before creating relations
-- Basic reference syntax (defer complex fragment refs to Project System)
+These will be considered in future iterations after Budget MVP is complete.
 
 **Deliverables:**
 - Recurrence system with iCal compatibility
-- Relation management with artifact linking
-- Complete audit trail via deltas (DB + Soil)
-- Reference resolution for Soil artifacts
-- API endpoints for all four features
+- CRUD API endpoints for recurrences
+- Budget app UI for managing recurring transactions
 
 ---
 
-### Step 6: Flutter App Foundation
+### Step 5: Flutter App Foundation
 
 **Objective:** Initialize Budget app with basic UI and API integration.
 
@@ -317,31 +179,31 @@ CREATE TABLE deltas (
 
 ---
 
-### Step 7: Budget App Features
+### Step 6: Budget App Features
 
 **Objective:** Complete Budget app with spending review and management features.
 
 **Components:**
 
-#### 7.1 Spending Review
+#### 6.1 Spending Review
 - Daily spending view (list grouped by date)
 - Monthly summary with category breakdown
 - Yearly overview with trends
 - Charts/visualizations (optional, defer if complex)
 
-#### 7.2 Account & Category Management
+#### 6.2 Account & Category Management
 - Account selection during transaction creation
 - Category picker with icons
 - Manage accounts (create, edit, delete)
 - Manage categories (create, edit, delete)
 
-#### 7.3 Transaction Management
+#### 6.3 Transaction Management
 - Edit transaction screen
 - Delete transaction with confirmation
 - Transaction detail view
 - Search/filter transactions
 
-#### 7.4 Recurring Transactions UI
+#### 6.4 Recurring Transactions UI
 - Create recurring transaction template
 - View upcoming recurring transactions
 - Mark occurrence as completed/skipped
@@ -354,26 +216,26 @@ CREATE TABLE deltas (
 
 ---
 
-### Step 8: Agent Integration & Deployment
+### Step 7: Agent Integration & Deployment
 
 **Objective:** Enable agent workflows and prepare for production deployment.
 
 **Components:**
 
-#### 8.1 Agent Workflows
+#### 7.1 Agent Workflows
 - Statement reconciliation endpoint
 - Email parsing integration (with Soil)
 - Transaction suggestion API
 - Bulk operations for agents
 - Reconciliation status tracking
 
-#### 8.2 Testing & CI/CD
+#### 7.2 Testing & CI/CD
 - Integration tests for full workflows
 - E2E tests for critical paths
 - GitHub Actions for CI
 - Automated testing on PR
 
-#### 8.3 Deployment
+#### 7.3 Deployment
 - Docker configuration for Core API
 - Docker Compose for local full-stack
 - Railway deployment configuration
@@ -381,7 +243,7 @@ CREATE TABLE deltas (
 - Environment variable management
 - Database backup strategy
 
-#### 8.4 Documentation
+#### 7.4 Documentation
 - API documentation for agents
 - Agent integration guide
 - Deployment runbook
@@ -469,12 +331,12 @@ CREATE TABLE deltas (
 - 2.9: Documentation & Integration ✅
 - 2.10: Refactor & Test Profiling ✅
 
-**Currently Planning:** Platform Foundation (Steps 3-4)
+**Currently Planning:** Advanced Core Features (Step 4)
 
 **Next:**
-- **Step 3** (Soil MVP Foundation) - Implement filesystem-based immutable storage
-- **Step 4** (Core Refactor to Item Type) - Migrate from `entity` to `item` table
-- **Step 5** (Advanced Core Features) - Recurrences, Relations, Deltas with Soil integration
+- ~~**Step 3** (Soil MVP Foundation)~~ - REMOVED (not needed for Budget)
+- **Step 4** (Advanced Core Features) - Recurrences only (Relations/Deltas deferred)
+- **Step 5** (Flutter App Foundation) - Budget app UI and API integration
 
 ---
 
@@ -491,29 +353,22 @@ CREATE TABLE deltas (
 - Auth affects all endpoints, easier to add after basics work
 - Can test with "system" author initially
 
-**Step 3 (Soil MVP)** comes before Core refactor because:
-- Soil has no dependencies (filesystem only)
-- Core refactor needs Soil for schema snapshots
-- Relations and deltas need Soil integration
-- Can be implemented independently (1-2 days)
+**Step 3 (Soil)** was removed from Budget MVP:
+- Schema is tentative and will see drastic changes
+- No value in archiving schema this early
+- Will be implemented when agent workflows are added
 
-**Step 4 (Core Refactor to Item Type)** comes before Step 5 because:
-- Adopting platform architecture now reduces future migration debt
-- All new entities (Recurrences, Relations) should extend Item
-- Easier to refactor 3 tables (transactions, users, api_keys) now than 10+ later
-- Enables Soil integration from the ground up
+**Step 4 (Advanced Core Features - Recurrences)** comes now because:
+- User needs recurring transaction management in Budget app
+- Recurrences are Entities (no Item refactor needed)
+- Relations and Deltas deferred to future agent workflows
 
-**Step 5 (Advanced Features)** after refactor because:
-- Recurrences, Relations, Deltas should use Item base type
-- Soil integration requires Item-based foreign keys
-- Cleaner to implement with new architecture than migrate later
-
-**Step 6-7 (Flutter)** come after stable API because:
+**Step 5-6 (Flutter)** come after stable API because:
 - Need stable API contract first
 - Backend can be tested independently
 - Reduces rework from API changes
 
-**Step 8 (Agents & Deployment)** last because:
+**Step 7 (Agents & Deployment)** last because:
 - Most complex workflows
 - Depends on all core features
 - Can defer without blocking user value
@@ -522,40 +377,37 @@ CREATE TABLE deltas (
 
 ## Platform Foundation Decisions
 
-The following design decisions from [budget_prd_update_analysis.md](budget_prd_update_analysis.md) are adopted:
+The following design decisions clarify the Budget MVP scope:
 
-### Soil MVP Scope
-- **Storage**: Filesystem-based (no database)
-- **API**: Simple Python module (`memogarden_core/soil/`)
-- **Artifact types**: emails, pdfs, statements (MVP)
-- **Reference format**: `artifact:{type}-{uuid}`
-- **Location**: Configurable via `SOIL_PATH` environment variable (default: `./soil`)
+### Soil (Removed from Budget MVP)
+- **Decision**: Soil (schema snapshots, Item archival) NOT included in Budget MVP
+- **Rationale**: Schema is tentative and will see drastic changes; no value in archiving this early
+- **Future**: Soil will be implemented when agent workflows are added (email parsing, statement reconciliation)
 
-### Item Type Migration
-- **Approach**: Forward migration with rollback script
-- **Dual timestamps**: `realized_at` (system) + `canonical_at` (user)
-- **Data preservation**: All existing data migrated, no loss
-- **Schema archival**: Snapshot stored in Soil before migration
-- **Test requirement**: All 396 existing tests must pass after migration
+### Entity vs Item Architecture
+- **Entities** (Budget app): Mutable shared beliefs in Core (transactions, recurrences, users)
+- **Items** (future): Immutable artifacts in Soil (emails, PDFs, statements)
+- **No Item migration**: Budget app uses Entity model only
+- **Future bridge**: Agents will create Entities based on Items (email → transaction)
+- **UUID prefixes**: `entity_` for Entities, `item_` for Items (separate databases, no collision risk)
 
-### Relation Types (MVP)
-- **Subset implemented**: `source`, `reconciliation`, `artifact`
+### Relation Types
+- **NOT part of Budget MVP**: Relations are backend agent feature, not managed through Budget app
+- **Backend scope**: Document linking (invoices/receipts → transactions) happens via agents
 - **Deferred to future**: `triggers`, `supercedes`, `replies_to`, `mentions`, `derived_from`, `contains` (Project System features)
-- **Single table**: Use `relations` table for MVP (defer UniqueRelation/MultiRelation split)
 
 ### Delta Tracking
-- **Granularity**: Field-level (one delta per field changed)
-- **Storage**: Database table + JSON files in Soil
-- **Timing**: After database commit (transactional consistency)
-- **Format**: JSON with metadata (id, entity_type, entity_id, field, old_value, new_value, rationale, author, timestamp)
+- **NOT part of Budget MVP**: No delta archival to Soil needed
+- **Deferred to future**: When audit trail/history reconstruction features needed
 
-### Deferred Features (Post-MVP)
+### Deferred Features (Post-Budget MVP)
 - Fragment system (Project System feature)
 - ConversationLog/Frame/Stack (Project System features)
-- UniqueRelation vs MultiRelation split
-- Fossilization (Soil compaction)
-- Extension archival (soil/core-migration/extensions/)
-- Tool call tracking
+- UniqueRelation vs MultiRelation split (Project System features)
+- ToolCall items (Project System feature)
+- ArtifactDelta (Project System feature)
+- Soil implementation (schema snapshots, Item archival)
+- Email/PDF archival (agent workflow feature)
 
 ---
 
