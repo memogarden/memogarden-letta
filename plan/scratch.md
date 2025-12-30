@@ -40,15 +40,15 @@ All 10 substeps completed:
 - Grow platform iteratively rather than building full platform upfront
 
 **Created:**
-- `plan/budget_prd_update_analysis.md` - Comprehensive feasibility analysis
 - `plan/budget_implementation.md` - Updated implementation plan (renamed from implementation.md)
+- `memogarden-soil/` - Repository for Soil storage layer
 
 ### 2. Updated Implementation Plan (2025-12-30)
 
 **New Steps Added:**
-- **Step 2.5**: Soil MVP Foundation (filesystem-based immutable storage)
-- **Step 2.6**: Core Refactor to Item Type (migrate entity → item table)
-- **Step 3**: Updated to include Soil integration
+- **Step 3**: Soil MVP Foundation (filesystem-based immutable storage)
+- **Step 4**: Core Refactor to Item Type (migrate entity → item table)
+- **Step 5**: Updated Advanced Core Features to include Soil integration
 
 **Platform Foundation Decisions Made:**
 - Soil MVP: Filesystem storage, simple Python API
@@ -95,15 +95,15 @@ All 10 substeps completed:
 ### Architecture State
 - **Current**: Entity-based schema (entity table + type-specific tables)
 - **Target**: Item-based schema (item table with dual timestamps)
-- **Pending**: Entity → Item migration (Step 2.6)
+- **Pending**: Entity → Item migration (Step 4)
 
 ---
 
 ## Ready for Platform Foundation
 
-**Next**: Steps 2.5-2.6 (Platform Foundation)
+**Next**: Steps 3-4 (Platform Foundation)
 
-### Step 2.5: Soil MVP Foundation
+### Step 3: Soil MVP Foundation
 **Objective**: Minimal immutable storage layer
 **Components**:
 - Filesystem storage API (`memogarden_core/soil/`)
@@ -112,7 +112,7 @@ All 10 substeps completed:
 - Schema snapshots (SQL dumps)
 **Estimate**: 1-2 days
 
-### Step 2.6: Core Refactor to Item Type
+### Step 4: Core Refactor to Item Type
 **Objective**: Migrate to platform Item base type
 **Components**:
 - Create `item` table with dual timestamps
@@ -122,7 +122,7 @@ All 10 substeps completed:
 - Test migration (all 396 tests must pass)
 **Estimate**: 2-3 days
 
-### Step 3: Advanced Core Features (Updated)
+### Step 5: Advanced Core Features (Updated)
 **Objective**: Recurrences, Relations, Deltas with Soil integration
 **Components**:
 - Recurrences (extends Item)
@@ -141,7 +141,7 @@ All 10 substeps completed:
 - `plan/budget_implementation.md` - **PRIMARY** - Updated implementation plan
 - `plan/budget_prd.md` - Budget app requirements
 - `plan/memogarden_prd_v4.md` - Complete platform specification
-- `plan/budget_prd_update_analysis.md` - Feasibility analysis (DELETE after planning complete)
+- `plan/memogarden_prd_v4_delta_analysis.md` - PRD v4 delta analysis (archived reference)
 
 ### Architecture References
 - `plan/future/soil-design.md` - Soil storage architecture

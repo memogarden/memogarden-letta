@@ -83,7 +83,7 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
 
 See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md) for authentication architecture details.
 
-### Step 2.5: Soil MVP Foundation 🔄 IN PLANNING
+### Step 3: Soil MVP Foundation 🔄 IN PLANNING
 
 **Objective:** Implement minimal immutable storage layer for artifact archival, delta tracking, and schema snapshots.
 
@@ -91,7 +91,7 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
 
 #### Components:
 
-**2.5.1 Soil Storage API**
+**3.1 Soil Storage API**
 - Create `memogarden_core/soil/` module
 - Filesystem storage with UUID-based artifact IDs
 - Environment variable `SOIL_PATH` (default: `./soil`)
@@ -110,25 +110,25 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
           └── {date}-schema.sql
   ```
 
-**2.5.2 Artifact Management**
+**3.2 Artifact Management**
 - `archive_artifact(artifact_type, content) -> artifact_id`
 - `get_artifact(artifact_id) -> content`
 - Artifact types: `emails`, `pdfs`, `statements`
 - UUID-based IDs with type prefix (e.g., `email-a7f3e2b1...`)
 
-**2.5.3 Delta Storage**
+**3.3 Delta Storage**
 - `write_delta(entity_uuid, delta_dict) -> delta_id`
 - `get_deltas(entity_uuid) -> list[delta_dict]`
 - JSON format per delta record
 - Append-only (never modify existing deltas)
 
-**2.5.4 Schema Snapshots**
+**3.4 Schema Snapshots**
 - `snapshot_schema() -> snapshot_path`
 - Automatic SQL dump before migrations
 - Date-stamped filenames
 - Integration with `_schema_metadata` table
 
-**2.5.5 Testing & Documentation**
+**3.5 Testing & Documentation**
 - Filesystem operation tests (use pytest tmpdir)
 - Soil API documentation
 - Integration examples for Core
@@ -141,7 +141,7 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
 
 ---
 
-### Step 2.6: Core Refactor to Item Type 🔄 IN PLANNING
+### Step 4: Core Refactor to Item Type 🔄 IN PLANNING
 
 **Objective:** Refactor existing schema to use Item base type from PRD v4 platform architecture.
 
@@ -149,7 +149,7 @@ See [memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)
 
 #### Migration Strategy:
 
-**2.6.1 Create Item Table**
+**4.1 Create Item Table**
 ```sql
 CREATE TABLE item (
     uuid TEXT PRIMARY KEY,
@@ -164,7 +164,7 @@ CREATE INDEX idx_item_type ON item(_type);
 CREATE INDEX idx_item_realized ON item(realized_at);
 ```
 
-**2.6.2 Migration Script**
+**4.2 Migration Script**
 - Create migration: `entity` → `item`
 - Migrate data:
   - `entity.type` → `item._type`
@@ -177,13 +177,13 @@ CREATE INDEX idx_item_realized ON item(realized_at);
 - Archive old schema snapshot to Soil before migration
 - Rollback script (drop `item`, restore `entity`)
 
-**2.6.3 Update Entity Operations**
+**4.3 Update Entity Operations**
 - Refactor `db/entity.py` to use `item` table
 - Update all `get_entity()`, `create_entity()`, etc. calls
 - Add `realized_at` / `canonical_at` to Pydantic schemas
 - Update foreign key constraints in schema.sql
 
-**2.6.4 Testing & Validation**
+**4.4 Testing & Validation**
 - Migration test suite (before/after data validation)
 - Run all 396 existing tests (must still pass)
 - Add tests for dual timestamp behavior
@@ -198,15 +198,15 @@ CREATE INDEX idx_item_realized ON item(realized_at);
 
 ---
 
-### Step 3: Advanced Core Features (Updated)
+### Step 5: Advanced Core Features (Updated)
 
 **Objective:** Implement recurrences, relations, and delta tracking with Soil integration.
 
-**Note:** All entities now use Item base type (from Step 2.6). Relations reference both Items and Soil artifacts.
+**Note:** All entities now use Item base type (from Step 4). Relations reference both Items and Soil artifacts.
 
 **Components:**
 
-#### 3.1 Recurrences (extends Item)
+#### 5.1 Recurrences (extends Item)
 - Create `recurrences` table (extends `item` with rrule, entities)
 - iCal rrule parsing library integration
 - Recurrence template → transaction generation
@@ -226,7 +226,7 @@ CREATE TABLE recurrences (
 );
 ```
 
-#### 3.2 Relations (with Soil integration)
+#### 5.2 Relations (with Soil integration)
 - Create `relations` table (links Items to Items or Soil artifacts)
 - Link Core entities to Soil artifacts (emails, PDFs, statements)
 - CRUD endpoints for relations
@@ -248,7 +248,7 @@ CREATE TABLE relations (
 );
 ```
 
-#### 3.3 Deltas (Audit Log + Soil Archival)
+#### 5.3 Deltas (Audit Log + Soil Archival)
 - Create `deltas` table (field-level change tracking)
 - Emit deltas on all mutations (INSERT/UPDATE/DELETE)
 - Delta tracking middleware/decorator
@@ -277,7 +277,7 @@ CREATE TABLE deltas (
 - Delta format: `{id, entity_type, entity_id, field, old_value, new_value, rationale, author, timestamp}`
 - Stored as: `soil/core-delta/{entity_uuid}/{delta_uuid}.json`
 
-#### 3.4 Reference Resolution
+#### 5.4 Reference Resolution
 - Parse artifact references (format: `artifact:{type}-{uuid}`)
 - Validate artifacts exist in Soil before creating relations
 - Basic reference syntax (defer complex fragment refs to Project System)
@@ -291,7 +291,7 @@ CREATE TABLE deltas (
 
 ---
 
-### Step 4: Flutter App Foundation
+### Step 6: Flutter App Foundation
 
 **Objective:** Initialize Budget app with basic UI and API integration.
 
@@ -317,31 +317,31 @@ CREATE TABLE deltas (
 
 ---
 
-### Step 5: Budget App Features
+### Step 7: Budget App Features
 
 **Objective:** Complete Budget app with spending review and management features.
 
 **Components:**
 
-#### 5.1 Spending Review
+#### 7.1 Spending Review
 - Daily spending view (list grouped by date)
 - Monthly summary with category breakdown
 - Yearly overview with trends
 - Charts/visualizations (optional, defer if complex)
 
-#### 5.2 Account & Category Management
+#### 7.2 Account & Category Management
 - Account selection during transaction creation
 - Category picker with icons
 - Manage accounts (create, edit, delete)
 - Manage categories (create, edit, delete)
 
-#### 5.3 Transaction Management
+#### 7.3 Transaction Management
 - Edit transaction screen
 - Delete transaction with confirmation
 - Transaction detail view
 - Search/filter transactions
 
-#### 5.4 Recurring Transactions UI
+#### 7.4 Recurring Transactions UI
 - Create recurring transaction template
 - View upcoming recurring transactions
 - Mark occurrence as completed/skipped
@@ -354,26 +354,26 @@ CREATE TABLE deltas (
 
 ---
 
-### Step 6: Agent Integration & Deployment
+### Step 8: Agent Integration & Deployment
 
 **Objective:** Enable agent workflows and prepare for production deployment.
 
 **Components:**
 
-#### 6.1 Agent Workflows
+#### 8.1 Agent Workflows
 - Statement reconciliation endpoint
 - Email parsing integration (with Soil)
 - Transaction suggestion API
 - Bulk operations for agents
 - Reconciliation status tracking
 
-#### 6.2 Testing & CI/CD
+#### 8.2 Testing & CI/CD
 - Integration tests for full workflows
 - E2E tests for critical paths
 - GitHub Actions for CI
 - Automated testing on PR
 
-#### 6.3 Deployment
+#### 8.3 Deployment
 - Docker configuration for Core API
 - Docker Compose for local full-stack
 - Railway deployment configuration
@@ -381,7 +381,7 @@ CREATE TABLE deltas (
 - Environment variable management
 - Database backup strategy
 
-#### 6.4 Documentation
+#### 8.4 Documentation
 - API documentation for agents
 - Agent integration guide
 - Deployment runbook
@@ -438,7 +438,7 @@ CREATE TABLE deltas (
 
 ## Critical Files Reference
 
-### Current Step Critical Files (Step 2.5-2.6 Planning)
+### Current Step Critical Files (Steps 3-4 Planning)
 - `/home/kureshii/memogarden/plan/budget_prd.md` - Budget app requirements
 - `/home/kureshii/memogarden/plan/memogarden_prd_v4.md` - Platform architecture reference (Item type, Soil)
 - `/home/kureshii/memogarden/memogarden-core/memogarden_core/schema/schema.sql` - Current database schema (to be migrated)
@@ -469,12 +469,12 @@ CREATE TABLE deltas (
 - 2.9: Documentation & Integration ✅
 - 2.10: Refactor & Test Profiling ✅
 
-**Currently Planning:** Platform Foundation (Steps 2.5-2.6)
+**Currently Planning:** Platform Foundation (Steps 3-4)
 
 **Next:**
-- **Step 2.5** (Soil MVP Foundation) - Implement filesystem-based immutable storage
-- **Step 2.6** (Core Refactor to Item Type) - Migrate from `entity` to `item` table
-- **Step 3** (Advanced Core Features) - Recurrences, Relations, Deltas with Soil integration
+- **Step 3** (Soil MVP Foundation) - Implement filesystem-based immutable storage
+- **Step 4** (Core Refactor to Item Type) - Migrate from `entity` to `item` table
+- **Step 5** (Advanced Core Features) - Recurrences, Relations, Deltas with Soil integration
 
 ---
 
@@ -491,29 +491,29 @@ CREATE TABLE deltas (
 - Auth affects all endpoints, easier to add after basics work
 - Can test with "system" author initially
 
-**Step 2.5 (Soil MVP)** comes before Core refactor because:
+**Step 3 (Soil MVP)** comes before Core refactor because:
 - Soil has no dependencies (filesystem only)
 - Core refactor needs Soil for schema snapshots
 - Relations and deltas need Soil integration
 - Can be implemented independently (1-2 days)
 
-**Step 2.6 (Core Refactor to Item Type)** comes before Step 3 because:
+**Step 4 (Core Refactor to Item Type)** comes before Step 5 because:
 - Adopting platform architecture now reduces future migration debt
 - All new entities (Recurrences, Relations) should extend Item
 - Easier to refactor 3 tables (transactions, users, api_keys) now than 10+ later
 - Enables Soil integration from the ground up
 
-**Step 3 (Advanced Features)** after refactor because:
+**Step 5 (Advanced Features)** after refactor because:
 - Recurrences, Relations, Deltas should use Item base type
 - Soil integration requires Item-based foreign keys
 - Cleaner to implement with new architecture than migrate later
 
-**Step 4-5 (Flutter)** come after stable API because:
+**Step 6-7 (Flutter)** come after stable API because:
 - Need stable API contract first
 - Backend can be tested independently
 - Reduces rework from API changes
 
-**Step 6 (Agents & Deployment)** last because:
+**Step 8 (Agents & Deployment)** last because:
 - Most complex workflows
 - Depends on all core features
 - Can defer without blocking user value

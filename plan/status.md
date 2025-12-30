@@ -4,14 +4,14 @@
 
 ## Active Step
 
-**Step 2.5-2.6 NEXT - Platform Foundation** 🚀
+**Step 3-4 NEXT - Platform Foundation** 🚀
 
 Architecture update: Adopting lean MVP platform approach from PRD v4.
 
 Ready to implement:
-- 🚧 **2.5** - Soil MVP Foundation (filesystem-based immutable storage)
-- 🚧 **2.6** - Core Refactor to Item Type (migrate entity → item table)
-- 🚧 **3.0** - Advanced Core Features with Soil integration (Recurrences, Relations, Deltas)
+- 🚧 **3** - Soil MVP Foundation (filesystem-based immutable storage)
+- 🚧 **4** - Core Refactor to Item Type (migrate entity → item table)
+- 🚧 **5** - Advanced Core Features with Soil integration (Recurrences, Relations, Deltas)
 
 ## Architecture Update
 
@@ -23,7 +23,6 @@ Ready to implement:
 **Reference Documents:**
 - [plan/memogarden_prd_v4.md](memogarden_prd_v4.md) - Complete platform specification
 - [plan/budget_implementation.md](budget_implementation.md) - Updated implementation plan
-- [plan/budget_prd_update_analysis.md](budget_prd_update_analysis.md) - Feasibility analysis (to be deleted after planning complete)
 
 ## Repository
 
@@ -134,7 +133,7 @@ Ready to implement:
 
 See [budget_implementation.md](budget_implementation.md) for detailed roadmap.
 
-**Ready for**: Platform Foundation (Steps 2.5-2.6)
+**Ready for**: Platform Foundation (Steps 3-4)
 
 **Step 2 (Authentication & Multi-User Support) is complete!** All major components implemented:
 - User authentication with JWT and API keys
