@@ -1,27 +1,73 @@
-# MemoGarden - Session Context (2025-12-30)
+# MemoGarden - Session Context (2025-12-31)
 
 **Purpose**: Session notes for next session
-**Last Updated**: 2025-12-30
+**Last Updated**: 2025-12-31
 
 ---
 
 ## Current Status
 
-**Platform Architecture Update**: Adopting lean MVP approach from PRD v4
+**Step 5 IN PROGRESS** 🔄 (Flutter App Foundation - Learning-Focused Development)
+
+**Approach:**
+- User is new to Flutter/Dart
+- Interactive development: User runs commands, AI guides
+- UI-first: Build screens incrementally with visual feedback
+- Small reviewable steps to avoid context window limits
+- Local DB-first architecture (SQLite with sync flags for future sync)
+
+**Repository:** https://github.com/memogarden/app-budget
+
+**Architecture Decisions:**
+- Local SQLite database matching Core API schema
+- Simple state management: `setState()` (no Riverpod yet)
+- Repository layer between widgets and DB
+- Sync-later: DB schema includes sync flags but unused initially
+- No API calls in Phase 1 (DB-only)
+
+---
+
+## Step 5: Flutter App Foundation
+
+### Substeps (11 total, learning-focused)
+
+- ⏳ **5.1** - Project Initialization & Setup
+- ⏳ **5.2** - Database Schema Setup
+- ⏳ **5.3** - Data Models
+- ⏳ **5.4** - Repository Layer
+- ⏳ **5.5** - Transaction Capture Screen (Static UI)
+- ⏳ **5.6** - Add State to Capture Screen
+- ⏳ **5.7** - Wire Up Data Flow
+- ⏳ **5.8** - Transaction List Screen
+- ⏳ **5.9** - Navigation Structure
+- ⏳ **5.10** - Design System Polish
+- ⏳ **5.11** - Testing & Refinement
+
+### Dependencies (pubspec.yaml)
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Database
+  sqflite: ^2.3.0
+  path: ^1.8.3
+
+  # Local storage (for auth tokens)
+  shared_preferences: ^2.2.0
+
+  # UUID generation
+  uuid: ^4.0.0
+```
+
+---
+
+## Previous Accomplishments
 
 **Step 2 COMPLETE** ✅ (Authentication & Multi-User Support)
 
-All 10 substeps completed:
-- Database Schema (Users, API Keys, Migration support)
-- Pydantic Schemas (User, APIKey, Auth validation)
-- JWT Token Service (30-day expiry, HS256)
-- Authentication Endpoints (login, logout, user profile, admin registration)
-- API Key Management (list, create, revoke)
-- Authentication Decorators (@localhost_only, @first_time_only)
-- HTML UI Pages (login, api-keys, settings with TailwindCSS)
-- Testing Infrastructure (165 auth tests, 91% coverage)
-- Documentation & Integration (ApiV1-level auth, README manual testing)
-- **Refactor & Test Profiling** (97.6% faster, code deduplication)
+**Step 4 COMPLETE** ✅ (Recurrences - 2025-12-30)
 
 ---
 
@@ -224,9 +270,9 @@ poetry run pytest --durations=10
 ## Repository URLs
 
 - **Core API**: https://github.com/memogarden/memogarden-core
-- **Main Repo**: https://github.com/memogarden/memogarden-budget
+- **Budget App**: https://github.com/memogarden/app-budget (cloned locally at `app-budget/`)
 
 ---
 
-**Last Updated**: 2025-12-30
-**Session Focus**: Platform architecture analysis, implementation plan update, ready for Soil MVP and Item type refactor
+**Last Updated**: 2025-12-31
+**Session Focus**: Step 5 (Flutter App Foundation) - Learning-focused interactive development

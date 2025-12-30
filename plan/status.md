@@ -1,17 +1,29 @@
 # MemoGarden Project Status
 
-**Last Updated**: 2025-12-30
+**Last Updated**: 2025-12-31
 
 ## Active Step
 
-**Step 3-4 NEXT - Platform Foundation** 🚀
+**Step 5 IN PROGRESS - Flutter App Foundation** 🔄
 
-Architecture update: Adopting lean MVP platform approach from PRD v4.
+**Learning-Focused Development:**
+- Repository: https://github.com/memogarden/app-budget
+- Local: `app-budget/` directory
+- Approach: Interactive development (user runs commands, AI guides)
+- Architecture: Local SQLite first, sync-later design
 
-Ready to implement:
-- 🚧 **3** - Soil MVP Foundation (filesystem-based immutable storage)
-- 🚧 **4** - Core Refactor to Item Type (migrate entity → item table)
-- 🚧 **5** - Advanced Core Features with Soil integration (Recurrences, Relations, Deltas)
+**Substeps (11 total, UI-first):**
+- ⏳ **5.1** - Project Initialization & Setup
+- ⏳ **5.2** - Database Schema Setup
+- ⏳ **5.3** - Data Models
+- ⏳ **5.4** - Repository Layer
+- ⏳ **5.5** - Transaction Capture Screen (Static UI)
+- ⏳ **5.6** - Add State to Capture Screen
+- ⏳ **5.7** - Wire Up Data Flow
+- ⏳ **5.8** - Transaction List Screen
+- ⏳ **5.9** - Navigation Structure
+- ⏳ **5.10** - Design System Polish
+- ⏳ **5.11** - Testing & Refinement
 
 ## Architecture Update
 
@@ -27,6 +39,7 @@ Ready to implement:
 ## Repository
 
 **Core API**: https://github.com/memogarden/memogarden-core
+**Budget App**: https://github.com/memogarden/app-budget
 
 ## Completed Work
 
@@ -59,7 +72,9 @@ Ready to implement:
 - **Coverage**: 91% (exceeds 80% target)
 - **No test mocks** (uses real SQLite)
 
-### Step 1: Core Backend Foundation ✅ COMPLETE (2025-12-27)
+### ~~Step 3: Soil MVP Foundation~~
+
+**REMOVED**: Not needed for Budget MVP.</think>
 
 **Completed:**
 - ✅ **1.1** - Project Setup & Structure
@@ -133,17 +148,27 @@ Ready to implement:
 
 See [budget_implementation.md](budget_implementation.md) for detailed roadmap.
 
-**Ready for**: Platform Foundation (Steps 3-4)
+**Current Phase**: Step 5 (Flutter App Foundation)
 
-**Step 2 (Authentication & Multi-User Support) is complete!** All major components implemented:
-- User authentication with JWT and API keys
-- Admin registration flow
-- HTML UI pages with TailwindCSS
-- All API endpoints protected by default
-- Test suite optimized (1.14s)
-- Code refactored and deduplicated
+**Step 5 Approach**: Learning-focused, interactive development
+- User is new to Flutter/Dart
+- AI guides, user runs commands and adds code
+- UI-first with small reviewable steps
+- Local SQLite database (DB-first architecture)
+- Simple state management (`setState()`)
+- Repository layer for future sync integration
 
-**Next phase**: Platform foundation (Soil MVP + Item type refactor) before continuing with Step 3 (Advanced Core Features).
+**Substeps** (11 total, incremental):
+- 5.1: Project Initialization & Setup
+- 5.2: Database Schema Setup
+- 5.3: Data Models
+- 5.4: Repository Layer
+- 5.5-5.6: Transaction Capture Screen (UI then state)
+- 5.7: Wire Up Data Flow
+- 5.8: Transaction List Screen
+- 5.9: Navigation Structure
+- 5.10: Design System Polish
+- 5.11: Testing & Refinement
 
 ---
 

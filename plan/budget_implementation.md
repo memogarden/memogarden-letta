@@ -16,7 +16,7 @@ Building a lightweight personal expenditure capture and review system with three
 
 **Repositories:**
 - Core: https://github.com/memogarden/memogarden-core
-- Budget: https://github.com/memogarden/memogarden-budget (to be created)
+- Budget: https://github.com/memogarden/app-budget
 
 **Platform Reference:** [plan/memogarden_prd_v4.md](memogarden_prd_v4.md) - Complete platform specification
 
@@ -166,29 +166,156 @@ These will be considered in future iterations after Budget MVP is complete.
 
 ---
 
-### Step 5: Flutter App Foundation
+### Step 5: Flutter App Foundation 🔄 IN PROGRESS (2025-12-31)
 
-**Objective:** Initialize Budget app with basic UI and API integration.
+**Objective:** Build Budget app with local-first SQLite architecture and simple state management.
 
-**Components:**
-- Create `memogarden-budget` repository
-- Flutter project setup (web + Android)
-- Project structure (clean architecture or feature-based)
-- HTTP client for Core API
-- State management (Riverpod or Provider)
-- Navigation structure
-- Design system (colors, typography, components)
+**Approach:** Learning-focused substeps (user is new to Flutter/Dart)
+- **Interactive development**: User runs commands and adds code based on AI guidance
+- **UI-first**: Build screens incrementally with visual feedback
+- **Small reviewable steps**: Each substep is reviewed before proceeding
+- **Context-friendly**: Break down to avoid context window limits
 
-**Screens:**
-- Transaction capture screen (Monefy-inspired)
-- Transaction list screen
-- Settings screen
+**Architecture Decisions:**
+- **Local DB first**: SQLite database matching Core API schema (for easy sync later)
+- **Simple state**: `setState()` (no Riverpod/Provider complexity for now)
+- **Repository layer**: Business logic between widgets and DB
+- **Sync-later design**: DB schema includes sync flags but unused initially
+- **No API calls yet**: Phase 1 is DB-only, API client added in Phase 2
 
-**Deliverables:**
-- Flutter app running on web and Android
-- API client connected to Core
-- Basic transaction creation flow
-- Simple, fast UI (<5 second capture goal)
+**Repository:** https://github.com/memogarden/app-budget
+
+---
+
+#### Substeps (Learning-Focused Breakdown)
+
+**5.1: Project Initialization & Setup**
+- Initialize Flutter project in `app-budget/`
+- Configure `pubspec.yaml` (dependencies: sqflite, path, shared_preferences)
+- Run baseline app (Flutter counter demo)
+- Verify web and Android targets work
+- **Goal**: Empty Flutter project running
+
+**5.2: Database Schema Setup**
+- Create `database/database_helper.dart`
+- Define SQLite schema (auth_state, transactions tables)
+- Implement `onCreate` migration
+- Test database initialization
+- **Goal**: Database ready, empty tables created
+
+**5.3: Data Models**
+- Create `models/transaction.dart` (plain data class)
+- Implement `fromMap()` and `toMap()` methods
+- Create `models/recurrence.dart` if needed
+- **Goal**: Data structures matching Core API schema
+
+**5.4: Repository Layer**
+- Create `repositories/transaction_repository.dart`
+- Implement CRUD methods (create, getAll, getById, update, delete)
+- Use raw SQL queries via `sqflite`
+- **Goal**: Business logic layer ready
+
+**5.5: Transaction Capture Screen (Static UI)**
+- Build main transaction capture UI (Monefy-inspired)
+- Big amount display, number pad (0-9, decimal, backspace)
+- Account/category selector buttons
+- Save/Cancel buttons
+- **No state yet** - just static layout
+- **Goal**: See what the app will look like
+
+**5.6: Add State to Capture Screen**
+- Make number pad buttons work
+- Update amount display in real-time
+- Select account/category (simple dropdown or buttons)
+- **Goal**: Interactive UI, but no data persistence
+
+**5.7: Wire Up Data Flow**
+- Connect capture screen to repository
+- Save transactions to DB on submit
+- Clear form after save
+- **Goal**: Capture screen actually saves data
+
+**5.8: Transaction List Screen**
+- Build list UI to show saved transactions
+- Pull from DB via repository
+- Group by date (optional)
+- **Goal**: See what you captured
+
+**5.9: Navigation Structure**
+- Add navigation (capture ↔ list ↔ settings)
+- Bottom navigation bar or simple drawer
+- **Goal**: Can move between screens
+
+**5.10: Design System Polish**
+- Define app colors (primary, secondary, background)
+- Typography (font sizes, weights)
+- Consistent button styles
+- Make it look professional
+- **Goal**: Polished MVP foundation
+
+**5.11: Testing & Refinement**
+- Test on web (chrome)
+- Test on Android (emulator or device)
+- Fix bugs, refine UX
+- **Goal**: Stable MVP foundation ready for features
+
+---
+
+#### Progress Tracking
+
+- ⏳ **5.1** - Project Initialization & Setup
+- ⏳ **5.2** - Database Schema Setup
+- ⏳ **5.3** - Data Models
+- ⏳ **5.4** - Repository Layer
+- ⏳ **5.5** - Transaction Capture Screen (Static UI)
+- ⏳ **5.6** - Add State to Capture Screen
+- ⏳ **5.7** - Wire Up Data Flow
+- ⏳ **5.8** - Transaction List Screen
+- ⏳ **5.9** - Navigation Structure
+- ⏳ **5.10** - Design System Polish
+- ⏳ **5.11** - Testing & Refinement
+
+---
+
+#### Dependencies (pubspec.yaml)
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Database
+  sqflite: ^2.3.0
+  path: ^1.8.3
+
+  # Local storage (for auth tokens)
+  shared_preferences: ^2.2.0
+
+  # UUID generation
+  uuid: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+```
+
+---
+
+#### Tech Stack Notes
+
+**Why this approach:**
+1. **UI first** - Visual feedback early (motivating for learning)
+2. **DB-first** - Local SQLite makes app fast and responsive
+3. **Simple state** - `setState()` is built into Flutter, no new concepts
+4. **Repository layer** - Makes adding sync easier later
+5. **No Riverpod yet** - Add only if complexity grows
+
+**Phase 2 (Future - Sync):**
+- Add HTTP client (`http` package)
+- Create sync service (background DB ↔ API)
+- Repositories gain dual-write capability (DB + API)
+- Widgets unchanged - still talk to repositories
 
 ---
 
