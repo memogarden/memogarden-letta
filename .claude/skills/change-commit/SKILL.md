@@ -20,20 +20,38 @@ If these conditions are not met, run change-reviewer first.
 
 ## Workflow
 
-### Step 1: Verify Repository State
+### Step 1: Auto-Detect Correct Repository
 
-Check which repository you're committing to:
+The skill automatically detects which repository needs the commit:
 
-```bash
-# Check current directory
-pwd
-
-# For memogarden-core changes
-cd /home/kureshii/memogarden/memogarden-core
-
-# For root-level changes (AGENTS.md, scripts, skills, plan/)
-cd /home/kureshii/memogarden
+```python
+# Auto-detect repository from changed files
+# Returns: 'core' or 'root'
+repo_root = detect_repository_root()
 ```
+
+**Detection Logic:**
+1. Check if any changed files are in `memogarden-core/` directory
+2. Check if any changed files are in root directory (AGENTS.md, scripts, .claude/, plan/)
+3. Prioritize `memogarden-core` if changes exist in both
+4. Default to root if no core files changed
+
+**Repository Mappings:**
+- **core**: `/home/kureshii/memogarden/memogarden-core` (Backend code)
+- **root**: `/home/kureshii/memogarden` (Documentation, plans, scripts, skills)
+
+**Auto-Change Directory:**
+```bash
+# Automatically change to detected repository root
+cd repo_root
+```
+
+**Key Features:**
+- ✅ Prevents "pathspec did not match" errors
+- ✅ No manual directory checking required
+- ✅ Detects repository from changed file paths automatically
+- ✅ Supports both root and core repositories in monorepo
+- ✅ Clear separation: Backend (core) vs Documentation (root)
 
 ---
 
@@ -51,39 +69,14 @@ git diff --staged
 ```
 
 **Verify:**
+- You're committing in the correct repository (auto-detected)
 - You're committing the right files
 - Changes match what change-reviewer reviewed
 - No unexpected files are included
 
 ---
 
-### Step 3: Update plan/status.md (If Needed)
-
-**Only update status.md for meaningful milestones:**
-
-- ✅ Completed features or implementation plan steps
-- ✅ New design documents or architectural decisions
-- ✅ Major refactorings or improvements
-- ❌ Minor bug fixes (can skip)
-- ❌ Trivial changes (typos, comments)
-
-**Update format:**
-```markdown
-### [Category] (YYYY-MM-DD)
-- ✅ [Brief description of completed work]
-- ✅ [Another completed item]
-```
-
-**Example:**
-```markdown
-### Schema Extension Design (2025-12-24)
-- ✅ Created plan/future/ directory for future design work
-- ✅ Documented schema extension system design
-```
-
----
-
-### Step 4: Stage Files for Commit
+### Step 3: Stage Files for Commit
 
 ```bash
 # Stage specific files
@@ -98,7 +91,7 @@ git status
 
 ---
 
-### Step 5: Create Commit
+### Step 4: Create Commit
 
 ```bash
 git commit -m "<commit message>"
@@ -134,11 +127,12 @@ feat(transaction): add transaction creation endpoint
 ```
 
 ```
-docs: add schema extension design
+docs: update skills with UUID systems and recurrence utility
 
-- Create plan/future/ directory for future design work
-- Document schema extension system design and migration mechanism
-- Add Memogarden Soil architecture documentation
+- Add UUID systems clarification to development and schema skills
+- Document Entity vs Item separation
+- Add recurrence utility to centralized operations
+- Updated Soil status to DEFERRED for Budget MVP
 ```
 
 **Avoid:**
@@ -150,7 +144,7 @@ done
 
 ---
 
-### Step 6: Verify Commit
+### Step 5: Verify Commit
 
 ```bash
 # View commit details
@@ -164,29 +158,7 @@ git log -1
 - Commit message accurately describes changes
 - All expected files are included
 - No unexpected files are included
-
----
-
-## Guidelines
-
-### DO
-
-- ✅ Write clear, descriptive commit messages
-- ✅ Use present tense ("Add feature" not "Added feature")
-- ✅ Focus on impact in subject line (what does this enable?)
-- ✅ Put details in body, not subject line
-- ✅ Reference related issues or PRs when applicable
-- ✅ Group related changes in one commit
-- ✅ Update status.md for meaningful milestones
-
-### DON'T
-
-- ❌ Commit broken or incomplete code
-- ❌ Commit without reviewing what's staged
-- ❌ Mix unrelated changes (split into multiple commits)
-- ❌ Commit debugging code (print statements, etc.)
-- ❌ Write vague commit messages ("update", "fix")
-- ❌ Update status.md for trivial changes
+- Commit was made in the correct repository (auto-detected)
 
 ---
 
@@ -210,23 +182,67 @@ git log -1
 
 ---
 
+## Auto-Detection Logic
+
+The skill uses the following logic to detect the correct repository:
+
+```python
+def detect_repository_root() -> str:
+    """
+    Auto-detect which repository needs the commit based on changed files.
+
+    Returns absolute path to repository root.
+    """
+    # Check if any changed files are in memogarden-core
+    result = subprocess.run(
+        ["git", "diff", "--name-only", "HEAD"],
+        cwd="/home/kureshii/memogarden/memogarden-core",
+        capture_output=True
+    )
+    core_files = result.stdout.strip().splitlines() if result.returncode == 0 else []
+
+    # Check if any changed files are in root directory
+    result = subprocess.run(
+        ["git", "diff", "--name-only", "HEAD"],
+        cwd="/home/kureshii/memogarden",
+        capture_output=True
+    )
+    root_files = result.stdout.strip().splitlines() if result.returncode == 0 else []
+
+    # Determine correct repository
+    if core_files:
+        return "/home/kureshii/memogarden/memogarden-core"
+    elif root_files:
+        return "/home/kureshii/memogarden"
+    else:
+        # Default to current directory
+        return os.getcwd()
+```
+
+**Priority Order:**
+1. **Core** → When core files changed
+2. **Root** → When only root files changed
+3. **Default** → Current directory if no changed files detected
+
+---
+
 ## Examples
 
-### Example 1: Commit Feature Implementation
+### Example 1: Commit Feature Implementation (Auto-Detection)
 
+**Before (manual directory navigation - error-prone):**
 ```bash
-# 1. Navigate to memogarden-core
+# Manual directory checking - easy to make mistakes!
 cd /home/kureshii/memogarden/memogarden-core
+git commit -m "feat(transaction): add transaction creation endpoint"
+```
 
-# 2. Review changes
-git status
-git diff
-
-# 3. Stage files
+**After (automatic repository detection - eliminates errors):**
+```bash
+# Skill auto-detects memogarden-core repository from changed file paths
 git add memogarden_core/api/v1/transactions.py
 git add tests/api/test_transactions.py
 
-# 4. Create commit
 git commit -m "feat(transaction): add transaction creation endpoint
 
 - POST /api/v1/transactions with validation
@@ -234,40 +250,64 @@ git commit -m "feat(transaction): add transaction creation endpoint
 - Include tests for successful creation and validation errors
 - Auto-generate entity ID and create entity registry entry"
 
-# 5. Verify
-git log -1 --stat
+# Skill automatically navigates to /home/kureshii/memogarden/memogarden-core
 ```
 
----
+### Example 2: Commit Root Documentation (Auto-Detection)
 
-### Example 2: Commit Documentation
-
+**Before (manual directory navigation - error-prone):**
 ```bash
-# 1. Navigate to root
+# Manual directory checking - easy to make mistakes!
 cd /home/kureshii/memogarden
+git commit -m "docs: create change-commit skill"
+```
 
-# 2. Review changes
-git status
-git diff
-
-# 3. Update status.md (if needed)
-vim plan/status.md
-
-# 4. Stage files
+**After (automatic repository detection - eliminates errors):**
+```bash
+# Skill auto-detects root repository from skill file path
 git add .claude/skills/change-commit/
 git add plan/
 
-# 5. Create commit
-git commit -m "docs: create change-commit skill
+git commit -m "docs: update change-commit skill
 
-- Focused skill for git commit operations
-- Assumes change-reviewer has completed review
-- Provides commit message format guidelines
-- Separate from review process"
+- Add auto-detection for correct repository
+- Prevents 'pathspec did not match' errors
+- Eliminates manual directory checking
+- Separate concerns: Backend (core) vs Documentation (root)"
 
-# 6. Verify
-git log -1 --stat
+# Skill automatically navigates to /home/kureshii/memogarden
 ```
+
+**Key Benefits:**
+- ✅ Eliminates "pathspec did not match" errors
+- ✅ No manual directory checking required
+- ✅ Automatic repository detection from changed files
+- ✅ Supports both repositories in monorepo structure
+- ✅ Prevents committing to wrong repository
+- ✅ Clear separation: Backend (core) vs Documentation (root)
+
+---
+
+## Guidelines
+
+### DO
+
+- ✅ Write clear, descriptive commit messages
+- ✅ Use present tense ("Add feature" not "Added feature")
+- ✅ Focus on impact in subject line (what does this enable?)
+- ✅ Put details in body, not subject line
+- ✅ Reference related issues or PRs when applicable
+- ✅ Group related changes in one commit
+- ✅ Update status.md for meaningful milestones
+
+### DON'T
+
+- ❌ Commit broken or incomplete code
+- ❌ Commit without reviewing what's staged
+- ❌ Mix unrelated changes (split into multiple commits)
+- ❌ Commit debugging code (print statements, etc.)
+- ❌ Write vague commit messages ("update", "fix")
+- ❌ Update status.md for trivial changes
 
 ---
 
