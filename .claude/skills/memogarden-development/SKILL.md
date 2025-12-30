@@ -244,7 +244,13 @@ The `/plan/future/` directory contains design documents for features not yet imp
 
 - **schema-extension-design.md** - Schema extension system for multi-user compatibility
 - **migration-mechanism.md** - Complete migration framework with validation and rollback
-- **soil-design.md** - Immutable storage architecture for document archival
+- **soil-design.md** - Immutable storage architecture for document archival (DEFERRED for Budget MVP)
+
+**Important:** Soil implementation is DEFERRED until agent workflows are added. For Budget MVP:
+- No Soil Items (emails, PDFs, statements)
+- No schema snapshots (manual migration only)
+- No delta archival
+- Focus on Entity-based features only
 
 When implementing related features or making architectural decisions, consult these documents to ensure alignment with the long-term design vision.
 
@@ -291,6 +297,13 @@ When implementing related features or making architectural decisions, consult th
      - `isodatetime.to_datetime(ts)` - Convert ISO string to datetime
    - **UUIDs**: `from memogarden_core.utils import uid`
      - `uid.generate_uuid()` - Generate UUID v4 (ONLY place that imports uuid4)
+     - **UUID prefixes**: `entity_` for Core Entities, `item_` for Soil Items (future)
+     - **Note**: Database stores plain UUID v4, prefixes added at API layer
+   - **Recurrence**: `from memogarden_core.utils import recurrence`
+     - `recurrence.validate_rrule()` - Validate iCal RRULE strings
+     - `recurrence.generate_occurrences()` - Generate occurrences from RRULE
+     - `recurrence.get_next_occurrence()` - Get next occurrence after datetime
+     - **All python-dateutil imports confined to this module**
    - **Domain types**: `from memogarden_core.schema.types import Timestamp, Date`
      - Use for type safety in API schemas and domain logic
    - See: `memogarden-core/docs/dev-guide.md` for complete patterns
