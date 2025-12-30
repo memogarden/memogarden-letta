@@ -103,7 +103,7 @@ For now, Budget app manages schema migrations manually without archival.
 
 ---
 
-### Step 4: Recurrences 🔄 IN PLANNING
+### Step 4: Recurrences ✅ COMPLETE (2025-12-30)
 
 **Objective:** Implement recurrences for Budget app.
 
@@ -116,37 +116,43 @@ For now, Budget app manages schema migrations manually without archival.
 - `python-dateutil` - iCal RFC 5545 RRULE parsing
 - All datetime/recurrence logic confined to `memogarden_core/utils/recurrence.py`
 
-**Components:**
+#### Completed Substeps:
+- ✅ **4.1** - Recurrence Utils Module (memogarden_core/utils/recurrence.py)
+- ✅ **4.2** - Database Schema (recurrences table, migration)
+- ✅ **4.3** - Pydantic Schemas (RecurrenceCreate, RecurrenceUpdate, RecurrenceResponse)
+- ✅ **4.4** - Core API Operations (db/recurrence.py - RecurrenceOperations)
+- ✅ **4.5** - API Endpoints (api/v1/recurrences.py - CRUD endpoints)
+- ✅ **4.6** - Testing (19 recurrence tests, all passing)
 
-#### 4.1 Recurrences (Entity-based)
-- Create `recurrences` table (Entity type)
-- iCal rrule parsing library integration (`python-dateutil`)
-- Recurrence template → transaction generation
-- CRUD endpoints for recurrences
-- UI in Budget app for managing recurring transactions
+**Deliverables:**
+- Recurrence system with iCal RFC 5545 RRULE compatibility
+- CRUD API endpoints for recurrences
+- `utils/recurrence.py` module with all datetime/recurrence logic
+- `python-dateutil` dependency confined to recurrence utils module
+- Database migration (20251229 → 20251230)
+- 415 total tests passing (396 original + 19 new)
+
+**API Endpoints:**
+- POST /api/v1/recurrences - Create recurrence
+- GET /api/v1/recurrences - List recurrences with filtering
+- GET /api/v1/recurrences/{id} - Get single recurrence
+- PUT /api/v1/recurrences/{id} - Update recurrence
+- DELETE /api/v1/recurrences/{id} - Delete recurrence (soft delete via superseding)
 
 **Schema:**
 ```sql
 CREATE TABLE recurrences (
-    uuid TEXT PRIMARY KEY,         -- References entity.uuid
+    id TEXT PRIMARY KEY,           -- References entity(id)
     rrule TEXT NOT NULL,           -- iCal rrule string
     entities TEXT NOT NULL,        -- JSON: transaction templates
-    valid_from TEXT NOT NULL,
-    valid_until TEXT,
+    valid_from TEXT NOT NULL,      -- ISO 8601 datetime (start of recurrence window)
+    valid_until TEXT,              -- ISO 8601 datetime (end of recurrence window, NULL = forever)
 
-    FOREIGN KEY (uuid) REFERENCES entity(uuid) ON DELETE CASCADE
+    FOREIGN KEY (id) REFERENCES entity(id) ON DELETE CASCADE
 );
 ```
 
 **Note:** Recurrences are Entities (mutable, in Core), not Items.
-
-**4.2 Recurrence Utils Module**
-- Create `memogarden_core/utils/recurrence.py`
-- Confine all `python-dateutil` imports to this module
-- Parse RRULE strings and generate occurrences
-- Validate RRULE syntax
-- Convert between RRULE and human-readable descriptions
-- Helper functions for next occurrence, occurrences in range
 
 #### ~~4.3 Relations~~ ~~4.4 Deltas~~ ~~4.5 Reference Resolution~~
 
@@ -157,12 +163,6 @@ CREATE TABLE recurrences (
 - Document linking to transactions
 
 These will be considered in future iterations after Budget MVP is complete.
-
-**Deliverables:**
-- Recurrence system with iCal compatibility
-- CRUD API endpoints for recurrences
-- `utils/recurrence.py` module with all datetime/recurrence logic
-- Budget app UI for managing recurring transactions
 
 ---
 
@@ -344,12 +344,18 @@ These will be considered in future iterations after Budget MVP is complete.
 - 2.9: Documentation & Integration ✅
 - 2.10: Refactor & Test Profiling ✅
 
-**Currently Planning:** Step 4 - Recurrences
+**Step 4 COMPLETE** ✅ (Recurrences - 2025-12-30)
+- 4.1: Recurrence Utils Module ✅
+- 4.2: Database Schema ✅
+- 4.3: Pydantic Schemas ✅
+- 4.4: Core API Operations ✅
+- 4.5: API Endpoints ✅
+- 4.6: Testing ✅
 
 **Next:**
 - ~~**Step 3** (Soil MVP Foundation)~~ - REMOVED (not needed for Budget)
-- **Step 4** (Recurrences) - Entity-based recurring transactions
 - **Step 5** (Flutter App Foundation) - Budget app UI and API integration
+- **Step 6** (Budget App Features) - Spending review, account/category management, recurring transactions UI
 
 ---
 
@@ -371,9 +377,10 @@ These will be considered in future iterations after Budget MVP is complete.
 - No value in archiving schema this early
 - Will be implemented when agent workflows are added
 
-**Step 4 (Recurrences)** comes now because:
+**Step 4 (Recurrences)** came before Flutter because:
 - User needs recurring transaction management in Budget app
 - Recurrences are Entities (no Item refactor needed)
+- Backend recurrence system enables Budget app UI
 - Relations and Deltas deferred to future agent workflows
 
 **Step 5-6 (Flutter)** come after stable API because:
