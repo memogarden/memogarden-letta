@@ -421,6 +421,36 @@ The following design decisions clarify the Budget MVP scope:
 - **Deferred to future**: When audit trail/history reconstruction features needed
 
 ### Deferred Features (Post-Budget MVP)
+
+#### Technical Improvements
+- **Replace Pydantic with dataclasses** (Post-Budget MVP)
+  - **Rationale**:
+    - Reduce memory footprint (3.3 MB runtime, 440 bytes/object)
+    - Faster validation (24% faster with manual validation)
+    - Model consolidation: 1 dataclass vs 4 Pydantic classes per entity
+    - Easier customization (response-only fields, computed properties)
+    - Stdlib only (simpler deployment, fewer dependencies)
+  - **Performance impact**:
+    - Pydantic: 1.90 μs/validation
+    - Dataclass + manual validation: 1.53 μs/validation
+    - At 1000 req/s: Pydantic adds 0.37ms total overhead (negligible)
+  - **Memory impact**:
+    - Current: 58.6 MB for 100K Pydantic objects
+    - Dataclass: 15.6 MB for 100K objects (440 bytes/object savings)
+  - **Migration strategy**:
+    - Phase 1: Add `validate()` classmethod to each schema
+    - Phase 2: Convert Pydantic models to dataclasses with factory methods
+    - Phase 3: Update `@validate_request` decorator to use dataclass validation
+    - Phase 4: Replace `model_dump(exclude_unset=True)` with helper function
+      - Current usage in update endpoints: `data.model_dump(exclude_unset=True)`
+      - Dataclass alternative: Custom helper or manual dict comprehension
+    - Phase 5: Remove Pydantic dependency
+    - **Zero endpoint changes needed** (abstraction boundary at `@validate_request`)
+  - **Design principle**: Keep Pydantic-specific methods out of endpoints
+    - Avoid: `.model_dump()`, `.model_dump_json()`, `.dict()`, `.json()`
+    - Use: Direct field access (`data.amount`, `data.description`)
+
+#### Functional Features
 - Fragment system (Project System feature)
 - ConversationLog/Frame/Stack (Project System features)
 - UniqueRelation vs MultiRelation split (Project System features)
