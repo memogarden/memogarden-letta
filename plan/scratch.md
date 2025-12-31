@@ -14,34 +14,39 @@
 - Interactive development: User runs commands, AI guides
 - UI-first: Build screens incrementally with visual feedback
 - Small reviewable steps to avoid context window limits
-- Local DB-first architecture (SQLite with sync flags for future sync)
+- Local DB-first architecture (SQLite with integer PK, extension pattern for optional sync)
 
 **Repository:** https://github.com/memogarden/app-budget
 
-**Architecture Decisions:**
-- Local SQLite database matching Core API schema
-- Simple state management: `setState()` (no Riverpod yet)
+**Architecture Decisions (2025-12-31):**
+- Local SQLite with integer PK for performance
+- MemoGarden UUID in `extension` column (JSON)
+- Hash-based sync via `extension.memogarden.last_sync_hash`
+- Extension vs Metadata pattern (avoid migrations)
+- Recurrences as first-class feature
+- Simple state: `setState()` (no Riverpod yet)
 - Repository layer between widgets and DB
-- Sync-later: DB schema includes sync flags but unused initially
+- Local-first, sync-optional (works offline)
 - No API calls in Phase 1 (DB-only)
 
 ---
 
 ## Step 5: Flutter App Foundation
 
-### Substeps (11 total, learning-focused)
+### Substeps (12 total, learning-focused)
 
-- ⏳ **5.1** - Project Initialization & Setup
-- ⏳ **5.2** - Database Schema Setup
+- ✅ **5.1** - Project Initialization & Setup (COMPLETE 2025-12-31)
+- ✅ **5.2** - Database Schema Setup (COMPLETE 2025-12-31)
 - ⏳ **5.3** - Data Models
 - ⏳ **5.4** - Repository Layer
 - ⏳ **5.5** - Transaction Capture Screen (Static UI)
 - ⏳ **5.6** - Add State to Capture Screen
 - ⏳ **5.7** - Wire Up Data Flow
 - ⏳ **5.8** - Transaction List Screen
-- ⏳ **5.9** - Navigation Structure
-- ⏳ **5.10** - Design System Polish
-- ⏳ **5.11** - Testing & Refinement
+- ⏳ **5.9** - Recurrence Management
+- ⏳ **5.10** - Navigation Structure
+- ⏳ **5.11** - Design System Polish
+- ⏳ **5.12** - Testing & Refinement
 
 ### Dependencies (pubspec.yaml)
 
@@ -51,15 +56,140 @@ dependencies:
     sdk: flutter
 
   # Database
-  sqflite: ^2.3.0
-  path: ^1.8.3
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  sqflite_common_ffi_web: ^1.1.0  # Web SQLite support
 
   # Local storage (for auth tokens)
-  shared_preferences: ^2.2.0
+  shared_preferences: ^2.5.4
 
-  # UUID generation
-  uuid: ^4.0.0
+  # Recurrence support (iCal RRULE)
+  rrule: ^0.2.0
 ```
+
+**Notes:**
+- `sqflite_common_ffi_web` enables SQLite on web platform (IndexedDB-based)
+- No `uuid` package needed (UUIDs from MemoGarden server or integer PK locally)
+- `rrule` package validates iCal RRULE client-side (enables local-only usage)
+
+---
+
+## Key Accomplishments This Session (2025-12-31)
+
+### 1. PRD v4.1: Hash-Based Change Tracking for Entities
+
+**Major Addition to Platform Architecture:**
+- Added Entity Change Tracking section to PRD v4
+- Hash chain pattern: `hash = SHA256(content + previous_hash)`
+- Entity stores: `hash`, `previous_hash`, `version` in Core
+- Enables robust conflict detection and sync
+- EntityDelta type for Soil (future)
+- Delta Notification Service schema (future)
+
+**Benefits Over Version Numbers:**
+- Content-addressable state
+- Tamper-evident (any change → new hash)
+- Revert-safe (new hash even if content matches old)
+- Provenance tracking via `previous_hash`
+
+**Documentation Updated:**
+- `plan/memogarden_prd_v4.md` → v0.4.1
+- `plan/memogarden_prd_v4_delta_analysis.md` - Added Part 0: PRD v4.1 Updates
+- `plan/future/soil-design.md` - Added note about EntityDelta format
+
+### 2. Budget App Local Database Architecture
+
+**Finalized Schema Decisions:**
+
+**Integer PK + Extension Pattern:**
+- Local ID: Auto-increment INTEGER for performance
+- MemoGarden UUID: Stored in `extension.memogarden.uuid` (nullable)
+- Local-only users: `extension` is NULL or empty
+- Sync users: `extension.memogarden.uuid` contains Core entity UUID
+
+**Hash-Based Sync:**
+- `extension.memogarden.last_sync_hash`: Last known server hash
+- `extension.memogarden.version`: Server version number
+- Conflict detection without scanning full history
+
+**Extension vs Metadata:**
+- `extension`: Namespaced external data (MemoGarden, bank_sync, etc.)
+- `metadata`: App-specific experimental features
+- Both JSON to avoid schema migrations
+
+**Recurrence Realization Pattern:**
+- Generated transactions have `recurrence_id NOT NULL`
+- Displayed differently (italic, grey, bold) to indicate "pending/projection"
+- User "realizes" via button tap or editing (sets `recurrence_id = NULL`)
+- Future occurrences regenerate fresh from template
+
+**Client-Side RRULE Validation:**
+- Uses `rrule` Dart package (iCal RFC 5545)
+- Enables local-only usage without MemoGarden Core
+
+**Schema Documentation:**
+- `plan/budget_prd.md` - Added "Budget App Local Database" section
+- `plan/budget_implementation.md` - Updated Step 5 with architecture decisions
+- Dependencies updated (removed uuid, added rrule)
+
+### 3. Flutter Project Initialization (Step 5.1)
+
+**Setup Complete:**
+- Flutter SDK installed: `~/.local/flutter`
+- Chrome configured for web development
+- Project initialized: `app-budget/` (org: net.memogarden)
+- Dependencies configured (sqflite, path, shared_preferences, rrule)
+- Web target verified (Chrome)
+- Initial commit created (ab415b0)
+
+**Installation Script Created:**
+- `~/bin/install-flutter.sh` - Safe Flutter installation script
+- Sanity checks: git installation, available disk space, network connectivity
+- Flutter doctor validation
+
+### 4. Database Schema Setup (Step 5.2)
+
+**What We Built:**
+- `DatabaseHelper` singleton class with factory constructor pattern
+- Cross-platform database initialization (web + native support)
+- `transactions` table: id, date, amount, description, account, category, labels, extension, metadata
+- `recurrences` table: id, rrule, template, valid_from, valid_until, last_generated, next_occurrence, extension, metadata
+- Extension-ready schema (JSON columns for future extensibility)
+
+**Key Dart/Flutter Concepts Learned:**
+- Singleton pattern with factory constructors
+- Private named constructors (`_internal()`)
+- `static const` for class-level constants
+- Async/await for database operations
+- Null safety (`?` and `!` operators)
+- Platform detection (`kIsWeb` from `foundation.dart`)
+- Multi-platform support (sqflite for native, sqflite_common_ffi_web for web)
+
+**Web Support Challenges:**
+- SQLite doesn't work natively on Flutter web
+- Solution: Use `sqflite_common_ffi_web` package
+- Must call `sqflite.databaseFactory = databaseFactoryFfiWeb` in constructor
+- Web uses IndexedDB for storage (simulated filesystem)
+
+**Extension System Design Discussion:**
+- `extension` column: JSON-managed data by extensions (MemoGarden, GDrive, etc.)
+- `metadata` column: JSON-managed data by Budget app
+- Event hook mechanism planned (future): `onRegister()`, `onDeregister()`, `onEvent()`
+- Extensions add/remove their own keys from `extension` object
+- When all extensions removed their keys, row can be deleted
+
+**Deletion Pattern (Simplified for MVP):**
+- Hard delete immediately (no soft delete with `is_active`)
+- Extension removes its key when done processing deletion event
+- Future: Cleanup daemon checks if `extension` is empty before deleting row
+
+**Testing:**
+- Successfully tested on Chrome/web platform
+- Both tables created correctly
+- Console output shows: "Database initialized!" and table names
+
+**Commits:**
+- app-budget commit b3ac8e1: "feat: add database schema and helper with web support"
 
 ---
 
@@ -71,208 +201,26 @@ dependencies:
 
 ---
 
-## Key Accomplishments This Session
-
-### 1. Platform Architecture Analysis (2025-12-30)
-
-**Delta Analysis Complete:**
-- Analyzed differences between current Budget PRD and PRD v4
-- PRD v4 is complete platform specification (Soil + Core + applications)
-- Current implementation only builds Budget app (one application on platform)
-
-**Key Finding:**
-- Budget app can be built with **lean MVP platform approach**
-- Implement minimal Soil and Core features to support Budget MVP
-- Grow platform iteratively rather than building full platform upfront
-
-**Created:**
-- `plan/budget_implementation.md` - Updated implementation plan (renamed from implementation.md)
-- `memogarden-soil/` - Repository for Soil storage layer
-
-### 2. Updated Implementation Plan (2025-12-30)
-
-**New Steps Added:**
-- **Step 3**: Soil MVP Foundation (filesystem-based immutable storage)
-- **Step 4**: Core Refactor to Item Type (migrate entity → item table)
-- **Step 5**: Updated Advanced Core Features to include Soil integration
-
-**Platform Foundation Decisions Made:**
-- Soil MVP: Filesystem storage, simple Python API
-- Item Type: Adopt now (reduce future migration debt)
-- Reference format: `artifact:{type}-{uuid}`
-- Relation types (MVP): source, reconciliation, artifact (defer Project System types)
-- Delta tracking: Field-level, stored in DB + Soil JSON files
-
-**Documentation Updated:**
-- `plan/budget_implementation.md` - Complete plan with new steps
-- `plan/status.md` - Project status with architecture update
-- `plan/scratch.md` - This file (session context)
-
-### 3. Previous Session Accomplishments (2025-12-29)
-
-**Test Suite Optimization (Step 2.10)**
-- 47.95s → 1.14s (97.6% faster, 42x speedup)
-- Reduced bcrypt work factor for tests
-- All 396 tests passing with 91% coverage
-
-**Code Quality Refactoring**
-- Removed ~120 lines of auth duplication
-- Created `_authenticate_jwt()` helper
-- Reduced auth/api.py by 99 lines (19% reduction)
-
-**Documentation Compacting**
-- Implementation plan reduced 60% (~750 → 304 lines)
-
----
-
-## Current System State
-
-### Database
-**Location**: `/home/kureshii/memogarden/memogarden-core/data/memogarden.db`
-**Schema Version**: 20251229 (entity-based, pre-Item migration)
-**Admin User**: `admin` (created 2025-12-29)
-**To reset**: `sqlite3 .../data/memogarden.db "DELETE FROM users WHERE username='admin';"`
-
-### Test Results
-- **All 396 tests passing** in 1.14s
-- **Coverage**: 91% (exceeds 80% target)
-- **No test mocks** (uses real dependencies)
-
-### Architecture State
-- **Current**: Entity-based schema (entity table + type-specific tables)
-- **Target**: Item-based schema (item table with dual timestamps)
-- **Pending**: Entity → Item migration (Step 4)
-
----
-
-## Ready for Platform Foundation
-
-**Next**: Steps 3-4 (Platform Foundation)
-
-### Step 3: Soil MVP Foundation
-**Objective**: Minimal immutable storage layer
-**Components**:
-- Filesystem storage API (`memogarden_core/soil/`)
-- Artifact management (emails, PDFs, statements)
-- Delta storage (JSON files)
-- Schema snapshots (SQL dumps)
-**Estimate**: 1-2 days
-
-### Step 4: Core Refactor to Item Type
-**Objective**: Migrate to platform Item base type
-**Components**:
-- Create `item` table with dual timestamps
-- Migration script (entity → item)
-- Update all foreign keys
-- Refactor entity operations
-- Test migration (all 396 tests must pass)
-**Estimate**: 2-3 days
-
-### Step 5: Advanced Core Features (Updated)
-**Objective**: Recurrences, Relations, Deltas with Soil integration
-**Components**:
-- Recurrences (extends Item)
-- Relations (links Items + Soil artifacts)
-- Deltas (DB + Soil archival)
-- Reference resolution
-**Estimate**: 3-4 days
-
-**Total Platform Foundation**: 6-9 days
-
----
-
-## Reference Documents
-
-### Planning Documents
-- `plan/budget_implementation.md` - **PRIMARY** - Updated implementation plan
-- `plan/budget_prd.md` - Budget app requirements
-- `plan/memogarden_prd_v4.md` - Complete platform specification
-- `plan/memogarden_prd_v4_delta_analysis.md` - PRD v4 delta analysis (archived reference)
-
-### Architecture References
-- `plan/future/soil-design.md` - Soil storage architecture
-- `plan/future/schema-extension-design.md` - Schema versioning system
-- `plan/future/migration-mechanism.md` - Database migration workflow
-- `memogarden-core/docs/architecture.md` - Core API design patterns
-
-### Status Tracking
-- `plan/status.md` - Project status overview
-- `plan/scratch.md` - This file (session context)
-
----
-
-## Platform Foundation Decisions
-
-The following decisions are finalized and documented in budget_implementation.md:
-
-### Soil MVP
-- Storage: Filesystem (no database)
-- API: `memogarden_core/soil/` module
-- Location: `SOIL_PATH` env var (default: `./soil`)
-- Artifact types: emails, pdfs, statements
-
-### Item Type Migration
-- Approach: Forward migration with rollback
-- Dual timestamps: realized_at (system) + canonical_at (user)
-- Data preservation: All existing data migrated, no loss
-- Schema archival: Soil snapshot before migration
-- Test requirement: All 396 tests must pass
-
-### Relations (MVP)
-- Types: source, reconciliation, artifact
-- Format: `artifact:{type}-{uuid}`
-- Single table (defer UniqueRelation/MultiRelation split)
-
-### Deltas
-- Granularity: Field-level
-- Storage: DB table + JSON files in Soil
-- Timing: After database commit
-
-### Deferred Features
-- Fragment system (Project System)
-- Conversation structures (Project System)
-- Fossilization (Soil compaction)
-- Extension archival
-- Tool call tracking
-
----
-
-## Open Questions (Resolved)
-
-All open questions from budget_prd_update_analysis.md have been answered:
-
-1. ✅ Item type migration: Forward migration with rollback
-2. ✅ Reference format: `artifact:{type}-{uuid}`
-3. ✅ Soil location: `SOIL_PATH` env var (default: `./soil`)
-4. ✅ Delta granularity: Field-level
-5. ✅ Recurrence generation: On-demand via API (no background worker)
-
----
-
-## Development Commands
+## Development Commands (Budget App)
 
 ```bash
-# Start development server
-./scripts/run.sh
+# Run Budget app (web)
+cd app-budget
+flutter run -d chrome
 
-# Run tests (fast!)
-./scripts/test.sh
+# Run tests
+flutter test
 
-# Run with coverage
-./scripts/test-coverage.sh
-
-# View slowest tests
-poetry run pytest --durations=10
+# Check dependencies
+flutter pub outdated
 ```
-
----
 
 ## Repository URLs
 
 - **Core API**: https://github.com/memogarden/memogarden-core
-- **Budget App**: https://github.com/memogarden/app-budget (cloned locally at `app-budget/`)
+- **Budget App**: https://github.com/memogarden/app-budget (local: `app-budget/`)
 
 ---
 
 **Last Updated**: 2025-12-31
-**Session Focus**: Step 5 (Flutter App Foundation) - Learning-focused interactive development
+**Session Focus**: Step 5.2 - Database Schema Setup (Next: Create database helper)

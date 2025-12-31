@@ -10,20 +10,21 @@
 - Repository: https://github.com/memogarden/app-budget
 - Local: `app-budget/` directory
 - Approach: Interactive development (user runs commands, AI guides)
-- Architecture: Local SQLite first, sync-later design
+- Architecture: Local SQLite with integer PK, extension pattern for optional sync
 
-**Substeps (11 total, UI-first):**
-- ⏳ **5.1** - Project Initialization & Setup
-- ⏳ **5.2** - Database Schema Setup
+**Substeps (12 total, UI-first):**
+- ✅ **5.1** - Project Initialization & Setup (COMPLETE 2025-12-31, commit: ab415b0)
+- ✅ **5.2** - Database Schema Setup (COMPLETE 2025-12-31, commit: b3ac8e1)
 - ⏳ **5.3** - Data Models
 - ⏳ **5.4** - Repository Layer
 - ⏳ **5.5** - Transaction Capture Screen (Static UI)
 - ⏳ **5.6** - Add State to Capture Screen
 - ⏳ **5.7** - Wire Up Data Flow
 - ⏳ **5.8** - Transaction List Screen
-- ⏳ **5.9** - Navigation Structure
-- ⏳ **5.10** - Design System Polish
-- ⏳ **5.11** - Testing & Refinement
+- ⏳ **5.9** - Recurrence Management
+- ⏳ **5.10** - Navigation Structure
+- ⏳ **5.11** - Design System Polish
+- ⏳ **5.12** - Testing & Refinement
 
 ## Architecture Update
 
@@ -94,14 +95,25 @@
 
 ## Architectural Decisions
 
-### Platform Architecture (from PRD v4)
+### Platform Architecture (from PRD v4.1)
+- **Hash-based change tracking**: Entity stores hash, previous_hash, version (PRD v0.4.1)
+- **EntityDelta type**: Immutable records in Soil for historical reconstruction
+- **Delta Notification Service**: Separate table for multi-app sync (future)
 - **Item-based entities**: All entities extend `item` base type with dual timestamps
 - **Two-layer storage**: Soil (immutable facts) + Core (mutable state)
 - **Document-centric**: Transactions linked to artifacts via relations
 - **Lean MVP**: Minimal platform features to support Budget app
 
+### Budget App Local Database (Step 5)
+- **Integer PK**: Auto-increment INTEGER for local performance
+- **Extension pattern**: MemoGarden UUID in `extension.memogarden.uuid` (JSON)
+- **Hash-based sync**: `extension.memogarden.last_sync_hash` for conflict detection
+- **Recurrences first-class**: Built from start with RRULE validation
+- **Local-first, sync-optional**: Works offline without MemoGarden
+
 ### Tech Stack
 - **Backend**: Flask (synchronous) + sqlite3 (built-in Python module)
+- **Frontend**: Flutter (Dart) with SQLite (sqflite)
 - **Storage**: SQLite for Core, filesystem for Soil
 - **Philosophy**: Deterministic synchronous execution for simplicity and debugging
 

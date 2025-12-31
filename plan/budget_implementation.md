@@ -177,11 +177,25 @@ These will be considered in future iterations after Budget MVP is complete.
 - **Context-friendly**: Break down to avoid context window limits
 
 **Architecture Decisions:**
-- **Local DB first**: SQLite database matching Core API schema (for easy sync later)
+- **Local DB first**: SQLite with integer PK, extension pattern for MemoGarden sync
 - **Simple state**: `setState()` (no Riverpod/Provider complexity for now)
 - **Repository layer**: Business logic between widgets and DB
-- **Sync-later design**: DB schema includes sync flags but unused initially
-- **No API calls yet**: Phase 1 is DB-only, API client added in Phase 2
+- **Local-first, sync-optional**: Works offline without MemoGarden; sync is add-on
+- **No API calls in Phase 1**: DB-only, API client added in Phase 2
+- **Hybrid schema**: Core columns + `extension` (JSON) + `metadata` (JSON)
+- **Recurrences as first-class**: Built from start with RRULE validation
+
+**Database Design Principles:**
+1. **Integer PK** for performance (local use)
+2. **MemoGarden UUID in extension** (not top-level column)
+3. **Hash-based sync** (via `extension.memogarden.last_sync_hash`)
+4. **Recurrence realization** (generated transactions pending until user confirms)
+
+**Dependencies (pubspec.yaml):**
+- `sqflite: ^2.4.2` - SQLite database
+- `path: ^1.9.1` - File path manipulation
+- `shared_preferences: ^2.5.4` - Local storage (auth tokens)
+- `rrule: ^0.2.0` - iCal RRULE validation (client-side)
 
 **Repository:** https://github.com/memogarden/app-budget
 
@@ -189,30 +203,43 @@ These will be considered in future iterations after Budget MVP is complete.
 
 #### Substeps (Learning-Focused Breakdown)
 
-**5.1: Project Initialization & Setup**
+**5.1: Project Initialization & Setup** ✅ COMPLETE
 - Initialize Flutter project in `app-budget/`
-- Configure `pubspec.yaml` (dependencies: sqflite, path, shared_preferences)
+- Configure `pubspec.yaml` (sqflite, path, shared_preferences, rrule)
 - Run baseline app (Flutter counter demo)
-- Verify web and Android targets work
+- Verify web target works (Chrome)
 - **Goal**: Empty Flutter project running
 
-**5.2: Database Schema Setup**
-- Create `database/database_helper.dart`
-- Define SQLite schema (auth_state, transactions tables)
-- Implement `onCreate` migration
-- Test database initialization
-- **Goal**: Database ready, empty tables created
+**5.2: Database Schema Setup** ✅ COMPLETE (2025-12-31)
+- Create `database/database_helper.dart` ✅
+- Define SQLite schema:
+  - `transactions` table (with extension, metadata) ✅
+  - `recurrences` table (with RRULE, template, occurrence tracking) ✅
+- Implement `onCreate` migration ✅
+- Add web support via `sqflite_common_ffi_web` ✅
+- Test database initialization ✅
+- **Goal**: Database ready, empty tables created ✅
+
+**Deliverables:**
+- `DatabaseHelper` singleton with cross-platform support (web + native)
+- `transactions` table: id, date, amount, description, account, category, labels, extension, metadata
+- `recurrences` table: id, rrule, template, valid_from, valid_until, last_generated, next_occurrence, extension, metadata
+- Extension-ready schema (JSON columns for future extensibility)
+- Successfully tested on Chrome/web platform
 
 **5.3: Data Models**
 - Create `models/transaction.dart` (plain data class)
+- Create `models/recurrence.dart`
 - Implement `fromMap()` and `toMap()` methods
-- Create `models/recurrence.dart` if needed
-- **Goal**: Data structures matching Core API schema
+- Handle JSON encoding/decoding for extension and metadata
+- **Goal**: Data structures matching local schema
 
 **5.4: Repository Layer**
 - Create `repositories/transaction_repository.dart`
+- Create `repositories/recurrence_repository.dart`
 - Implement CRUD methods (create, getAll, getById, update, delete)
 - Use raw SQL queries via `sqflite`
+- Implement transaction realization logic
 - **Goal**: Business logic layer ready
 
 **5.5: Transaction Capture Screen (Static UI)**
@@ -238,33 +265,41 @@ These will be considered in future iterations after Budget MVP is complete.
 **5.8: Transaction List Screen**
 - Build list UI to show saved transactions
 - Pull from DB via repository
+- Display generated transactions differently (italic/grey/bold)
 - Group by date (optional)
 - **Goal**: See what you captured
 
-**5.9: Navigation Structure**
-- Add navigation (capture ↔ list ↔ settings)
+**5.9: Recurrence Management**
+- Create recurrence CRUD UI
+- Validate RRULE syntax (client-side via `rrule` package)
+- Generate transactions from recurrence template
+- Implement realization flow (tap button or edit)
+- **Goal**: Recurring transactions work
+
+**5.10: Navigation Structure**
+- Add navigation (capture ↔ list ↔ recurrences ↔ settings)
 - Bottom navigation bar or simple drawer
 - **Goal**: Can move between screens
 
-**5.10: Design System Polish**
+**5.11: Design System Polish**
 - Define app colors (primary, secondary, background)
 - Typography (font sizes, weights)
 - Consistent button styles
 - Make it look professional
 - **Goal**: Polished MVP foundation
 
-**5.11: Testing & Refinement**
+**5.12: Testing & Refinement**
 - Test on web (chrome)
-- Test on Android (emulator or device)
 - Fix bugs, refine UX
+- Test recurrence generation and realization
 - **Goal**: Stable MVP foundation ready for features
 
 ---
 
 #### Progress Tracking
 
-- ⏳ **5.1** - Project Initialization & Setup
-- ⏳ **5.2** - Database Schema Setup
+- ✅ **5.1** - Project Initialization & Setup
+- ✅ **5.2** - Database Schema Setup
 - ⏳ **5.3** - Data Models
 - ⏳ **5.4** - Repository Layer
 - ⏳ **5.5** - Transaction Capture Screen (Static UI)
@@ -285,20 +320,26 @@ dependencies:
     sdk: flutter
 
   # Database
-  sqflite: ^2.3.0
-  path: ^1.8.3
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  sqflite_common_ffi_web: ^1.1.0  # Web SQLite support
 
   # Local storage (for auth tokens)
-  shared_preferences: ^2.2.0
+  shared_preferences: ^2.5.4
 
-  # UUID generation
-  uuid: ^4.0.0
+  # Recurrence support (iCal RRULE)
+  rrule: ^0.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 ```
+
+**Notes:**
+- `sqflite_common_ffi_web` enables SQLite on web platform (IndexedDB-based)
+- No `uuid` package needed (UUIDs come from MemoGarden server, or use integer PK locally)
+- `rrule` package validates iCal RRULE syntax client-side (enables local-only usage)
 
 ---
 
@@ -310,12 +351,17 @@ dev_dependencies:
 3. **Simple state** - `setState()` is built into Flutter, no new concepts
 4. **Repository layer** - Makes adding sync easier later
 5. **No Riverpod yet** - Add only if complexity grows
+6. **Integer PK locally** - Performance for local queries, UUID in extension for sync
+7. **Extension pattern** - Avoid schema migrations, add MemoGarden data via JSON
+8. **Recurrences first-class** - Built from start, not added as afterthought
 
 **Phase 2 (Future - Sync):**
 - Add HTTP client (`http` package)
 - Create sync service (background DB ↔ API)
+- Implement hash-based conflict detection (via `extension.memogarden.last_sync_hash`)
 - Repositories gain dual-write capability (DB + API)
 - Widgets unchanged - still talk to repositories
+- User resolves conflicts (merge, discard local, discard server)
 
 ---
 
