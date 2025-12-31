@@ -227,12 +227,23 @@ These will be considered in future iterations after Budget MVP is complete.
 - Extension-ready schema (JSON columns for future extensibility)
 - Successfully tested on Chrome/web platform
 
-**5.3: Data Models**
-- Create `models/transaction.dart` (plain data class)
-- Create `models/recurrence.dart`
-- Implement `fromMap()` and `toMap()` methods
-- Handle JSON encoding/decoding for extension and metadata
-- **Goal**: Data structures matching local schema
+**5.3: Data Models** ✅ COMPLETE (2025-12-31)
+- Create `models/transaction.dart` (plain data class) ✅
+- Create `models/recurrence.dart` ✅
+- Implement `fromMap()` and `toMap()` methods ✅
+- Handle JSON encoding/decoding for extensionData and metadata ✅
+- **Goal**: Data structures matching local schema ✅
+
+**Deliverables:**
+- `Transaction` data class with SQLite serialization
+  - Fields: id, date, amount, description, account, category, labels, extensionData, metadata
+  - `fromMap()` factory constructor for database rows → model
+  - `toMap()` method for model → database rows
+- `Recurrence` data class with SQLite serialization
+  - Fields: id, rrule, template, valid_from, valid_until, last_generated, next_occurrence, extensionData, metadata
+  - Same serialization pattern as Transaction
+- JSON encoding/decoding for extensionData and metadata fields
+- Renamed `extension` → `extensionData` (Dart keyword conflict)
 
 **5.4: Repository Layer**
 - Create `repositories/transaction_repository.dart`
