@@ -300,7 +300,7 @@ These will be considered in future iterations after Budget MVP is complete.
 
 - ✅ **5.1** - Project Initialization & Setup
 - ✅ **5.2** - Database Schema Setup
-- ⏳ **5.3** - Data Models
+- ✅ **5.3** - Data Models (2025-12-31)
 - ⏳ **5.4** - Repository Layer
 - ⏳ **5.5** - Transaction Capture Screen (Static UI)
 - ⏳ **5.6** - Add State to Capture Screen
