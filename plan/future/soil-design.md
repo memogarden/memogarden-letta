@@ -345,6 +345,8 @@ CREATE TABLE tags (...);
 
 #### Entity Deltas
 
+**Note:** As of PRD v0.4.1, EntityDeltas use a hash-based change tracking pattern (see [memogarden_prd_v4.md](../memogarden_prd_v4.md#entitydelta-soil---future)). The example below shows the older format and will be updated to align with the hash chain pattern.
+
 **Original:** `core-delta/20250411/txn-abc/delta-001.json`
 ```json
 {

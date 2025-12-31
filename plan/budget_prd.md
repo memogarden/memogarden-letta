@@ -188,6 +188,137 @@ revoked_on?
 
 ---
 
+## Budget App Local Database
+
+### Architecture Decision: Local-First with Optional Sync
+
+The Budget app uses a **local SQLite database** with the following design principles:
+
+1. **Integer Primary Keys**: Local auto-increment IDs for performance
+2. **MemoGarden Sync Optional**: Local-only use cases fully supported
+3. **Extension Pattern**: MemoGarden-specific data stored in JSON `extension` column
+4. **No Migrations for Features**: New fields added via `metadata` JSON to avoid schema churn
+
+### Local Schema
+
+```sql
+CREATE TABLE transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  -- Core data fields
+  amount REAL NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'SGD',
+  transaction_date TEXT NOT NULL,    -- YYYY-MM-DD
+  description TEXT NOT NULL DEFAULT '',
+  account TEXT NOT NULL,
+  category TEXT,
+  notes TEXT,
+
+  -- Recurrence link (NULL = manual/realized, NOT NULL = pending/projection)
+  recurrence_id INTEGER,
+
+  -- App-specific features
+  tags TEXT,
+  attachment_url TEXT,
+
+  -- Timestamps
+  created_at TEXT NOT NULL,          -- ISO 8601
+  updated_at TEXT NOT NULL,          -- ISO 8601
+
+  -- Extension data (JSON) - MemoGarden sync data
+  extension TEXT,                    -- {"memogarden": {"uuid": "...", "last_sync_hash": "...", "version": 5}}
+
+  -- App metadata (JSON) - Experimental/future features
+  metadata TEXT                      -- {"custom_field": "value"}
+);
+
+CREATE INDEX idx_transactions_date ON transactions(transaction_date);
+CREATE INDEX idx_transactions_recurrence ON transactions(recurrence_id);
+
+CREATE TABLE recurrences (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  -- iCal RRULE (validated client-side via `rrule` Dart package)
+  rrule TEXT NOT NULL,               -- "FREQ=MONTHLY;BYDAY=2FR;COUNT=12"
+
+  -- Transaction template (JSON)
+  template TEXT NOT NULL,            -- {"amount": 50.0, "description": "Allowance", ...}
+
+  -- Validity window
+  valid_from TEXT NOT NULL,          -- ISO 8601 date
+  valid_until TEXT,                  -- ISO 8601 date or NULL (forever)
+
+  -- State management
+  is_active INTEGER DEFAULT 1,       -- 0 = paused, 1 = active
+
+  -- Occurrence tracking (local-only, for UI)
+  last_generated_date TEXT,          -- Last date we generated a transaction
+  next_occurrence_date TEXT,         -- Pre-computed next occurrence (for UI display)
+
+  -- Timestamps
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+
+  -- Extension data (JSON) - MemoGarden sync data
+  extension TEXT,                    -- {"memogarden": {"uuid": "...", "version": 2}}
+
+  -- App metadata (JSON) - Excluded dates, custom settings
+  metadata TEXT                      -- {"excluded_dates": ["2025-02-15"], ...}
+);
+
+CREATE INDEX idx_recurrences_active ON recurrences(is_active);
+CREATE INDEX idx_recurrences_next ON recurrences(next_occurrence_date);
+```
+
+### Key Design Decisions
+
+**1. Integer PK with Optional MemoGarden UUID**
+- Local ID: Auto-increment INTEGER for performance
+- MemoGarden UUID: Stored in `extension.memogarden.uuid` (nullable)
+- Local-only users: `extension` is NULL or empty
+- Sync users: `extension.memogarden.uuid` contains Core entity UUID
+
+**2. Hash-Based Sync (from PRD v0.4.1)**
+- `extension.memogarden.last_sync_hash`: Last known server hash
+- `extension.memogarden.version`: Server version number
+- Enables conflict detection without scanning full history
+- See [memogarden_prd_v4.md](memogarden_prd_v4.md#entity-change-tracking)
+
+**3. Extension vs Metadata**
+- **`extension`**: Namespaced external data (`{"memogarden": {...}}`, `{"bank_sync": {...}}`)
+- **`metadata`**: App-specific experimental features
+- Both JSON to avoid schema migrations
+
+**4. Recurrence Realization Pattern**
+- Generated transactions have `recurrence_id NOT NULL`
+- Displayed differently (italic, grey, bold) to indicate "pending/projection"
+- User must "realize" transaction:
+  - **Explicit**: Tap "Realize" button
+  - **Implicit**: Edit transaction details
+- Realization sets `recurrence_id = NULL`, detaching from recurrence
+- Future occurrences regenerate fresh from template
+
+**5. Client-Side RRULE Validation**
+- Uses `rrule` Dart package (iCal RFC 5545)
+- Validates recurrence syntax locally
+- Enables local-only usage without MemoGarden Core
+
+### Sync Protocol (Future)
+
+**Optimistic locking with hash chain:**
+1. Client reads entity from server (gets hash + version)
+2. Client makes changes locally
+3. Client sends update with `based_on_hash`
+4. Server validates hash, computes new hash, returns 409 Conflict if mismatch
+5. Client resolves conflict (merge, discard local, discard server)
+
+**Local-only users:**
+- Never set `extension.memogarden.uuid`
+- Never set `extension.memogarden.last_sync_hash`
+- Works offline forever
+
+---
+
 ## API Requirements
 
 * Budget app and agents use identical endpoints

@@ -1,7 +1,116 @@
 # PRD v4 Delta Analysis
 
 **Date**: 2025-12-30
+**Last Updated**: 2025-12-31
 **Purpose**: Comprehensive comparison of current PRD vs PRD v4 and impact analysis
+
+---
+
+## Part 0: PRD v4.1 Updates (2025-12-31)
+
+### Hash-Based Change Tracking for Entities
+
+**What Changed in PRD v0.4.0 → v0.4.1:**
+
+Added comprehensive **Entity Change Tracking** system with hash chain pattern, affecting all mutable entities in Core.
+
+#### New Components
+
+1. **Hash Chain Pattern**:
+   - `Entity.hash`: SHA256 of current state
+   - `Entity.previous_hash`: Hash of prior state (NULL for initial)
+   - `Entity.version`: Monotonically increasing integer
+   - Hash computation: `hash = SHA256(content + previous_hash)`
+
+2. **EntityDelta Type (Soil - Future)**:
+   - Immutable record of entity changes
+   - Fields: `entity_uuid`, `commit`, `parent`, `version`, `changes`
+   - Enables historical reconstruction and audit trails
+   - Same pattern as ArtifactDelta (git-like history)
+
+3. **Delta Notification Service (Future)**:
+   - Separate table for tracking entity changes
+   - Notifies subscribed apps of updates
+   - Enables multi-app synchronization (Budget, Project System, etc.)
+   - Schema: `delta_notification(entity_uuid, old_hash, new_hash, version, ...)`
+
+#### Impact on Analysis
+
+**Updated Data Model** (from Part 1):
+
+| Aspect | Before v0.4.1 | After v0.4.1 |
+|--------|--------------|--------------|
+| **Entity state tracking** | `updated_at` timestamp only | `hash`, `previous_hash`, `version` |
+| **Conflict detection** | Clock-based (fragile) | Hash-based (robust) |
+| **Synchronization** | Not specified | Full conflict detection protocol |
+| **Historical queries** | Scan all versions | Direct hash lookup in Soil |
+| **Revert handling** | Ambiguous | Clear (new hash with different parent) |
+
+**Benefits Over Version Numbers Alone**:
+- Content-addressable state (hash uniquely identifies state)
+- Tamper-evident (any change produces new hash)
+- Revert-safe (reverting creates new hash, not duplicate)
+- Provenance tracking (previous_hash provides full lineage)
+
+#### Implementation Impact
+
+**For Core API (memogarden-core)**:
+- Add `hash`, `previous_hash`, `version` to `entity` table
+- Implement `compute_entity_hash()` utility function
+- Update all entity mutation endpoints to:
+  1. Validate `based_on_hash` from client
+  2. Compute new hash
+  3. Store `(hash, previous_hash, version + 1)`
+  4. Archive EntityDelta to Soil (future)
+  5. Record delta notification (future)
+
+**For Budget App (app-budget)**:
+- Local DB schema: Add `last_sync_hash` column
+- Sync protocol: Send `based_on_hash` with updates
+- Conflict resolution: Detect hash mismatches, prompt user
+- Benefits: Multi-device sync, offline-first with conflict resolution
+
+**For Project System (future)**:
+- ArtifactDelta already uses hash chain pattern
+- EntityDelta provides same pattern for non-artifact entities
+- Unified change tracking across all entity types
+
+#### Clarified Architecture Decisions
+
+1. **Hash Storage in Core**:
+   - Store `hash` and `previous_hash` in entity table (not just Soil)
+   - Avoids expensive recomputation on every validation
+   - Enables fast conflict detection
+
+2. **Soil Role**:
+   - Stores EntityDeltas (immutable historical record)
+   - Core stores current state + hash metadata
+   - Clear separation: current vs historical
+
+3. **Delta Notification Service**:
+   - Separate from entity table (not stored in Core)
+   - Enables efficient pub/sub for multi-app sync
+   - Apps don't need to poll entire entity set
+
+#### Updated Recommendations
+
+**For Platform Foundation (Layer 1)**:
+- Add hash computation utilities to Core API
+- Add hash fields to entity table schema
+- Implement conflict detection in all mutation endpoints
+- Design EntityDelta archival mechanism (defer to Soil implementation)
+
+**For Budget App (Layer 2)**:
+- Include hash-based sync protocol in initial design
+- Add `last_sync_hash` to local transaction table
+- Plan for conflict resolution UI (merge, discard local, discard server)
+
+**For Future Work**:
+- EntityDelta implementation tied to Soil (currently deferred)
+- Delta notification service built when multi-device sync needed
+- Hash-based system foundationally supports CRDTs (future enhancement)
+
+---
 
 ## Executive Summary
 
@@ -452,4 +561,5 @@ MemoGarden should be implemented as a **three-layer architecture**:
 
 **Analysis Prepared By**: Claude (Explore agents a5cb73e, a021af0, aad482e)
 **Date**: 2025-12-30
+**Last Updated**: 2025-12-31 (added PRD v4.1 hash-based change tracking analysis)
 **Status**: Analysis complete

@@ -1,8 +1,8 @@
 # MemoGarden Project System - Product Requirements Document
 
-**Version:** 0.4.0  
-**Status:** Draft  
-**Last Updated:** 2025-12-29
+**Version:** 0.4.1
+**Status:** Draft
+**Last Updated:** 2025-12-31
 
 ## Overview
 
@@ -81,6 +81,229 @@ item_<uuid4>      # e.g., item_fedcba98-7654-3210-fedc-ba9876543210
 - **User-sovereign**: User beliefs override inferred/imported facts
 - **Evolving**: Artifacts change over time via Deltas
 - **Lifecycle-aware**: Relations fossilize from Core to Soil when appropriate
+
+---
+
+## Entity Change Tracking
+
+MemoGarden uses **hash-based change tracking** for all mutable entities in Core, enabling efficient synchronization, conflict detection, and historical reconstruction via EntityDeltas in Soil.
+
+### Hash Chain Pattern
+
+Every Entity in Core maintains a cryptographic hash chain, similar to git commits:
+
+```
+Entity.hash = SHA256(content + previous_hash)
+Entity.previous_hash = hash of prior state (NULL for initial Entity)
+```
+
+**Properties:**
+- **Content-addressable**: Hash uniquely identifies entity state
+- **Tamper-evident**: Any change produces new hash, breaking the chain
+- **Revert-safe**: Reverting to previous state creates new hash (e.g., `hash(rollback, hash_C) ≠ hash_A`)
+- **Collision-resistant**: SHA256 prevents practical hash collisions
+- **Provenance tracking**: `previous_hash` provides full lineage
+
+**Schema:**
+```python
+@dataclass
+class Entity:
+    uuid: str                       # Unique identifier (never changes)
+    type: str                       # Entity type: 'transaction', 'user', 'recurrence', etc.
+    hash: str                       # Current state hash (SHA256)
+    previous_hash: str | None       # Previous state hash (NULL for initial)
+    version: int                    # Monotonically increasing (for ordering/display)
+    created_at: datetime            # Entity creation timestamp
+    updated_at: datetime            # Last update timestamp
+
+    # Type-specific fields (transaction amount, username, etc.)
+    # ...
+```
+
+### Hash Computation
+
+```python
+import hashlib
+import json
+
+def compute_entity_hash(entity_data: dict, previous_hash: str | None) -> str:
+    """
+    Compute hash for entity state.
+
+    Args:
+        entity_data: Dict of entity fields (excluding uuid, hash, previous_hash, version)
+        previous_hash: Hash of previous state (None for initial entity)
+
+    Returns:
+        SHA256 hash string
+    """
+    # Canonical JSON representation (sorted keys, no whitespace)
+    canonical = json.dumps(entity_data, sort_keys=True, separators=(',', ':'))
+
+    # Include previous hash in hash computation (creates chain)
+    content = f"{canonical}|{previous_hash or ''}"
+
+    return hashlib.sha256(content.encode()).hexdigest()
+```
+
+**Example hash chain:**
+```
+Initial:  hash="a1b2c3...", previous_hash=None, version=1
+Update 1: hash="d4e5f6...", previous_hash="a1b2c3...", version=2
+Update 2: hash="g7h8i9...", previous_hash="d4e5f6...", version=3
+Revert:   hash="j0k1l2...", previous_hash="g7h8i9...", version=4
+          (content matches version 1, but hash is new due to different previous_hash)
+```
+
+### Conflict Detection
+
+**Optimistic locking with hash chain:**
+
+1. **Client reads entity**: `GET /api/v1/transactions/uuid`
+   - Response: `{uuid, amount, hash: "abc", version: 5, ...}`
+
+2. **Client updates entity**: `PUT /api/v1/transactions/uuid`
+   - Request: `{amount: 10.50, based_on_hash: "abc", based_on_version: 5}`
+
+3. **Server validates**:
+   ```python
+   current = get_entity(uuid)
+   if current.hash != request.based_on_hash:
+       # Conflict! Someone else changed it
+       return 409 Conflict, {
+           "current_hash": current.hash,
+           "current_version": current.version,
+           "client_hash": request.based_on_hash,
+           "client_version": request.based_on_version,
+           "error": "Entity was modified by another client"
+       }
+
+   # Compute new hash and update
+   new_hash = compute_entity_hash(new_data, current.hash)
+   update_entity(
+       hash=new_hash,
+       previous_hash=current.hash,
+       version=current.version + 1,
+       **new_data
+   )
+   ```
+
+4. **Delta archival to Soil**:
+   - EntityDelta stored in Soil with `(commit=new_hash, parent=current.hash)`
+   - Enables historical reconstruction and audit trail
+
+### Benefits Over Version Numbers Alone
+
+| Aspect | Version Only | Hash Chain |
+|--------|-------------|------------|
+| **Change detection** | "This is v5" | "Content is {state}, derived from v4" |
+| **Tamper evidence** | No (can increment without change) | Yes (content change → new hash) |
+| **Revert handling** | Ambiguous (rollback to v4?) | Clear (new hash with different parent) |
+| **Synchronization** | Fragile (clock skew) | Robust (cryptographic verification) |
+| **Multi-app support** | Race conditions | Conflict detection via hash mismatch |
+| **Historical query** | Scan all versions | Direct hash lookup in Soil |
+
+### Storage in Core
+
+**Entity table stores:**
+- Current state (fields: amount, description, etc.)
+- Change metadata (hash, previous_hash, version, timestamps)
+- **Not full history** (that's what Soil EntityDeltas are for)
+
+**Performance consideration:**
+- Storing `hash` and `previous_hash` in Core avoids expensive recomputation
+- Hash is computed once on update, stored for quick validation
+- Enables fast conflict detection without scanning Soil
+
+**Schema (entity table):**
+```sql
+CREATE TABLE entity (
+    uuid TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    hash TEXT NOT NULL,              -- Current state hash
+    previous_hash TEXT,              -- Previous state hash (NULL for initial)
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+
+    -- Common metadata
+    group_id TEXT,                   -- Optional grouping
+    superseded_by TEXT,              -- Reclassification
+    superseded_at TEXT,
+    derived_from TEXT,               -- Provenance
+
+    FOREIGN KEY (group_id) REFERENCES entity(uuid),
+    FOREIGN KEY (superseded_by) REFERENCES entity(uuid),
+    FOREIGN KEY (derived_from) REFERENCES entity(uuid)
+);
+
+CREATE INDEX idx_entity_hash ON entity(hash);
+CREATE INDEX idx_entity_previous_hash ON entity(previous_hash);
+```
+
+### EntityDelta (Soil - Future)
+
+**Purpose:** Immutable record of entity changes for historical reconstruction
+
+**Schema:**
+```python
+@dataclass
+class EntityDelta(Item):
+    # Inherited: uuid, _type='EntityDelta', realized_at, canonical_at
+    entity_uuid: str          # Which entity changed
+    entity_type: str          # Type of entity (transaction, user, etc.)
+    commit: str               # Hash of new state (matches Entity.hash)
+    parent: str | None        # Hash of previous state (matches Entity.previous_hash)
+    version: int              # Entity version after this change
+    changes: dict             {"fields": {"amount": [10.0, 15.0]}, "reason": "..."}
+```
+
+**Relation to ArtifactDelta:**
+- Same hash chain pattern
+- `commit` = current state hash
+- `parent` = previous state hash
+- Enables git-like history navigation
+- Different schema: EntityDelta tracks field changes, ArtifactDelta tracks line operations
+
+**Use cases:**
+- Audit trails (who changed what, when)
+- Conflict resolution (compare divergent branches)
+- Historical queries (what did this transaction look like on date X?)
+- Agent analysis (detect patterns, anomalies)
+- Rollback/revert (navigate to any prior state)
+
+### Delta Notification Service (Future)
+
+**Purpose:** Notify subscribed apps of entity changes
+
+**Schema:**
+```sql
+CREATE TABLE delta_notification (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity_uuid TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    old_hash TEXT NOT NULL,         -- Previous state hash
+    new_hash TEXT NOT NULL,         -- New state hash
+    version INTEGER NOT NULL,
+    changed_at TEXT NOT NULL,       -- ISO 8601
+    processed INTEGER DEFAULT 0     -- 0 = pending, 1 = processed
+);
+
+CREATE INDEX idx_delta_notification_entity ON delta_notification(entity_uuid);
+CREATE INDEX idx_delta_notification_processed ON delta_notification(processed);
+```
+
+**Notification flow:**
+1. Entity updated in Core (hash changes: A→B)
+2. Delta notification recorded: `(entity_uuid, old_hash=A, new_hash=B, version=5)`
+3. Subscribed apps poll or receive push notifications
+4. Apps fetch updated entity, detect local conflicts via hash mismatch
+
+**Benefits:**
+- Apps don't need to poll entire entity set
+- Efficient synchronization (only process changes)
+- Multi-app support (Budget, Project System, future apps)
+- Ordered notifications (version ensures correct sequence)
 
 ---
 
@@ -298,10 +521,17 @@ class ArtifactDelta(Item):
 **Properties:**
 - **Timeline Item**: Deltas appear in the timeline; Artifacts do not
 - **Artifact reference**: Links to Artifact in Core by UUID
+- **Hash chain**: Same pattern as Entity change tracking (see [Entity Change Tracking](#entity-change-tracking))
 - **Parent tracking**: Enables git-like history graph
 - **Multiple parents**: Merge commits have `[hash1, hash2]`
 - **Operation syntax**: `+add -remove ~replace >move` (line-based)
 - **References fragments**: Links to the fragments that informed this change
+
+**Relation to EntityDelta:**
+- Both use hash chain pattern (`commit` = current hash, `parent` = previous hash)
+- ArtifactDelta tracks line-based text operations
+- EntityDelta tracks field-level changes
+- Both enable git-like history navigation and conflict resolution
 
 **Delta Operations:**
 ```
@@ -1165,6 +1395,7 @@ Migration strategy for moving hot relations to item attributes:
 | 0.2.0 | 2025-12-27 | Added ToolCall entity, Frame entity, clarified stack semantics (insertion order, tree via parent_uuid), parallel exploration model, JCS-informed shared tool design |
 | 0.3.0 | 2025-12-29 | Storage layer split (Soil/Core); Item base type with hierarchy; dual timestamps (realized_at, canonical_at); `_type` field with CamelCase convention; `caller` field on ToolCall; ArtifactCreated as distinct Item type; Trigger relation for explicit causal chains; clarified Fragments as inline within Messages; ArtifactDelta includes artifact_uuid; database schema draft |
 | 0.4.0 | 2025-12-29 | Generalized relations model with UniqueRelation and MultiRelation tables; relation kinds (triggers, supercedes, replies_to, mentions, derived_from, contains); relation lifecycle (Core↔Soil); reserved attribute names for future denormalization; query abstraction layer; removed standalone Trigger entity (now kind='triggers' in UniqueRelation) |
+| 0.4.1 | 2025-12-31 | Added Entity Change Tracking section with hash chain pattern; hash and previous_hash fields in Core entity table for conflict detection and sync; EntityDelta type for Soil (future); Delta Notification Service schema; documented hash computation algorithm and conflict detection flow; linked ArtifactDelta to Entity change tracking pattern |
 
 ---
 
