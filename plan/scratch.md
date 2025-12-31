@@ -37,7 +37,7 @@
 
 - ✅ **5.1** - Project Initialization & Setup (COMPLETE 2025-12-31)
 - ✅ **5.2** - Database Schema Setup (COMPLETE 2025-12-31)
-- ⏳ **5.3** - Data Models
+- ✅ **5.3** - Data Models (COMPLETE 2025-12-31)
 - ⏳ **5.4** - Repository Layer
 - ⏳ **5.5** - Transaction Capture Screen (Static UI)
 - ⏳ **5.6** - Add State to Capture Screen
@@ -191,6 +191,52 @@ dependencies:
 **Commits:**
 - app-budget commit b3ac8e1: "feat: add database schema and helper with web support"
 
+### 5. Data Models (Step 5.3)
+
+**What We Built:**
+- `Transaction` data class with SQLite serialization
+  - Fields: id, date, amount, description, account, category, labels, extensionData, metadata
+  - `fromMap()` factory constructor for database rows → model
+  - `toMap()` method for model → database rows
+  - JSON encoding/decoding for extensionData and metadata fields
+- `Recurrence` data class with SQLite serialization
+  - Fields: id, rrule, template, valid_from, valid_until, last_generated, next_occurrence, extensionData, metadata
+  - Same serialization pattern as Transaction
+  - Template stored as JSON string (matches database schema)
+
+**Key Dart/Flutter Concepts Learned:**
+- Factory constructors (`factory ClassName.fromMap()`)
+- Type casting with `as Type` and `as Type?`
+- Conditional map entries (`if (condition) 'key': value`)
+- JSON encoding/decoding with `dart:convert` (json.encode, json.decode)
+- Dart reserved keywords (renamed `extension` → `extensionData`)
+- Named parameters with `required` keyword
+- Nullable types (`Type?`)
+
+**Design Decisions:**
+- Kept dates as String (ISO 8601) for learning simplicity
+- Will refactor to DateTime when date arithmetic needed
+- Used vanilla constructor syntax (will refactor to `this.field` sugar later)
+- Comma-separated labels (simple, can migrate to JSON later)
+- Double for amounts (matches Core API, will handle precision with rounding helpers)
+
+**Bug Fixes:**
+- Fixed Recurrence constructor type mismatch (parameters were String?, should be Map<String, dynamic>?)
+- Fixed fromMap() to use correct column name (extensionData, not extension)
+
+**Code Quality:**
+- Reviewed by code-review agent (found and fixed critical bugs)
+- Reviewed by change-reviewer agent (verified alignment with implementation plan)
+- Both models complete and ready for Repository layer
+
+**Testing:**
+- No unit tests yet (will add in Step 5.12 - Testing & Refinement)
+- Manual verification: Models compile and match database schema
+
+**Commits:**
+- app-budget commit 620b84c: "feat(models): add Transaction and Recurrence data models"
+- root repo commit e6172d7: "docs: mark Step 5.3 (Data Models) complete"
+
 ---
 
 ## Previous Accomplishments
@@ -223,4 +269,4 @@ flutter pub outdated
 ---
 
 **Last Updated**: 2025-12-31
-**Session Focus**: Step 5.2 - Database Schema Setup (Next: Create database helper)
+**Session Focus**: Step 5.3 - Data Models (Next: 5.4 Repository Layer)
