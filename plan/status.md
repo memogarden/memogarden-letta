@@ -1,6 +1,6 @@
 # MemoGarden Project Status
 
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-02
 
 ## Active Step
 
@@ -16,13 +16,13 @@
 - ✅ **5.1** - Project Initialization & Setup (COMPLETE 2025-12-31, commit: ab415b0)
 - ✅ **5.2** - Database Schema Setup (COMPLETE 2025-12-31, commit: b3ac8e1)
 - ✅ **5.3** - Data Models (COMPLETE 2025-12-31, commit: 620b84c)
-- ⏳ **5.4** - Repository Layer
-- ⏳ **5.5** - Transaction Capture Screen (Static UI)
+- ✅ **5.4** - Repository Layer (COMPLETE 2026-01-02)
+- ✅ **5.5** - Transaction Capture Screen (COMPLETE 2026-01-02, commit: b5bf609)
 - ⏳ **5.6** - Add State to Capture Screen
 - ⏳ **5.7** - Wire Up Data Flow
-- ⏳ **5.8** - Transaction List Screen
+- 🔄 **5.8** - Transaction List Screen (UI complete, commit: b5bf609)
 - ⏳ **5.9** - Recurrence Management
-- ⏳ **5.10** - Navigation Structure
+- 🔄 **5.10** - Navigation Structure (screens connected, commit: b5bf609)
 - ⏳ **5.11** - Design System Polish
 - ⏳ **5.12** - Testing & Refinement
 
@@ -92,6 +92,54 @@
 - Entity registry pattern for global metadata
 - 231 tests with 90% coverage (exceeds 80% target)
 - Comprehensive README with API documentation
+
+### Step 5: Flutter App Foundation ✅ PARTIAL (2026-01-02)
+
+**Completed Substeps:**
+- ✅ **5.1** - Project Initialization & Setup
+- ✅ **5.2** - Database Schema Setup
+- ✅ **5.3** - Data Models
+- ✅ **5.4** - Repository Layer
+- ✅ **5.5** - Transaction Capture Screen (Static UI)
+- 🔄 **5.8** - Transaction List Screen (UI complete)
+- 🔄 **5.10** - Navigation Structure (screens connected)
+
+**Commit:** b5bf609 - "feat(ui): implement main screens with navigation"
+
+**Key Deliverables (UI Phase):**
+- **Transaction Capture Screen** (166 lines):
+  - Calculator-style number pad (0-9, decimal, operators, equals)
+  - Large amount display with grey bordered container
+  - Account and category dropdown selectors
+  - Description text field
+  - Date display (today's date)
+  - Green save button for visual distinction
+  - Placeholder for future recurrence button
+
+- **Transaction List Screen** (277 lines):
+  - Group transactions by category with collapsible sections
+  - Drawer with account filter (All/Household/Personal) and date range selector (Day/Month/Year)
+  - Settings access via overflow menu (Material Design compliant)
+  - Category headers show emoji, name, total amount, and percentage
+  - Transaction items show date, description, and amount (red/green)
+  - FAB for navigation to capture screen
+  - Expand/collapse state management with StatefulWidget
+
+- **Settings Screen** (70 lines):
+  - Accounts management section (placeholder)
+  - Categories management section (placeholder)
+  - Preferences: Currency, Sync, Theme settings
+
+- **Navigation Flow**:
+  - All screens connected with MaterialPageRoute
+  - FAB on list screen → capture screen
+  - Overflow menu → settings screen
+  - Automatic back navigation via AppBar
+
+**Next Steps (Data Flow Phase):**
+- Add state to capture screen (Step 5.6): Make number pad functional
+- Wire up data flow (Step 5.7): Connect capture screen to repository
+- Complete list screen (Step 5.8): Pull real data from database
 
 ## Architectural Decisions
 
