@@ -18,7 +18,7 @@
 - ✅ **5.3** - Data Models (COMPLETE 2025-12-31, commit: 620b84c)
 - ✅ **5.4** - Repository Layer (COMPLETE 2026-01-02)
 - ✅ **5.5** - Transaction Capture Screen (COMPLETE 2026-01-02, commit: b5bf609)
-- ⏳ **5.6** - Add State to Capture Screen
+- ✅ **5.6** - Add State to Capture Screen (COMPLETE 2026-01-02, commit: 91246ea)
 - ⏳ **5.7** - Wire Up Data Flow
 - 🔄 **5.8** - Transaction List Screen (UI complete, commit: b5bf609)
 - ⏳ **5.9** - Recurrence Management
@@ -101,10 +101,13 @@
 - ✅ **5.3** - Data Models
 - ✅ **5.4** - Repository Layer
 - ✅ **5.5** - Transaction Capture Screen (Static UI)
+- ✅ **5.6** - Add State to Capture Screen
 - 🔄 **5.8** - Transaction List Screen (UI complete)
 - 🔄 **5.10** - Navigation Structure (screens connected)
 
-**Commit:** b5bf609 - "feat(ui): implement main screens with navigation"
+**Commits:**
+- b5bf609 - "feat(ui): implement main screens with navigation"
+- 91246ea - "feat(ui): add state to transaction capture screen"
 
 **Key Deliverables (UI Phase):**
 - **Transaction Capture Screen** (166 lines):
@@ -137,9 +140,9 @@
   - Automatic back navigation via AppBar
 
 **Next Steps (Data Flow Phase):**
-- Add state to capture screen (Step 5.6): Make number pad functional
-- Wire up data flow (Step 5.7): Connect capture screen to repository
-- Complete list screen (Step 5.8): Pull real data from database
+- ✅ Add state to capture screen (Step 5.6): Number pad functional with proper state management
+- Wire up data flow (Step 5.7): Connect capture screen to repository and save transactions
+- Complete list screen (Step 5.8): Pull real data from database and display
 
 ## Architectural Decisions
 
