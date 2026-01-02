@@ -356,6 +356,72 @@ POST /transactions
 
 These are accessible via agent tooling or admin interfaces only.
 
+### UI Layout & Navigation
+
+**Follow Material Design guidelines** except where explicitly stated below.
+
+#### Main Screen (Transaction List)
+
+**Left Sidebar (Drawer):**
+- Auto-hide drawer (slide from left or tap upper left hamburger icon)
+- **Account Filter**: All / Household / Personal
+- **Date Range Selector**: Day / Month / Year
+- Drawer closes after selection
+
+**App Bar:**
+- Title: "Transactions" (or current date range)
+- **Settings**: Icon inside overflow menu (three dots) - follow Material Design guidelines
+
+**Transaction List:**
+- **Group by Category**: Transactions organized into category sections
+- **Sort Categories**: By total transaction amount (descending)
+- **Sort Transactions within Category**: By date ascending (oldest first)
+- **Account & Category Icons**: Emoji icons supported (UI-only, not synced to extensions)
+  - Emoji appears in selector dropdowns
+  - Emoji appears in transaction list category groups
+  - Purpose: Visual identification, not part of data model
+- **Category Group Headers**:
+  - Show category name with emoji (if set)
+  - Show total amount for category
+  - Show percentage of day/month/year total
+- **Transaction Items**:
+  - Icon: Category emoji or default Material icon
+  - Title: Description
+  - Subtitle: Account • Date
+  - Trailing: Amount (red for expenses, green for income)
+
+**Floating Action Button (FAB):**
+- Bottom-right: Add transaction button
+- Navigates to transaction capture screen
+
+#### Transaction Capture Screen
+
+**Future Separation:**
+- Will split into **Add Expense** and **Add Deposit** screens
+- Both use same UI layout, differ only in transaction sign (negative/positive)
+
+**Current UI (Monefy-inspired):**
+- Large amount display (calculator-style)
+- Number pad: 0-9, decimal point, arithmetic operators (+, -, *, /), equals
+- Account dropdown
+- Category dropdown (with emoji icons)
+- Description text field
+- Date display (today's date, selector coming later)
+- Save button (green, to distinguish from calculator buttons)
+- Placeholder: Future recurrence button
+
+**UX Pattern:**
+- Autosave disabled: back/close implies cancel
+- Explicit save only (user must tap Save button)
+
+#### Settings Screen (Future)
+
+- Manage accounts (add, edit, delete, assign emoji)
+- Manage categories (add, edit, delete, assign emoji)
+- Currency settings
+- Sync configuration (MemoGarden Core connection)
+- Theme preferences
+
 ---
 
 ## Success Criteria

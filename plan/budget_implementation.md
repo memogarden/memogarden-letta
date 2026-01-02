@@ -287,8 +287,20 @@ These will be considered in future iterations after Budget MVP is complete.
 - Build list UI to show saved transactions
 - Pull from DB via repository
 - Display generated transactions differently (italic/grey/bold)
-- Group by date (optional)
-- **Goal**: See what you captured
+- **Layout Requirements:**
+  - Left sidebar (Drawer) with:
+    - Account filter: All / Household / Personal
+    - Date range selector: Day / Month / Year
+    - Auto-hide with hamburger icon
+  - Settings icon in app bar overflow menu (three dots)
+  - Floating Action Button (FAB) to add transactions
+- **Transaction List Grouping:**
+  - Group transactions by category
+  - Sort categories by total amount (descending)
+  - Sort transactions within category by date ascending
+  - Category headers show: name + emoji, total amount, % of period
+  - Transaction items show: emoji icon, description, account•date, amount (red/green)
+- **Goal**: See what you captured with proper grouping and sorting
 
 **5.9: Recurrence Management**
 - Create recurrence CRUD UI
@@ -323,7 +335,7 @@ These will be considered in future iterations after Budget MVP is complete.
 - ✅ **5.2** - Database Schema Setup
 - ✅ **5.3** - Data Models (2025-12-31)
 - ✅ **5.4** - Repository Layer (2026-01-02)
-- ⏳ **5.5** - Transaction Capture Screen (Static UI)
+- ✅ **5.5** - Transaction Capture Screen (Static UI) (2026-01-02)
 - ⏳ **5.6** - Add State to Capture Screen
 - ⏳ **5.7** - Wire Up Data Flow
 - ⏳ **5.8** - Transaction List Screen
