@@ -260,7 +260,7 @@ These will be considered in future iterations after Budget MVP is complete.
 - Input validation (null ID checks for create/update)
 - Parameterized queries for SQL injection prevention
 
-**5.5: Transaction Capture Screen (Static UI)**
+**5.5: Transaction Capture Screen (Static UI)** ✅ COMPLETE (2026-01-02)
 - Build main transaction capture UI (Monefy-inspired)
 - Big amount display, number pad (0-9, decimal, backspace)
 - Date display (static for now, date selector added later)
@@ -283,7 +283,7 @@ These will be considered in future iterations after Budget MVP is complete.
 - Clear form after save
 - **Goal**: Capture screen actually saves data
 
-**5.8: Transaction List Screen**
+**5.8: Transaction List Screen** 🔄 UI COMPLETE (2026-01-02, commit: b5bf609)
 - Build list UI to show saved transactions
 - Pull from DB via repository
 - Display generated transactions differently (italic/grey/bold)
@@ -300,6 +300,15 @@ These will be considered in future iterations after Budget MVP is complete.
   - Sort transactions within category by date ascending
   - Category headers show: name + emoji, total amount, % of period
   - Transaction items show: emoji icon, description, account•date, amount (red/green)
+- **Completed** (UI Phase):
+  - Collapsible category sections with state management
+  - Category headers with expand/collapse icons
+  - Drawer with filters (Material Design compliant)
+  - Sample data display (Food, Transport, Income categories)
+- **Pending** (Data Phase):
+  - Connect to repository to pull real transactions
+  - Apply account and date range filters
+  - Calculate category totals and percentages dynamically
 - **Goal**: See what you captured with proper grouping and sorting
 
 **5.9: Recurrence Management**
@@ -309,9 +318,16 @@ These will be considered in future iterations after Budget MVP is complete.
 - Implement realization flow (tap button or edit)
 - **Goal**: Recurring transactions work
 
-**5.10: Navigation Structure**
-- Add navigation (capture ↔ list ↔ recurrences ↔ settings)
+**5.10: Navigation Structure** 🔄 SCREENS CONNECTED (2026-01-02, commit: b5bf609)
+- Add navigation (capture ↔ list ↔ settings)
 - Bottom navigation bar or simple drawer
+- **Completed**:
+  - FAB on transaction list screen → capture screen
+  - Overflow menu on transaction list screen → settings screen
+  - Automatic back navigation on all screens via AppBar
+  - MaterialPageRoute transitions between screens
+- **Pending**:
+  - Recurrence management navigation (when Step 5.9 is complete)
 - **Goal**: Can move between screens
 
 **5.11: Design System Polish**
