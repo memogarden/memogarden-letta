@@ -245,13 +245,20 @@ These will be considered in future iterations after Budget MVP is complete.
 - JSON encoding/decoding for extensionData and metadata fields
 - Renamed `extension` → `extensionData` (Dart keyword conflict)
 
-**5.4: Repository Layer**
-- Create `repositories/transaction_repository.dart`
-- Create `repositories/recurrence_repository.dart`
-- Implement CRUD methods (create, getAll, getById, update, delete)
-- Use raw SQL queries via `sqflite`
-- Implement transaction realization logic
-- **Goal**: Business logic layer ready
+**5.4: Repository Layer** ✅ COMPLETE (2026-01-02)
+- Create `repositories/transaction_repository.dart` ✅
+- Create `repositories/recurrence_repository.dart` ✅
+- Implement CRUD methods (create, getAll, getById, update, delete) ✅
+- Use raw SQL queries via `sqflite` ✅
+- Implement transaction realization logic (deferred to UI implementation)
+- **Goal**: Business logic layer ready ✅
+
+**Deliverables:**
+- `TransactionRepository` with full CRUD operations
+- `RecurrenceRepository` with full CRUD operations
+- Table name constants to avoid magic strings
+- Input validation (null ID checks for create/update)
+- Parameterized queries for SQL injection prevention
 
 **5.5: Transaction Capture Screen (Static UI)**
 - Build main transaction capture UI (Monefy-inspired)
@@ -312,14 +319,15 @@ These will be considered in future iterations after Budget MVP is complete.
 - ✅ **5.1** - Project Initialization & Setup
 - ✅ **5.2** - Database Schema Setup
 - ✅ **5.3** - Data Models (2025-12-31)
-- ⏳ **5.4** - Repository Layer
+- ✅ **5.4** - Repository Layer (2026-01-02)
 - ⏳ **5.5** - Transaction Capture Screen (Static UI)
 - ⏳ **5.6** - Add State to Capture Screen
 - ⏳ **5.7** - Wire Up Data Flow
 - ⏳ **5.8** - Transaction List Screen
-- ⏳ **5.9** - Navigation Structure
-- ⏳ **5.10** - Design System Polish
-- ⏳ **5.11** - Testing & Refinement
+- ⏳ **5.9** - Recurrence Management
+- ⏳ **5.10** - Navigation Structure
+- ⏳ **5.11** - Design System Polish
+- ⏳ **5.12** - Testing & Refinement
 
 ---
 
