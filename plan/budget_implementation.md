@@ -263,8 +263,11 @@ These will be considered in future iterations after Budget MVP is complete.
 **5.5: Transaction Capture Screen (Static UI)**
 - Build main transaction capture UI (Monefy-inspired)
 - Big amount display, number pad (0-9, decimal, backspace)
-- Account/category selector buttons
-- Save/Cancel buttons
+- Date display (static for now, date selector added later)
+- Account/category selector dropdowns (use placeholder values)
+  - Future: Settings screen for adding/removing accounts & categories
+- Save button only (autosave UX: back/close implies cancel)
+- Placeholder spot for future recurrence button
 - **No state yet** - just static layout
 - **Goal**: See what the app will look like
 
