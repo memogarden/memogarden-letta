@@ -277,11 +277,21 @@ These will be considered in future iterations after Budget MVP is complete.
 - Select account/category (simple dropdown or buttons)
 - **Goal**: Interactive UI, but no data persistence
 
-**5.7: Wire Up Data Flow**
+**5.7: Wire Up Data Flow** ✅ COMPLETE (2026-01-03)
 - Connect capture screen to repository
 - Save transactions to DB on submit
-- Clear form after save
-- **Goal**: Capture screen actually saves data
+- Navigate away after save (better UX than clearing form)
+- **Goal**: Capture screen actually saves data ✅
+
+**Completed Substeps:**
+- ✅ Import Transaction model and TransactionRepository
+- ✅ Instantiate repository in screen state
+- ✅ Implement `_isFormValid()` for validation (prevents zero-amount transactions)
+- ✅ Implement `_saveTransaction()` with error handling and async/await
+- ✅ Wire save button to validation + save method
+- ✅ Navigate away on successful save
+- ✅ Add backspace button to amount display with proper positioning
+- ✅ Fix Transaction and Recurrence model constructor syntax
 
 **5.8: Transaction List Screen** 🔄 UI COMPLETE (2026-01-02, commit: b5bf609)
 - Build list UI to show saved transactions
@@ -353,7 +363,7 @@ These will be considered in future iterations after Budget MVP is complete.
 - ✅ **5.4** - Repository Layer (2026-01-02)
 - ✅ **5.5** - Transaction Capture Screen (Static UI) (2026-01-02)
 - ✅ **5.6** - Add State to Capture Screen (2026-01-02)
-- ⏳ **5.7** - Wire Up Data Flow
+- ✅ **5.7** - Wire Up Data Flow (2026-01-03)
 - 🔄 **5.8** - Transaction List Screen (UI complete, data connection pending)
 - ⏳ **5.9** - Recurrence Management
 - 🔄 **5.10** - Navigation Structure (screens connected, navigation flow established)
