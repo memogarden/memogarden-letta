@@ -1,6 +1,6 @@
 # MemoGarden Project Status
 
-**Last Updated**: 2026-01-02
+**Last Updated**: 2026-01-03
 
 ## Active Step
 
@@ -19,8 +19,8 @@
 - ✅ **5.4** - Repository Layer (COMPLETE 2026-01-02)
 - ✅ **5.5** - Transaction Capture Screen (COMPLETE 2026-01-02, commit: b5bf609)
 - ✅ **5.6** - Add State to Capture Screen (COMPLETE 2026-01-02, commit: 91246ea)
-- ⏳ **5.7** - Wire Up Data Flow
-- 🔄 **5.8** - Transaction List Screen (UI complete, commit: b5bf609)
+- ✅ **5.7** - Wire Up Data Flow (COMPLETE 2026-01-03, commit: 35c9c0f)
+- 🔄 **5.8** - Transaction List Screen (UI complete, data connection pending, commit: b5bf609)
 - ⏳ **5.9** - Recurrence Management
 - 🔄 **5.10** - Navigation Structure (screens connected, commit: b5bf609)
 - ⏳ **5.11** - Design System Polish
@@ -102,12 +102,14 @@
 - ✅ **5.4** - Repository Layer
 - ✅ **5.5** - Transaction Capture Screen (Static UI)
 - ✅ **5.6** - Add State to Capture Screen
-- 🔄 **5.8** - Transaction List Screen (UI complete)
+- ✅ **5.7** - Wire Up Data Flow
+- 🔄 **5.8** - Transaction List Screen (UI complete, data connection pending)
 - 🔄 **5.10** - Navigation Structure (screens connected)
 
 **Commits:**
 - b5bf609 - "feat(ui): implement main screens with navigation"
 - 91246ea - "feat(ui): add state to transaction capture screen"
+- 35c9c0f - "feat(capture): wire up data flow with save functionality"
 
 **Key Deliverables (UI Phase):**
 - **Transaction Capture Screen** (166 lines):
@@ -139,10 +141,25 @@
   - Overflow menu → settings screen
   - Automatic back navigation via AppBar
 
+**Key Deliverables (Data Flow Phase - Step 5.7):**
+- **Save Functionality**:
+  - Backspace button on amount display (fixed positioning on right edge)
+  - Form validation preventing zero-amount transactions
+  - Transaction save to SQLite database via repository
+  - Error handling with user-visible SnackBar messages
+  - Save button enable/disable based on form validity
+  - Navigate away after successful save
+
+- **Technical Improvements**:
+  - Fixed Transaction and Recurrence model constructors (Dart idiomatic syntax)
+  - UTC date handling (DateTime.now().toUtc())
+  - Mounted checks after async operations (Flutter best practice)
+  - Comprehensive error handling with try-catch blocks
+
 **Next Steps (Data Flow Phase):**
 - ✅ Add state to capture screen (Step 5.6): Number pad functional with proper state management
-- Wire up data flow (Step 5.7): Connect capture screen to repository and save transactions
-- Complete list screen (Step 5.8): Pull real data from database and display
+- ✅ Wire up data flow (Step 5.7): Connect capture screen to repository and save transactions
+- Complete list screen (Step 5.8): Pull real data from database and display (current)
 
 ## Architectural Decisions
 
