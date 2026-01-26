@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# MemoGarden Core - Local Deployment Script
+#
+# Run this script on the Raspberry Pi to deploy memogarden-core.
+# Clones/updates the repo to /opt/memogarden-core and runs the install script.
+#
+# Usage:
+#   ~/scripts/deploy-memogarden-core.sh
+#
+# This script:
+# 1. Clones memogarden-core to /opt/memogarden-core (or updates if exists)
+# 2. Runs the install script (idempotent - safe to run multiple times)
+
+set -eo pipefail
+
+#=============================================================================
+# Configuration
+#=============================================================================
+
+INSTALL_DIR="/opt/memogarden-core"
+REPO_URL="https://github.com/memogarden/memogarden-core.git"
+
+#=============================================================================
+# Colors
+#=============================================================================
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+#=============================================================================
+# Deploy
+#=============================================================================
+
+if [ -d "$INSTALL_DIR" ]; then
+    log_info "Updating existing installation at ${INSTALL_DIR}..."
+    cd "$INSTALL_DIR"
+    sudo git fetch origin
+    sudo git reset --hard origin/main
+else
+    log_info "Cloning fresh installation to ${INSTALL_DIR}..."
+    sudo git clone "$REPO_URL" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+fi
+
+#=============================================================================
+# Install
+#=============================================================================
+
+log_info "Running install script..."
+cd "$INSTALL_DIR"
+sudo ./install.sh
+
+log_info "Deployment complete!"
