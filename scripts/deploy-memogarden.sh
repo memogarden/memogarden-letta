@@ -1,15 +1,15 @@
 #!/bin/bash
 #
-# MemoGarden Core - Local Deployment Script
+# MemoGarden - Local Deployment Script
 #
-# Run this script on the Raspberry Pi to deploy memogarden-core.
-# Clones/updates the repo to /opt/memogarden-core and runs the install script.
+# Run this script on the Raspberry Pi to deploy memogarden.
+# Clones/updates the repo to /opt/memogarden and runs the install script.
 #
 # Usage:
-#   ~/scripts/deploy-memogarden-core.sh
+#   ~/scripts/deploy-memogarden.sh
 #
 # This script:
-# 1. Clones memogarden-core to /opt/memogarden-core (or updates if exists)
+# 1. Clones memogarden to /opt/memogarden (or updates if exists)
 # 2. Runs the install script (idempotent - safe to run multiple times)
 
 set -eo pipefail
@@ -18,8 +18,8 @@ set -eo pipefail
 # Configuration
 #=============================================================================
 
-INSTALL_DIR="/opt/memogarden-core"
-REPO_URL="https://github.com/memogarden/memogarden-core.git"
+INSTALL_DIR="/opt/memogarden"
+REPO_URL="https://github.com/memogarden/memogarden.git"
 
 #=============================================================================
 # Colors
