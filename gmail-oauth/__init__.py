@@ -79,6 +79,7 @@ class GmailOAuthClient:
         state: str | None = None,
         access_type: Literal["online", "offline"] = "offline",
         prompt: Literal["consent", "select_account"] = "consent",
+        use_oob: bool = False,
     ) -> str:
         """Generate GMail OAuth authorization URL.
 
@@ -86,6 +87,7 @@ class GmailOAuthClient:
             state: Optional CSRF token (generated if not provided)
             access_type: "offline" for refresh token (required)
             prompt: "consent" to force approval screen
+            use_oob: Use out-of-band flow (oob) for headless/CLI usage
 
         Returns:
             Authorization URL for user to visit
@@ -95,9 +97,15 @@ class GmailOAuthClient:
         if state is None:
             state = self._generate_state()
 
+        # Choose redirect URI based on flow type
+        if use_oob:
+            redirect_uri = "urn:ietf:wg:oauth:2.0:oob"  # OOB flow for headless
+        else:
+            redirect_uri = self.redirect_uri  # Callback flow
+
         params = {
             "client_id": client_id,
-            "redirect_uri": self.redirect_uri,
+            "redirect_uri": redirect_uri,
             "scope": " ".join(GOOGLE_SCOPES),
             "response_type": "code",
             "access_type": access_type,
@@ -108,11 +116,12 @@ class GmailOAuthClient:
         url = f"{GOOGLE_AUTH_URI}?{urlencode(params)}"
         return url
 
-    def exchange_code_for_tokens(self, code: str, state: str | None = None) -> dict:
+    def exchange_code_for_tokens(self, code: str, redirect_uri: str | None = None, state: str | None = None) -> dict:
         """Exchange authorization code for access and refresh tokens.
 
         Args:
-            code: Authorization code from OAuth callback
+            code: Authorization code from OAuth callback/oob
+            redirect_uri: Redirect URI used in authorization (defaults to self.redirect_uri)
             state: State parameter for validation (if generated)
 
         Returns:
@@ -123,11 +132,15 @@ class GmailOAuthClient:
         """
         client_id, client_secret = self.get_client_credentials()
 
+        # Use provided redirect_uri or default
+        if redirect_uri is None:
+            redirect_uri = self.redirect_uri
+
         data = {
             "code": code,
             "client_id": client_id,
             "client_secret": client_secret,
-            "redirect_uri": self.redirect_uri,
+            "redirect_uri": redirect_uri,
             "grant_type": "authorization_code",
         }
 

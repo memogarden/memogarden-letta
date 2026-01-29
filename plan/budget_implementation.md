@@ -321,12 +321,103 @@ These will be considered in future iterations after Budget MVP is complete.
   - Calculate category totals and percentages dynamically
 - **Goal**: See what you captured with proper grouping and sorting
 
-**5.9: Recurrence Management**
+**5.9: Recurrence Management** 🔄 IN PROGRESS (2026-01-18)
 - Create recurrence CRUD UI
 - Validate RRULE syntax (client-side via `rrule` package)
 - Generate transactions from recurrence template
 - Implement realization flow (tap button or edit)
 - **Goal**: Recurring transactions work
+
+**Learning-Focused Substeps:**
+
+**5.9.1: Add Recurrence Button to Capture Screen** ✅ COMPLETE (2026-01-18)
+- Add recurrence icon button to capture screen AppBar
+- Use `Icons.repeat` Material icon
+- Open recurrence picker bottom sheet on tap
+- Enable recurrence state when button is tapped
+- **Goal**: UI entry point for recurrence configuration ✅
+
+**5.9.2: Build Recurrence Picker Bottom Sheet** ✅ COMPLETE (2026-01-18)
+- Create Material Design `showModalBottomSheet` with two-column layout
+- **Number picker** (left): ListWheelScrollView with dynamic range based on unit
+  - days: 1-30
+  - weeks: 1-10
+  - months: 1-6
+  - years: 1
+- **Unit picker** (right): ListView with days/weeks/months/years
+- Done button to confirm selection
+- **Goal**: User-friendly recurrence selection UI ✅
+
+**5.9.3: Store Recurrence State in Capture Screen** ✅ COMPLETE (2026-01-18)
+- Add state variables:
+  - `_hasRecurrence`: bool flag for recurrence active state
+  - `_recurrenceNumber`: nullable int for interval value
+  - `_recurrenceUnit`: string for frequency unit (days/weeks/months/years)
+- Helper methods:
+  - `_maxForUnit()`: returns max value for each unit
+  - `_clampNumberToUnit()`: ensures number is within valid range
+- Display selected recurrence as chip with delete button
+- Defaults to "1 months" when picker opens
+- **Goal**: Capture screen knows about recurrence intent ✅
+
+**5.9.4: Save Recurrence with Transaction**
+- When saving transaction with recurrence:
+  - Save transaction normally (via repository)
+  - Create recurrence record (via RecurrenceRepository)
+  - Store transaction template as JSON
+  - Set `valid_from` to transaction date
+  - Generate RRULE string from selection
+- Error handling: rollback transaction if recurrence creation fails
+- **Goal**: Recurrence created in database with linked transaction
+
+**5.9.5: RRULE Generation Helper**
+- Create utility function: `generateRRULE(frequency, interval)`
+- Map simple selections to iCal RRULE strings:
+  - Daily → `FREQ=DAILY`
+  - Weekly → `FREQ=WEEKLY;INTERVAL=1`
+  - Monthly (date-based) → `FREQ=MONTHLY;BYMONTHDAY=15`
+  - Yearly → `FREQ=YEARLY`
+- Use `rrule` package to validate generated strings
+- **Goal**: Valid RRULE strings for database storage
+
+**5.9.6: Display Recurrence Indicator**
+- Show recurrence icon on transactions in list
+- Display recurrence pattern (e.g., "🔄 Monthly on 15th")
+- Different styling for generated vs. manual transactions
+- **Goal**: Visual indication of recurring transactions
+
+**5.9.7: Transaction Generation Logic**
+- Create method in RecurrenceRepository: `generateOccurrences()`
+- Use `rrule` package to calculate next occurrences
+- Check `last_generated` and `next_occurrence` fields
+- Return list of proposed transaction dates
+- **Goal**: Calculate upcoming recurring transactions
+
+**5.9.8: Recurrence Management Screen**
+- Create list screen showing all recurrences
+- Display recurrence pattern, next occurrence, amount
+- Edit/delete recurrence operations
+- Navigation from transaction list or settings
+- **Goal**: Manage existing recurrences
+
+**5.9.9: Realization Flow**
+- Show pending recurring transactions
+- User taps to confirm/realize (creates actual transaction)
+- Update recurrence's `last_generated` and `next_occurrence`
+- Optional: Bulk confirm multiple occurrences
+- **Goal**: User confirms recurring transactions before posting
+
+**Implementation Notes:**
+- **Flexible interval-based RRULE**: Number picker (1-N) + Unit picker (days/weeks/months/years)
+- **Dynamic ranges**: Max values based on unit (days: 30, weeks: 10, months: 6, years: 1)
+- **State management**: `_hasRecurrence` bool flag + `_recurrenceNumber` (int?) + `_recurrenceUnit` (string)
+- **RRULE mapping**: "2 weeks" → `FREQ=WEEKLY;INTERVAL=2`, "1 months" → `FREQ=MONTHLY;INTERVAL=1`
+- **Visual feedback**: Chip indicator shows current selection, delete button removes recurrence
+- **Default selection**: "1 months" when picker opens (most common use case)
+- **RRULE validation**: Will use `rrule` package's `RRule.parse()` to validate before saving
+- **Transaction template**: Will store as JSON: `{amount, description, account, category, labels}`
+- **Realization**: Generated transactions will be marked via metadata flag (MVP)
+- **Error handling**: If recurrence creation fails, don't save the base transaction (atomicity)
 
 **5.10: Navigation Structure** 🔄 SCREENS CONNECTED (2026-01-02, commit: b5bf609)
 - Add navigation (capture ↔ list ↔ settings)
@@ -364,9 +455,9 @@ These will be considered in future iterations after Budget MVP is complete.
 - ✅ **5.5** - Transaction Capture Screen (Static UI) (2026-01-02)
 - ✅ **5.6** - Add State to Capture Screen (2026-01-02)
 - ✅ **5.7** - Wire Up Data Flow (2026-01-03)
-- 🔄 **5.8** - Transaction List Screen (UI complete, data connection pending)
-- ⏳ **5.9** - Recurrence Management
-- 🔄 **5.10** - Navigation Structure (screens connected, navigation flow established)
+- ✅ **5.8** - Transaction List Screen (2026-01-17)
+- 🔄 **5.9** - Recurrence Management (2026-01-18, 5.9.1-5.9.3 complete: picker UI with number/unit selection)
+- ✅ **5.10** - Navigation Structure (screens connected, navigation flow established)
 - ⏳ **5.11** - Design System Polish
 - ⏳ **5.12** - Testing & Refinement
 
