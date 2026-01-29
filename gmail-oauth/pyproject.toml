@@ -1,0 +1,9 @@
+# GMail OAuth 2.0
+
+# OAuth 2.0
+google-api-python-client>=2.0.0
+requests>=2.31.0
+memogarden-hacm>=0.1.0
+
+[dev]
+pytest>=7.0.0

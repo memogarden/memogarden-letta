@@ -1,0 +1,3 @@
+include gmail_oauth
+recursive-exclude *.pyc
+recursive-exclude __pycache__
