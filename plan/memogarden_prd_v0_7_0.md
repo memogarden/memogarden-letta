@@ -262,6 +262,56 @@ class Message(Note):
 
 ---
 
+### Email
+
+**Purpose:** Email message imported from external provider (GMail, Outlook, etc.)
+
+**Schema:**
+```python
+@dataclass
+class Email(Note):
+    # Inherited: uuid, _type='Email', realized_at, canonical_at, integrity_hash,
+    #            fidelity, superseded_by, superseded_at
+    # Note: description stores email body (plain text), title stores subject
+
+    # Standard email fields (provider-agnostic)
+    rfc_message_id: str              # RFC 822 Message-ID header (deduplication key)
+    from_address: str                # From header (parsed)
+    to_addresses: list[str]          # To header (parsed, multiple recipients)
+    cc_addresses: list[str] | None   # Cc header (parsed)
+    bcc_addresses: list[str] | None  # Bcc header (rarely available in exports)
+    sent_at: datetime                # Date header (sent timestamp)
+    received_at: datetime | None     # Delivery timestamp (when available)
+
+    # Threading (RFC 5322)
+    references: list[str] | None     # References header (thread ancestors)
+    in_reply_to: str | None          # In-Reply-To header (direct parent)
+
+    # Attachments
+    has_attachments: bool
+    attachment_count: int
+
+    # Provider-specific data (stored in Item.metadata, not data):
+    # GMail: {"provider": "google", "gmail_thread_id": "...", "labels": [...]}
+    # Outlook: {"provider": "outlook", "conversation_id": "..."}
+```
+
+**Properties:**
+- **Provider-agnostic**: Core fields work with any email provider
+- **Threading**: Uses standard RFC 5322 headers (References, In-Reply-To)
+- **Deduplication**: `rfc_message_id` is globally unique per email
+- **Metadata**: Provider-specific fields (GMail thread ID, labels) stored in `Item.metadata`
+- **Body storage**: Plain text in `description`, HTML in `metadata` if needed
+
+**Threading Relations:**
+Emails in a conversation chain are connected via `replies_to` system relations:
+- `source`: reply email UUID
+- `target`: parent email UUID
+- `evidence.source`: `"system_inferred"`
+- `evidence.method`: `"rfc_5322_in_reply_to"` or `"rfc_5322_references"`
+
+---
+
 ### ToolCall
 
 **Purpose:** Record of tool invocation by user or agent
