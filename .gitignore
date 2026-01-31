@@ -76,3 +76,8 @@ data/
 *.tmp
 *.temp
 .ruff_cache/
+
+# Fixtures and test data (contains personal data)
+fixtures/
+*.mbox
+*.mbox.*
