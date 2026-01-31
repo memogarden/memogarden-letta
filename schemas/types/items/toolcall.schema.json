@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/items/toolcall.schema.json",
+  "title": "ToolCall",
+  "description": "Record of tool invocation by user or agent",
+  "allOf": [
+    {
+      "$ref": "item.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "ToolCall"
+        },
+        "tool": {
+          "type": "string",
+          "description": "Tool name (e.g., 'artifact_reader', 'scratchpad')",
+          "examples": ["artifact_reader", "scratchpad", "database_query"]
+        },
+        "operation": {
+          "type": "string",
+          "description": "Specific operation (e.g., 'semantic_search', 'scroll_to')",
+          "examples": ["semantic_search", "scroll_to", "execute"]
+        },
+        "params": {
+          "type": "object",
+          "description": "Operation parameters (tool-specific)",
+          "additionalProperties": true
+        },
+        "result": {
+          "type": ["object", "null"],
+          "description": "Tool result (if completed)",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["success", "error", "cancelled"],
+              "description": "Execution status"
+            },
+            "output": {
+              "description": "Tool-specific output (any type)"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When result was produced"
+            }
+          }
+        },
+        "caller": {
+          "type": "string",
+          "description": "Who invoked the tool ('user', 'agent', specific identifier)",
+          "examples": ["user", "agent", "claude-code"]
+        },
+        "context": {
+          "type": ["string", "null"],
+          "description": "Human-readable intent/explanation"
+        }
+      },
+      "required": ["tool", "operation", "params", "caller"]
+    }
+  ]
+}

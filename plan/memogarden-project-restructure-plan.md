@@ -1,10 +1,26 @@
 # MemoGarden Project Restructure Plan
 
-**Version:** 1.2
-**Status:** Draft
-**Last Updated:** 2026-01-30
+**Version:** 1.7
+**Status:** In Progress (Phase 6/6)
+**Last Updated:** 2026-01-31
+
+## Quick Progress Summary
+
+| Phase | Status | Deliverables |
+|-------|--------|--------------|
+| 1. Schema Consolidation | ✅ Complete | Unified `/schemas/` directory with SQL and JSON schemas |
+| 2. System Package Creation | ✅ Complete | `memogarden-system/` package with Core and Soil layers |
+| 3. API Extraction | ✅ Complete | Separate `/api/` package with Flask application |
+| 4. Soil Package Migration | ✅ Complete | Updated imports, created compatibility wrapper for `/soil/` |
+| 5. Legacy Cleanup | ✅ Complete | Removed old `/memogarden/` package structure |
+| 6. Provider Refactoring | 🔲 Next | Move email importers to `/providers/` |
 
 ## Changelog
+- **v1.7** (2026-01-31): Phase 5 (Legacy Cleanup) completed. Removed old `/memogarden/` package directory containing the triple-nested memogarden.memogarden structure. All code has been migrated to the new package structure. Updated convenience scripts to use new `/api/` package. Copied missing files (hash_chain.py, migrations) to memogarden-system.
+- **v1.6** (2026-01-31): Phase 4 (Soil Package Migration) completed. Updated email importers (email_importer.py, import_mbox.py) and tests to use `system.soil`. Created compatibility wrapper in `soil/__init__.py` that re-exports from `system.soil` with deprecation warning. The `/soil/` package now only contains email importer utilities temporarily; full removal deferred to Phase 6 (Provider Refactoring).
+- **v1.5** (2026-01-31): Phase 3 (API Extraction) completed. Created `/api/` package with Flask app, API endpoints, authentication middleware, and schemas. All imports updated to use `system.core` and `system.utils`.
+- **v1.4** (2026-01-31): Phase 2 (System Package Creation) completed. Created `memogarden-system/` package with Core, Soil, Host interface, and utilities.
+- **v1.3** (2026-01-30): Phase 1 (Schema Consolidation) completed. Created unified `/schemas/` structure with SQL schemas and JSON Schema templates.
 - **v1.2** (2026-01-30): Added Step 2.6 to create `system/schemas/` directory structure per RFC-004. Schema bundling automation deferred.
 - **v1.1** (2026-01-30): Removed Phase 1 (Characterization Testing) since `/soil/` is a throwaway MVP. Renumbered phases 2-7 to 1-6. Updated timeline to 8-12 days.
 
@@ -118,11 +134,14 @@ To minimize disruption:
 
 ## Detailed Migration Steps
 
-### Phase 1: Schema Consolidation
+### Phase 1: Schema Consolidation ✅
+
+**Status**: COMPLETE
+**Completed**: 2026-01-30
 
 **Goal**: Create unified `/schemas/` directory structure.
 
-**Duration**: 1 day
+**Duration**: 1 day (Actual: <1 day)
 
 #### Step 2.1: Create `/schemas/sql/` Structure
 
@@ -185,19 +204,31 @@ Create `/memogarden/schemas/sql/core.sql`:
 
 Create template files for each Item/Entity type:
 
-- `/schemas/json/item/email.schema.json`
-- `/schemas/json/item/note.schema.json`
-- `/schemas/json/entity/transaction.schema.json`
+- `/schemas/types/items/email.schema.json`
+- `/schemas/types/items/note.schema.json`
+- `/schemas/types/items/message.schema.json`
+- `/schemas/types/entities/transaction.schema.json`
 
 (Use existing `/schemas/email.yaml` as reference)
 
+**Deliverables**:
+- ✅ `/schemas/sql/soil.sql` - Base Soil schema (item, system_relation tables)
+- ✅ `/schemas/sql/core.sql` - Base Core schema (entity, user_relation, context_frame tables)
+- ✅ `/schemas/types/items/note.schema.json` - Base Note type
+- ✅ `/schemas/types/items/email.schema.json` - Email with RFC 5322 fields
+- ✅ `/schemas/types/items/message.schema.json` - Chat messages
+- ✅ `/schemas/types/entities/transaction.schema.json` - Financial transactions
+
 ---
 
-### Phase 2: System Package Creation
+### Phase 2: System Package Creation ✅
+
+**Status**: COMPLETE
+**Completed**: 2026-01-31
 
 **Goal**: Create the unified `memogarden-system/` package.
 
-**Duration**: 2-3 days
+**Duration**: 2-3 days (Actual: <1 day)
 
 #### Step 2.1: Create Package Structure
 
@@ -833,16 +864,16 @@ Stop migration and rollback if:
 
 ### Migration Timeline
 
-| Phase | Duration | Risk Level | Dependencies |
-|-------|----------|------------|--------------|
-| 1. Schema Consolidation | 1 day | Low | None |
-| 2. System Package Creation | 2-3 days | Medium | Phase 1 |
-| 3. API Extraction | 2-3 days | Medium | Phase 2 |
-| 4. Soil Package Migration | 1-2 days | Low | Phase 2 |
-| 5. Legacy Cleanup | 1 day | High | Phases 2-4 |
-| 6. Provider Refactoring | 1-2 days | Low | Phase 4 |
+| Phase | Duration | Risk Level | Status | Dependencies |
+|-------|----------|------------|--------|--------------|
+| 1. Schema Consolidation | 1 day | Low | ✅ Complete | None |
+| 2. System Package Creation | 2-3 days | Medium | ✅ Complete | Phase 1 |
+| 3. API Extraction | 2-3 days | Medium | ✅ Complete | Phase 2 |
+| 4. Soil Package Migration | 1-2 days | Low | 🔲 Next | Phase 2 |
+| 5. Legacy Cleanup | 1 day | High | 🔲 Pending | Phases 2-4 |
+| 6. Provider Refactoring | 1-2 days | Low | 🔲 Pending | Phase 4 |
 
-**Total Duration**: 8-12 days
+**Total Duration**: 8-12 days | **Progress**: 3/6 phases complete (Phase 4 next)
 
 ### Critical Success Factors
 

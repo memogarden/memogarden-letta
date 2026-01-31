@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/items/systemevent.schema.json",
+  "title": "SystemEvent",
+  "description": "System-generated notifications and state changes",
+  "allOf": [
+    {
+      "$ref": "item.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "SystemEvent"
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Event type identifier",
+          "examples": [
+            "entity_created",
+            "fossilization_sweep",
+            "item_fossilized",
+            "fossilized_item_accessed",
+            "integrity_check_failed"
+          ]
+        },
+        "payload": {
+          "type": ["object", "null"],
+          "description": "Event-specific data",
+          "additionalProperties": true
+        }
+      },
+      "required": ["event_type"]
+    }
+  ]
+}

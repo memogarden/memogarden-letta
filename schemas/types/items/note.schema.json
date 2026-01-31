@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/items/note.schema.json",
+  "title": "Note",
+  "description": "General-purpose text item. Base Item type for textual notes with title and description. Most Item types extend from Note.",
+  "allOf": [
+    {
+      "$ref": "item.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "Note"
+        },
+        "title": {
+          "type": ["string", "null"],
+          "description": "Optional title or headline of the note",
+          "examples": ["Meeting Notes", "Project Idea", "Quick Reminder"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Main content or body text of the note",
+          "examples": ["Discussed quarterly roadmap and priorities.", "Buy groceries on the way home."]
+        },
+        "summary": {
+          "type": ["string", "null"],
+          "description": "Optional summary (for agent use)"
+        }
+      },
+      "required": ["description"]
+    }
+  ]
+}

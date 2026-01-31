@@ -57,6 +57,81 @@ poetry shell
 
 This activates a virtual shell with all dependencies available. You can skip this step by using `poetry run` prefix for all commands.
 
+## Package Management with Poetry
+
+**CRITICAL**: This project uses Poetry for dependency management. **NEVER use `pip install`**.
+
+### Installing Dependencies
+
+```bash
+# From project root or package directory
+poetry install
+```
+
+### Running Commands with Poetry
+
+```bash
+# Run Python commands
+poetry run python -m module.name
+
+# Run tests
+poetry run pytest
+
+# Run the Flask server
+poetry run flask --app memogarden_core.main run --debug
+```
+
+### Adding New Dependencies
+
+```bash
+# Add a runtime dependency
+poetry add package-name
+
+# Add a development dependency
+poetry add --group dev package-name
+
+# Add a dependency from a specific package
+poetry add --optional package-name
+```
+
+### During Project Restructure (Temporary)
+
+While migrating to the new package structure (Phases 1-4 of restructure plan), some system packages may not be installed yet. Use PYTHONPATH as a temporary workaround:
+
+```bash
+# Add memogarden-system to Python path for testing
+PYTHONPATH=/home/kureshii/memogarden/memogarden-system:$PYTHONPATH poetry run pytest
+```
+
+**This is temporary** - after Phase 6 (Provider Refactoring), all packages will be properly installed via Poetry.
+
+### 🚫 NEVER Use These Commands
+
+```bash
+# ❌ DON'T - Bypasses Poetry's dependency management
+pip install package-name
+python -m pip install package-name
+pip3 install package-name
+
+# ❌ DON'T - Installs to system Python, breaks project isolation
+sudo pip install package-name
+```
+
+**Why**: Using `pip` directly bypasses Poetry's dependency lock file, can cause version conflicts, and breaks the reproducible development environment.
+
+### Checking Installed Packages
+
+```bash
+# Show all installed packages
+poetry show
+
+# Show package tree (dependencies)
+poetry show --tree
+
+# Check for outdated packages
+poetry show --outdated
+```
+
 ### Working Directory Reminder
 
 **Always verify your current directory before running commands:**
@@ -383,6 +458,7 @@ The following commands are pre-approved in `.claude/settings.local.json` and won
 
 ## Anti-Patterns to Avoid
 
+❌ **Don't** use `pip install` - Use Poetry instead (`poetry add package-name`)
 ❌ **Don't** create ORM models when schema exists
 ❌ **Don't** add dependencies without discussion
 ❌ **Don't** skip tests "for now"
@@ -395,6 +471,7 @@ The following commands are pre-approved in `.claude/settings.local.json` and won
 ❌ **Don't** import `uuid4` directly (use `uid.generate_uuid()`)
 ❌ **Don't** scatter external library imports across modules (confine to one place)
 
+✅ **Do** use Poetry for package management (`poetry add`, not `pip install`)
 ✅ **Do** write raw SQL queries
 ✅ **Do** keep dependencies minimal
 ✅ **Do** write tests alongside code

@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/entities/artifact.schema.json",
+  "title": "Artifact",
+  "description": "Structured document or content object (lives in Core, mutable, delta-tracked)",
+  "allOf": [
+    {
+      "$ref": "entity.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "Artifact"
+        },
+        "label": {
+          "type": "string",
+          "description": "User-facing name",
+          "examples": ["Project README", "Meeting Notes", "Configuration File"]
+        },
+        "content": {
+          "type": "string",
+          "description": "Current content (may be line-numbered or structured)"
+        },
+        "content_type": {
+          "type": "string",
+          "description": "MIME type or content type identifier",
+          "examples": ["text/plain", "text/markdown", "application/json", "text/html"]
+        },
+        "label_history": {
+          "type": ["array", "null"],
+          "description": "Past labels for backward compatibility with old references",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["label", "content", "content_type"]
+    }
+  ]
+}

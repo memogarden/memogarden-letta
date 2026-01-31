@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/items/item.schema.json",
+  "title": "Item (Base Type)",
+  "description": "Base type for all timeline entries in Soil. All items are immutable once realized.",
+  "type": "object",
+  "properties": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^soil_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Unique identifier with soil_ prefix",
+      "examples": ["soil_12345678-1234-1234-1234-123456789abc"]
+    },
+    "_type": {
+      "type": "string",
+      "description": "Item type discriminator (CamelCase). Uses underscore prefix to reserve non-prefixed attributes for user use.",
+      "examples": ["Note", "Message", "Email", "ToolCall", "EntityDelta", "SystemEvent"]
+    },
+    "realized_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When system recorded this item (immutable, system time)",
+      "examples": ["2026-01-30T12:34:56Z"]
+    },
+    "canonical_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When user says it happened (user-controllable, subjective time)",
+      "examples": ["2026-01-30T12:00:00Z"]
+    },
+    "integrity_hash": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA256 hash of content fields for corruption detection"
+    },
+    "fidelity": {
+      "type": "string",
+      "enum": ["full", "summary", "stub", "tombstone"],
+      "default": "full",
+      "description": "Compression state of the item"
+    },
+    "superseded_by": {
+      "type": ["string", "null"],
+      "pattern": "^soil_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "UUID of Item that supersedes this one"
+    },
+    "superseded_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When supersession occurred"
+    }
+  },
+  "required": ["uuid", "_type", "realized_at", "canonical_at", "fidelity"],
+  "additionalProperties": false
+}

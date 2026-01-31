@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/entities/entity.schema.json",
+  "title": "Entity (Base Type)",
+  "description": "Base type for all mutable objects in Core. All Entity changes create EntityDelta Items in Soil.",
+  "type": "object",
+  "properties": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^core_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Unique identifier with core_ prefix (never changes)",
+      "examples": ["core_12345678-1234-1234-1234-123456789abc"]
+    },
+    "_type": {
+      "type": "string",
+      "description": "Entity type discriminator (uses underscore prefix to reserve non-prefixed attributes)",
+      "examples": ["Artifact", "Label", "Tag", "Transaction"]
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Current state hash (SHA256 of content + previous_hash)"
+    },
+    "previous_hash": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Hash of prior state (null for initial Entity)"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Monotonically increasing version number (for ordering/display)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Entity creation timestamp"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    },
+    "group_id": {
+      "type": ["string", "null"],
+      "pattern": "^core_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Optional grouping (references another Entity UUID)"
+    },
+    "superseded_by": {
+      "type": ["string", "null"],
+      "pattern": "^core_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Reclassification to another Entity (soft delete/replacement)"
+    },
+    "superseded_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When supersession occurred"
+    },
+    "derived_from": {
+      "type": ["string", "null"],
+      "pattern": "^(core|soil)_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Provenance (references Item or Entity UUID)"
+    }
+  },
+  "required": ["uuid", "_type", "hash", "version", "created_at", "updated_at"],
+  "additionalProperties": false
+}

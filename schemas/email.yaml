@@ -1,0 +1,317 @@
+# MemoGarden Email Item Schema
+# Language-agnostic definition for Email items in Soil
+# PRD v0.7.0 - Email Type Definition
+
+# ==============================================================================
+# ITEM TYPE
+# ==============================================================================
+type: Email
+extends: Note
+description: Email message imported from external provider (GMail, Outlook, etc.)
+
+# ==============================================================================
+# DATA FIELDS (Provider-Agnostic RFC 5322 Standard)
+# ==============================================================================
+# These fields are stored in Item.data JSON and represent the core email content
+# following RFC 5322 / RFC 822 standards. All email providers should map their
+# native format to these fields.
+
+data:
+  # Identity and deduplication
+  rfc_message_id:
+    type: string
+    required: true
+    description: RFC 822 Message-ID header (globally unique, used for deduplication)
+    example: "<CAD5xWgHZ5K9M3d8x@example.com>"
+
+  # Participants
+  from_address:
+    type: string
+    required: true
+    description: From header (parsed email address)
+    example: "sender@example.com"
+
+  to_addresses:
+    type: array
+    items: string
+    required: true
+    description: To header (parsed list of recipient addresses)
+    example: ["recipient1@example.com", "recipient2@example.com"]
+
+  cc_addresses:
+    type: array
+    items: string
+    required: false
+    nullable: true
+    description: Cc header (parsed list of CC recipients)
+    example: ["cc@example.com"]
+
+  bcc_addresses:
+    type: array
+    items: string
+    required: false
+    nullable: true
+    description: Bcc header (rarely available in exports due to privacy)
+    example: ["bcc@example.com"]
+
+  # Timestamps
+  sent_at:
+    type: string
+    format: date-time
+    required: true
+    description: Date header (when email was sent)
+    example: "2026-01-30T12:34:56Z"
+
+  received_at:
+    type: string
+    format: date-time
+    required: false
+    nullable: true
+    description: Delivery timestamp (when available)
+    example: "2026-01-30T12:35:01Z"
+
+  # Threading (RFC 5322)
+  references:
+    type: array
+    items: string
+    required: false
+    nullable: true
+    description: References header (thread ancestor Message-IDs in order)
+    example: ["<parent1@example.com>", "<parent2@example.com>"]
+
+  in_reply_to:
+    type: string
+    required: false
+    nullable: true
+    description: In-Reply-To header (direct parent Message-ID)
+    example: "<parent@example.com>"
+
+  # Content (inherited from Note)
+  # - title: Email subject
+  # - description: Email body (plain text)
+
+  # Body content type
+  content_type:
+    type: string
+    required: false
+    default: "text/plain"
+    description: MIME type of description field
+    enum: ["text/plain", "text/html"]
+    example: "text/plain"
+
+  # Attachments
+  has_attachments:
+    type: boolean
+    required: true
+    description: Whether email has any attachments
+    example: true
+
+  attachment_count:
+    type: integer
+    required: true
+    minimum: 0
+    description: Number of attachments
+    example: 3
+
+  attachment_filenames:
+    type: array
+    items: string
+    required: false
+    description: List of attachment filenames (for significance inference)
+    example: ["invoice.pdf", "screenshot.png"]
+
+# ==============================================================================
+# METADATA FIELDS (Provider-Specific)
+# ==============================================================================
+# These fields are stored in Item.metadata JSON and vary by email provider.
+# They are not part of the core email data but are preserved for debugging,
+# provider-specific features, and future significance inference.
+
+metadata:
+  # Provider identification
+  provider:
+    type: string
+    required: true
+    description: Email provider name
+    example: "google"
+    enum: ["google", "outlook", "imap", "mbox"]
+
+  # GMail-specific fields
+  gmail_thread_id:
+    type: string
+    required: false
+    description: GMail thread ID (numeric string)
+    example: "1234567890123456789"
+
+  gmail_labels:
+    type: array
+    items: string
+    required: false
+    description: GMail labels (INBOX, SENT, user-created, etc.)
+    example: ["INBOX", "IMPORTANT", "work"]
+
+  gmail_message_id:
+    type: string
+    required: false
+    description: Internal GMail message ID
+    example: "1234567890123456789"
+
+  # Outlook-specific fields
+  outlook_conversation_id:
+    type: string
+    required: false
+    description: Outlook conversation ID
+    example: "AAQkADY..."
+
+  # Source information
+  source_file:
+    type: string
+    required: false
+    description: Source file path (for mbox imports)
+    example: "/path/to/takeout/Mail/All mail.mbox"
+
+  source_offset:
+    type: integer
+    required: false
+    description: Byte offset in source file
+    example: 1234567
+
+  # Original headers (for debugging)
+  original_headers:
+    type: object
+    required: false
+    description: Complete original email headers (lowercase keys)
+    additionalProperties: true
+    example:
+      message-id: "<CAD5xWg@example.com>"
+      subject: "Project Update"
+      from: "Sender <sender@example.com>"
+      x-gm-thrid: "1234567890123456789"
+
+  # HTML body (if available)
+  html_body:
+    type: string
+    required: false
+    description: HTML version of email body (if available)
+    example: "<html><body>...</body></html>"
+
+# ==============================================================================
+# AUTO-RELATIONS
+# ==============================================================================
+# These system relations are automatically created during import based on
+# RFC 5322 threading headers.
+
+relations:
+  replies_to:
+    kind: system_relation
+    description: Threaded conversation relationship (reply → parent)
+
+    source:
+      type: item
+      description: Reply email UUID
+
+    target:
+      type: item
+      description: Parent email UUID being replied to
+
+    evidence:
+      source: system_inferred
+      method: rfc_5322_in_reply_to | rfc_5322_references
+      confidence: high
+      basis: "RFC 5322 In-Reply-To or References header"
+
+    creation_logic:
+      - Check in_reply_to field first (direct parent, most reliable)
+      - If no match, check last entry in references array
+      - Look up parent UUID by rfc_message_id in email index
+      - Create relation if parent found
+
+# ==============================================================================
+# DEDUPLICATION STRATEGY
+# ==============================================================================
+deduplication:
+  primary_key: rfc_message_id
+  description: "RFC 822 Message-ID is globally unique per email"
+  lookup:
+    - Index: idx_item_email_id on json_extract(data, '$.rfc_message_id')
+    - Query: SELECT uuid FROM item WHERE json_extract(data, '$.rfc_message_id') = ?
+  strategy:
+    - Before import, check if email with rfc_message_id already exists
+    - If exists, skip import (idempotent)
+    - If not, create new Email item
+
+# ==============================================================================
+# IMPORT STRATEGIES
+# ==============================================================================
+importers:
+  mbox:
+    description: Bulk import from mbox file (Google Takeout, etc.)
+    module: soil.import_mbox.MboxImporter
+    batch_size: 100-1000
+    incremental: false
+
+  gmail:
+    description: Incremental sync from Gmail API
+    module: soil.gmail_importer.GmailImporter
+    batch_size: 50-100
+    incremental: true
+    status: stub
+
+# ==============================================================================
+# VALIDATION RULES
+# ==============================================================================
+validation:
+  required_fields:
+    - rfc_message_id
+    - from_address
+    - to_addresses
+    - sent_at
+    - description  # inherited from Note (email body)
+    - title        # inherited from Note (email subject)
+
+  email_format:
+    - from_address must match regex: /^[^@]+@[^@]+\.[^@]+$/
+    - All to_addresses must match email regex
+    - cc_addresses must match email regex if present
+    - bcc_addresses must match email regex if present
+
+  timestamp_format:
+    - sent_at must be valid ISO 8601 datetime
+    - received_at must be valid ISO 8601 datetime if present
+
+  threading_consistency:
+    - in_reply_to must be a valid Message-ID format if present
+    - All references entries must be valid Message-ID format if present
+
+# ==============================================================================
+# EXAMPLE ITEM
+# ==============================================================================
+example:
+  uuid: "soil_a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  _type: "Email"
+  realized_at: "2026-01-30T12:35:00Z"
+  canonical_at: "2026-01-30T12:34:56Z"
+  fidelity: "full"
+
+  data:
+    rfc_message_id: "<CAD5xWgHZ5K9M3d8x@example.com>"
+    from_address: "sender@example.com"
+    to_addresses: ["recipient@example.com"]
+    cc_addresses: null
+    bcc_addresses: null
+    sent_at: "2026-01-30T12:34:56Z"
+    received_at: "2026-01-30T12:35:01Z"
+    references: ["<original@example.com>"]
+    in_reply_to: "<original@example.com>"
+    title: "Re: Project Update"
+    description: "Thanks for the update! I'll review the changes."
+    content_type: "text/plain"
+    has_attachments: false
+    attachment_count: 0
+    attachment_filenames: []
+
+  metadata:
+    provider: "google"
+    gmail_thread_id: "1234567890123456789"
+    gmail_labels: ["INBOX", "IMPORTANT"]
+    source_file: "/path/to/takeout/Mail/All mail.mbox"
