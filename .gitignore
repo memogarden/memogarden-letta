@@ -1,5 +1,6 @@
 # Project directories with their own git repositories
 memogarden-core/
+memogarden-api/
 memogarden.github.io/
 life-map-app/
 claudecode-webui/
