@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "mbox-importer"
+version = "0.1.0"
+description = "MemoGarden Mbox Email Importer - Import emails from mbox files into Soil"
+authors = ["MemoGarden Contributors"]
+readme = "README.md"
+packages = [{include = "mbox_importer"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+memogarden-system = {path = "../../memogarden-system", develop = true}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^7.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

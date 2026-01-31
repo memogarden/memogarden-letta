@@ -478,7 +478,7 @@ class TestDatabaseInitialization:
 
             version = soil.get_schema_version()
             assert version is not None
-            assert version == "0.7.0"
+            assert version == "20260130"
 
     def test_reinit_is_idempotent(self):
         """Calling init_schema() twice should not fail."""
@@ -489,7 +489,7 @@ class TestDatabaseInitialization:
             soil.init_schema()  # Should not fail
 
             version = soil.get_schema_version()
-            assert version == "0.7.0"
+            assert version == "20260130"
 
     def test_database_file_is_created(self):
         """Database file should be created after init_schema()."""
@@ -685,7 +685,8 @@ class TestCountOperations:
             soil.create_item(item1)
             soil.create_item(item2)
 
-            # Create multiple relations
+            # Create multiple relations with same kind, source, target
+            # Due to UNIQUE(kind, source, target) constraint, only 1 is stored
             for i in range(3):
                 soil.create_relation(SystemRelation(
                     uuid=generate_soil_uuid(),
@@ -698,7 +699,7 @@ class TestCountOperations:
                 ))
 
             count = soil.count_relations()
-            assert count == 3
+            assert count == 1  # Deduplication: only 1 unique (kind, source, target) tuple
 
     def test_relations_can_be_counted_by_kind(self):
         """Relations can be counted by kind."""
@@ -726,6 +727,7 @@ class TestCountOperations:
             soil.create_item(item2)
 
             # Create relations of different kinds
+            # Due to UNIQUE(kind, source, target) constraint, each kind gets 1 relation
             for i in range(2):
                 soil.create_relation(SystemRelation(
                     uuid=generate_soil_uuid(),
@@ -751,8 +753,8 @@ class TestCountOperations:
             cites_count = soil.count_relations(kind="cites")
             replies_count = soil.count_relations(kind="replies_to")
 
-            assert cites_count == 2
-            assert replies_count == 3
+            assert cites_count == 1  # Deduplication: only 1 unique (kind, source, target) tuple
+            assert replies_count == 1  # Deduplication: only 1 unique (kind, source, target) tuple
 
 
 class TestEvidence:

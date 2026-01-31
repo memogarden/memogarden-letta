@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "gmail-importer"
+version = "0.1.0"
+description = "MemoGarden Gmail Email Importer - Import emails from Gmail API into Soil"
+authors = ["MemoGarden Contributors"]
+readme = "README.md"
+packages = [{include = "gmail_importer"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+memogarden-system = {path = "../../memogarden-system", develop = true}
+mbox-importer = {path = "../mbox-importer", develop = true}
+google-api-python-client = "^2.100.0"
+google-auth-oauthlib = "^1.0.0"
+google-auth-httplib2 = "^0.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^7.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

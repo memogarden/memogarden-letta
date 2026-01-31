@@ -378,7 +378,6 @@ def create_threading_relations(
     in_reply_to = data.get('in_reply_to')
     if in_reply_to:
         # Normalize to match storage format (with angle brackets)
-        from soil.email_parser import normalize_message_id
         parent_message_id = normalize_message_id(in_reply_to)
 
         if parent_message_id in email_index:
@@ -401,7 +400,6 @@ def create_threading_relations(
     references = data.get('references')
     if references and len(references) > 0:
         # Use the last (most recent) reference as direct parent
-        from soil.email_parser import normalize_message_id
         last_ref = references[-1]
         parent_message_id = normalize_message_id(last_ref)
 
