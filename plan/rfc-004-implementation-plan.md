@@ -1,9 +1,9 @@
 # RFC-004 Implementation Plan (Simplified)
 
-**Version:** 1.1
-**Status:** Draft
+**Version:** 1.5
+**Status:** All Tests Passing, Ready for RFC-004 Implementation
 **Created:** 2026-01-31
-**Last Updated:** 2026-01-31
+**Last Updated:** 2026-02-03
 **Author:** MemoGarden Project
 
 ## Executive Summary
@@ -13,11 +13,23 @@ Simplified implementation plan for achieving RFC-004 (Package Structure & Deploy
 **Approach:** Config-based path resolution with environment variable overrides. Profile detection deferred.
 
 **Current Compliance:** ~50%
+
+**Completed Work:**
 - ✅ Core package structure (system.soil, system.core, system.utils)
 - ✅ Provider packages (mbox-importer, gmail-importer)
 - ✅ Repository layout matches RFC-004 Section 2.1
-- ❌ Schema bundling (system.schemas missing)
-- ❌ Config-based path resolution (system.host incomplete)
+- ✅ Schema migration to v20260130 (generic entity table with JSON data)
+- ✅ Transaction/Recurrence CRUD operations working with new schema
+- ✅ Authentication system fully functional (all tests passing)
+- ✅ Test infrastructure complete (44/44 tests passing, 100%)
+
+**Ready to Implement:**
+- 🔜 Phase 1: Config-based path resolution (~1 hour)
+- 🔜 Phase 2: Schema access utilities (~30 min)
+- 🔜 Phase 3: Update package exports (~15 min)
+
+**Remaining (Optional/Low Priority):**
+- ⏸️ Schema bundling (manual step for now)
 
 **Target Compliance:** ~80% (simplified - defer profile detection)
 
@@ -82,6 +94,54 @@ These can be added later without breaking the simple approach.
 - ✅ SQL schemas: `soil.sql`, `core.sql`
 - ✅ JSON schemas: email, note, message, transaction
 - ❌ **Missing**: `schemas.py` module for runtime access
+
+---
+
+## Session 2026-02-01: API Testing Infrastructure
+
+### Work Completed
+
+1. **Test Structure Created** for `memogarden-api`:
+   - `tests/conftest.py` - Pytest fixtures with test database and authentication
+   - `tests/test_transactions.py` - 20+ tests for transactions API endpoints
+   - `tests/test_recurrences.py` - 12+ tests for recurrences API endpoints
+   - `tests/test_auth.py` - 9 tests for authentication endpoints
+
+2. **Testing Approach Established**:
+   - **No Docker needed** - Use temp file SQLite for testing (simpler than in-memory)
+   - **Integration testing** - Tests use real `memogarden-system` code without mocking
+   - Test fixtures provide JWT token and API key authentication
+   - SHA256 function registered for hash-based entity operations
+
+3. **Schema Version Mismatch Discovered** ⚠️:
+   - **Problem**: `memogarden-system/core.sql` is **version 20260130** (new design with generic `entity` table + JSON data)
+   - **Expected**: `memogarden-api` code expects **version 20260129** (separate tables: `transactions`, `users`, `api_keys`, `recurrences`)
+   - **Impact**: Cannot run tests without resolving this schema incompatibility
+   - **Root Cause**: Schema evolved from separate tables (20260129) to generic entity pattern (20260130), but API code wasn't updated
+
+### Recommended Resolution
+
+**Option A** (Recommended): Update `memogarden-api` to work with new schema (version 20260130)
+- More future-proof, aligns with latest design
+- Requires updating all database queries to use entity table
+- Estimated effort: 2-4 hours
+
+**Option B**: Use old schema (version 20260129) for testing
+- Faster to get tests running
+- Creates technical debt (old schema in tests)
+- Estimated effort: 1-2 hours
+
+**Option C**: Create standalone test schema file
+- Clean separation between test and production schemas
+- Risk of tests diverging from production
+- Estimated effort: 1 hour
+
+### Next Session Priority
+
+1. **Choose schema resolution approach** (Option A recommended)
+2. **Update memogarden-api** or **create test schema**
+3. **Run tests** and ensure they pass
+4. **Complete RFC-004 Phase 1** (config-based path resolution)
 
 ---
 
@@ -637,12 +697,110 @@ python -m system.cli init  # Initialize databases in config-based paths
 
 ## Next Steps
 
-1. ✅ **Plan updated** - Simplified approach ready for review
-2. **Await approval** - Don't start implementation yet
-3. **Tackle other priorities** - Address these tasks when ready
+1. ✅ **Schema migration complete** - v20260130 generic entity table implemented
+2. ✅ **Core CRUD operations working** - All transaction/recurrence operations tested
+3. ✅ **Authentication system complete** - All 9 auth tests passing (100%)
+4. ✅ **Test infrastructure complete** - 44/44 tests passing (100%)
+5. 🔜 **Implement RFC-004 Phase 1** - Config-based path resolution (~1 hour)
+   - Add `get_db_path()` function to `system.host.environment`
+   - Update Soil and Core classes to use config-based paths
+6. 🔜 **Implement RFC-004 Phase 2** - Schema access utilities (~30 min)
+   - Create `system.schemas` module with `get_sql_schema()`
+   - Update package exports
+7. 🔜 **Implement RFC-004 Phase 3** - Update package exports (~15 min)
+   - Export `get_db_path` and `get_sql_schema` from `system.host`
+
+**Current Status**: ✅ All tests passing! Ready to proceed with RFC-004 implementation.
 
 ---
 
-**Status:** Plan updated, awaiting approval
-**Estimated Effort:** 2 hours when ready to implement
-**Target Compliance:** ~80% (simplified approach, defer profile detection)
+## Session History
+
+### 2026-02-01 Session
+- **Focus**: memogarden-api testing infrastructure
+- **Achievements**:
+  - Created complete test structure (conftest.py, test files for transactions, recurrences, auth)
+  - Established testing approach (no Docker, integration tests with real system code)
+  - Discovered critical schema version mismatch issue
+  - Identified three resolution approaches
+- **Files Created**:
+  - `memogarden-api/tests/conftest.py` - Pytest fixtures
+  - `memogarden-api/tests/test_transactions.py` - Transaction API tests
+  - `memogarden-api/tests/test_recurrences.py` - Recurrence API tests
+  - `memogarden-api/tests/test_auth.py` - Authentication tests
+  - `memogarden-api/tests/__init__.py` - Test package marker
+- **Technical Debt**:
+  - Schema version mismatch requires resolution before tests can run
+  - Test infrastructure ready but blocked on schema compatibility
+
+### 2026-02-01 Session (Continued) - Schema Migration Complete
+- **Focus**: Schema migration to v20260130 (generic entity table with JSON data)
+- **Achievements**:
+  - ✅ Migrated `transaction.py` to use generic entity table with JSON data
+  - ✅ Migrated `recurrence.py` to use generic entity table with JSON data
+  - ✅ Updated `entity.py` to include `data` parameter in entity creation
+  - ✅ Created `system/exceptions.py` with ResourceNotFound, ValidationError, etc.
+  - ✅ Updated test fixtures to load schema from core.sql
+  - ✅ Fixed API response functions to handle sqlite3.Row objects
+  - ✅ Unified exception handling (all code uses `system.exceptions`)
+  - **Test Results**: 36/44 passing (82%) - all transaction/recurrence CRUD operations working
+  - **Remaining Issues**:
+    - 8 authentication tests failing (404/401 errors) - user auth system needs separate migration
+    - 1 transaction update test (json_set syntax edge case)
+  - **Files Modified**:
+  - `memogarden-system/system/core/transaction.py` - Complete refactor for new schema
+  - `memogarden-system/system/core/recurrence.py` - Complete refactor for new schema
+  - `memogarden-system/system/core/entity.py` - Added data parameter to create()
+  - `memogarden-system/system/exceptions.py` - Created exception module
+  - `memogarden-api/api/v1/core/transactions.py` - Fixed sqlite3.Row handling
+  - `memogarden-api/api/v1/core/recurrences.py` - Fixed sqlite3.Row handling
+  - `memogarden-api/api/main.py` - Updated to use system.exceptions
+  - `memogarden-api/api/validation.py` - Updated to use system.exceptions
+  - `memogarden-api/api/middleware/*.py` - Updated to use system.exceptions
+  - `memogarden-api/tests/conftest.py` - Load schema from core.sql, add auth tables
+  - **Schema Design**: New schema stores all entity data in `entity.data` JSON field with `type` discriminator
+
+### 2026-02-03 Session - Authentication System Complete
+- **Focus**: Fix all 8 failing authentication tests and 1 transaction update test
+- **Achievements**:
+  - ✅ Fixed auth test URL paths (`/auth/register` → `/admin/register`)
+  - ✅ Fixed localhost bypass logic in `@localhost_only` decorator
+  - ✅ Updated service layer for new entity schema (uuid, hash, version, data fields)
+  - ✅ Fixed test fixtures to use Flask app's database connection
+  - ✅ Fixed API key authentication fixture
+  - ✅ Fixed transaction update json_set syntax
+  - ✅ All 44 tests passing (100%)
+- **Issues Resolved**:
+  1. **URL Path Mismatch**: Tests used `/auth/register` but actual route is `/admin/register`
+  2. **Localhost Bypass**: Decorator had backwards logic - when bypass enabled, it simulated non-localhost instead of skipping check
+  3. **Schema Incompatibility**: User/API key creation used old schema (`id` column, missing required fields)
+     - Fixed to use `uuid` column and include `hash`, `version`, `data` fields
+     - Updated to use `hash_chain.compute_entity_hash()` for proper hash generation
+  4. **Database Isolation**: Test fixtures created users in separate database from Flask app
+     - Created `test_user_app` fixture using Flask app's connection
+     - Updated `auth_headers` and `auth_headers_apikey` fixtures
+  5. **JSON Update Syntax**: Transaction update had incorrect nested json_set logic
+     - Fixed to properly nest calls: `json_set(json_set(entity.data, '$.f1', ?), '$.f2', ?)`
+  6. **Response Structure**: `/auth/me` returns user data directly, not wrapped in `"user"` key
+- **Test Results**: 44/44 passing (100%)
+  - 9/9 auth tests passing
+  - 12/12 recurrence tests passing
+  - 20/20 transaction tests passing
+  - 3/3 health/check tests passing
+- **Files Modified**:
+  - `memogarden-api/tests/test_auth.py` - Fixed URL paths and fixture dependencies
+  - `memogarden-api/api/middleware/decorators.py` - Fixed localhost bypass logic
+  - `memogarden-api/api/middleware/service.py` - Updated user creation for new schema
+  - `memogarden-api/api/middleware/api_keys.py` - Updated API key creation for new schema
+  - `memogarden-api/tests/conftest.py` - Added `test_user_app` fixture, updated auth fixtures
+  - `memogarden-system/system/core/transaction.py` - Fixed json_set nesting logic
+- **Authentication System Now Fully Functional**:
+  - Admin registration: `POST /admin/register`
+  - User login: `POST /auth/login`
+  - Get current user: `GET /auth/me`
+  - JWT and API key authentication both working
+  - All CRUD operations tested and passing
+
+---
+
+
