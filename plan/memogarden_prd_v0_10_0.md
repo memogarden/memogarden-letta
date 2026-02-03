@@ -1,7 +1,7 @@
 # MemoGarden Product Requirements Document
 
-**Version:** 0.10.0  
-**Date:** 2025-01-31  
+**Version:** 0.11.0  
+**Date:** 2026-02-02  
 **Status:** Active Development
 
 ---
@@ -36,6 +36,74 @@ MemoGarden uses a two-layer storage model:
 - Relation specification: RFC-002
 - Context mechanism: RFC-003
 - Deployment: RFC-004
+
+---
+
+## Consistency Guarantees
+
+MemoGarden provides the following guarantees for decade-long survivability:
+
+### Always-Available Startup
+
+**System starts regardless of database state.** Even with corrupted databases or detected inconsistencies, MemoGarden starts in an appropriate operating mode:
+
+- **NORMAL**: Healthy operation, full read/write capabilities
+- **READ-ONLY**: Maintenance/recovery mode, queries only
+- **SAFE MODE**: Degraded/inconsistent state, limited operations with diagnostics enabled
+
+The system never refuses to start due to data issues. Operator investigates and resolves problems while system remains available.
+
+### Crash Recovery
+
+**System detects and reports inconsistencies on startup.** MemoGarden performs quick consistency checks during startup:
+- Orphaned EntityDeltas (Soil committed, Core did not)
+- Broken Entity hash chains
+- Dangling relation references
+- Database integrity violations
+
+**No guarantee of zero data loss on power failure.** The system prioritizes survivability over preventing rare data loss (~0.01% per year vulnerability window). Operator uses short-term memory to recreate any unwritten data if needed.
+
+### Transaction Atomicity
+
+**Operations within explicit transactions are atomic with best-effort cross-database coordination.** MemoGarden coordinates commits across Soil and Core databases:
+
+- Single-database operations: Standard SQLite ACID guarantees
+- Cross-database operations: Best-effort atomicity via application-level coordination
+- Rare failures (~0.01%/year) logged and flagged for operator intervention
+
+**Transaction failure modes:**
+- Both databases commit successfully: Normal operation
+- Both databases fail: Transaction rolled back cleanly
+- Soil commits, Core fails: System marked INCONSISTENT, requires `memogarden repair`
+
+See RFC-008 for detailed transaction semantics.
+
+### Data Integrity
+
+**Item integrity_hash and Entity hash chains detect corruption:**
+
+- **Items**: SHA256 hash of content fields verified on access
+- **Entities**: Cryptographic hash chain enables tamper detection and lineage reconstruction
+- **System checks**: `memogarden diagnose` reports all detected integrity issues
+
+**SSD health monitoring:** System tracks mission-essential metrics including SSD wear level, reallocated sectors, and temperature. Statistical Process Control (SPC) techniques detect degradation trends before catastrophic failure.
+
+### Recovery Tools
+
+**Operator-in-the-loop recovery:**
+
+```bash
+# Detect issues
+memogarden diagnose
+
+# Automated repairs
+memogarden repair
+
+# Manual investigation
+memogarden debug consistency
+```
+
+System provides diagnostic tools and clear error reporting. Operator makes final decisions on recovery actions.
 
 ---
 
@@ -258,13 +326,13 @@ System relations encode structural facts. Stored in Soil, never modified, no tim
 
 | Kind | Meaning | Example |
 |------|---------|---------|
-| `triggers` | Causal chain | Message → EntityDelta |
-| `cites` | Reference/quotation | Artifact A → Artifact B |
-| `replies_to` | Email threading | Email A → Email B (from In-Reply-To) |
-| `derives_from` | Synthesis provenance | Summary → source documents |
-| `contains` | Structural containment | Project → Artifact |
-| `continues` | Branch continuation | ConversationLog → parent |
-| `supersedes` | Replacement/update | Item B → Item A |
+| `triggers` | Causal chain | Message Ã¢â€ â€™ EntityDelta |
+| `cites` | Reference/quotation | Artifact A Ã¢â€ â€™ Artifact B |
+| `replies_to` | Email threading | Email A Ã¢â€ â€™ Email B (from In-Reply-To) |
+| `derives_from` | Synthesis provenance | Summary Ã¢â€ â€™ source documents |
+| `contains` | Structural containment | Project Ã¢â€ â€™ Artifact |
+| `continues` | Branch continuation | ConversationLog Ã¢â€ â€™ parent |
+| `supersedes` | Replacement/update | Item B Ã¢â€ â€™ Item A |
 
 **Properties:**
 - Created by system (providers, parsers, agents)
@@ -282,7 +350,7 @@ User relations encode engagement and attention. Active relations stored in Core,
 **Time-horizon mechanism:** Each relation has a `time_horizon` (days since epoch) representing estimated relevance endpoint. Relations decay based on Anderson & Schooler's power law of forgetting. See RFC-002 for lifecycle management.
 
 **Properties:**
-- UUID prefix: `core_` (active) → `soil_` (fossilized)
+- UUID prefix: `core_` (active) Ã¢â€ â€™ `soil_` (fossilized)
 - Last access updates time-horizon
 - Fossilization transfers to Soil when expired
 - Operators can extend time-horizons explicitly
@@ -392,7 +460,7 @@ class Provider(Protocol):
     def sync(self, since: datetime = None) -> Iterator[Item]:
         """Fetch items from source, yield MemoGarden Items.
         
-        Provider translates source_schema → standard_schema → Item.
+        Provider translates source_schema Ã¢â€ â€™ standard_schema Ã¢â€ â€™ Item.
         MemoGarden validates and inserts.
         """
         
@@ -427,7 +495,7 @@ MemoGarden implements background compression of old Items to manage storage on r
 
 Items transition through fidelity states:
 ```
-full → summary → stub → tombstone
+full Ã¢â€ â€™ summary Ã¢â€ â€™ stub Ã¢â€ â€™ tombstone
 ```
 
 ### Triggers
