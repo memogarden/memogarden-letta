@@ -1,0 +1,61 @@
+#!/bin/bash
+# Pre-commit hook for MemoGarden
+# Install: ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
+
+set -e
+
+echo "Running pre-commit checks..."
+
+# Get the package being committed (api or system)
+PACKAGE=""
+
+# Detect which package we're in based on directory
+if [[ "$PWD" == *"memogarden-api"* ]]; then
+    PACKAGE="api"
+elif [[ "$PWD" == *"memogarden-system"* ]]; then
+    PACKAGE="system"
+fi
+
+# Only lint if we're in a package directory
+if [ -n "$PACKAGE" ]; then
+    echo "Linting $PACKAGE..."
+    cd "/home/kureshii/memogarden/memogarden-$PACKAGE"
+
+    # Run ruff check but don't block commits on warnings
+    poetry run ruff check .
+    LINT_STATUS=$?
+
+    if [ $LINT_STATUS -ne 0 ]; then
+        echo ""
+        echo "❌ Linting failed. Commit aborted."
+        echo ""
+        echo "To fix issues automatically, run:"
+        echo "  poetry run ruff check --fix ."
+        echo ""
+        echo "Or bypass with: git commit --no-verify"
+        exit 1
+    fi
+
+    echo "✓ Lint passed"
+fi
+
+# Run tests if we're in the API package
+if [ "$PACKAGE" == "api" ]; then
+    echo ""
+    echo "Running tests..."
+    poetry run pytest tests/ -q --tb=no
+
+    if [ $? -ne 0 ]; then
+        echo ""
+        echo "❌ Tests failed. Commit aborted."
+        echo ""
+        echo "See test output above for details."
+        echo "Or bypass with: git commit --no-verify"
+        exit 1
+    fi
+
+    echo "✓ Tests passed"
+fi
+
+echo ""
+echo "✅ Pre-commit checks passed"
