@@ -40,7 +40,7 @@ This document consolidates all implementation planning for MemoGarden across mul
 | **Core Storage** | ✅ Implemented | 70% | Entity registry, Transaction/Recurrence CRUD. Missing: user relations, context tracking |
 | **Authentication** | ✅ Implemented | 95% | JWT + API key auth complete. Missing: permissions enforcement |
 | **REST API** | ⚠️ Partial | 50% | Entity CRUD for Transaction/Recurrence only. **Note:** REST API is Entity-only for external CRUD apps. Full MemoGarden capabilities (Facts, Relations, Context) accessed via Semantic API. |
-| **Semantic API** | ⚠️ Partial | 35% | Core bundle complete (6 verbs). Soil/Relations/Context/Search bundles missing. |
+| **Semantic API** | ⚠️ Partial | 50% | Core bundle complete (5 verbs). Soil bundle complete (4 verbs). Relations/Context/Search bundles missing. |
 | **Context Mechanism** | ❌ Not Implemented | 0% | RFC-003: ContextFrame, View stream, enter/leave/focus/rejoin |
 | **Fossilization** | ❌ Not Implemented | 0% | RFC-002: Time horizon decay, item compression |
 | **Relations API** | ❌ Not Implemented | 5% | Schema exists, no operations |
@@ -889,24 +889,35 @@ Entity types:
 
 **Dependencies:** None
 
-### Session 2: Semantic API - Soil Bundle Verbs (2-3 hours)
+### ✅ Session 2: Semantic API - Soil Bundle Verbs (COMPLETED)
+
+**Completed:** 2026-02-07
 
 **Goal:** Fact operations via Semantic API
 
 **Tasks:**
-1. Implement `add` verb - Add fact (bring external data into MemoGarden)
-2. Implement `amend` verb - Amend fact (create superseding fact)
-3. Extend `query` verb - Support fact queries (type, start, end, filters)
-4. Add tests for Soil bundle verbs
+1. ✅ Implement `add` verb - Add fact (bring external data into MemoGarden)
+2. ✅ Implement `amend` verb - Amend fact (create superseding fact)
+3. ✅ Extend `query` verb - Support fact queries (type, start, end, filters)
+4. ✅ Add tests for Soil bundle verbs
 
-**Invariants to Enforce:**
-- Facts are immutable (amend creates new fact with `supersedes` link)
-- `integrity_hash` computed on all fact creation
-- `_type` validated against registered schemas
+**Implementation:**
+- Created `api/handlers/soil.py` with Soil verb handlers (add, amend, get, query)
+- Added `AddRequest` and `AmendRequest` schemas to `api/schemas/semantic.py`
+- Updated `api/semantic.py` dispatcher to route get/query based on UUID prefix and target_type
+- Added 15 new tests for Soil bundle verbs (all passing)
+- Added Soil database initialization to test fixtures
 
-**Deliverables:** Complete Soil bundle, testable
+**Invariants Enforced:**
+- ✅ Facts are immutable (amend creates new fact with `supersedes` link)
+- ✅ `integrity_hash` computed on all fact creation
+- ✅ `_type` validated against registered schemas
 
-**Dependencies:** Session 1
+**Deliverables:** Complete Soil bundle with 37 tests passing (22 Core + 15 Soil)
+
+**Commit:** 6dcdd57 "feat: implement Semantic API Soil bundle verbs (Session 2)"
+
+**Dependencies:** Session 1 ✅
 
 ### Session 3: User Relations (2-3 hours)
 
@@ -1431,15 +1442,16 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 ---
 
-**Status:** Active Development - Session 1 Complete
+**Status:** Active Development - Session 2 Complete
 
 **Next Steps:**
 1. ✅ ~~Review and prioritize Phase 1 tasks~~ (Completed - Session 1)
 2. ✅ ~~Set up Semantic API development environment~~ (Completed)
 3. ✅ ~~Implement Core bundle verbs first (highest value)~~ (Completed)
-4. ⏳ **Start Session 2: Semantic API - Soil Bundle Verbs**
-5. Continue implementing remaining Semantic API bundles (Soil, Relations, Context, Search)
-6. Write tests alongside implementation
+4. ✅ ~~Implement Soil bundle verbs (Session 2)~~ (Completed)
+5. ⏳ **Start Session 3: User Relations** (RFC-002 time horizon tracking)
+6. Continue implementing remaining Semantic API bundles (Relations, Context, Search)
+7. Write tests alongside implementation
 
 ---
 
