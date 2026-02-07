@@ -164,21 +164,116 @@ git log -1
 
 ## Repository-Specific Notes
 
-### memogarden-core
+### ⚠️ CRITICAL: Multiple Git Repositories
 
-- **Focus:** Backend API implementation
-- **Path:** `/home/kureshii/memogarden/memogarden-core`
-- **Test before committing:** Run `./scripts/test.sh`
+The MemoGarden project has **THREE separate git repositories**. You MUST check which repository you're committing to.
+
+```bash
+# ALWAYS check current directory first
+pwd
+git status --short
+```
+
+### Repository Structure
+
+```
+/home/kureshii/memogarden/                    # Root repo (git #1)
+├── .git/                                      # Root repository
+├── AGENTS.md                                  # Agent guide
+├── plan/                                      # Planning documents
+├── scripts/                                   # Convenience scripts
+├── .claude/                                   # Skills and agents
+│
+├── memogarden-api/                            # API package (git #2 - SEPARATE)
+│   ├── .git/                                  # Separate repository!
+│   ├── api/                                   # Flask application
+│   │   ├── v1/                                # REST API endpoints
+│   │   ├── semantic.py                        # Semantic API (/mg endpoint)
+│   │   └── handlers/                          # Request handlers
+│   ├── tests/                                 # Test suite
+│   └── pyproject.toml                         # Poetry dependencies
+│
+└── memogarden-system/                         # System package (git #3 - SEPARATE)
+    ├── .git/                                  # Separate repository!
+    ├── system/                                # Core library
+    │   ├── core/                              # Database operations
+    │   ├── utils/                             # Utilities (uid, isodatetime)
+    │   └── exceptions.py                      # Exception classes
+    └── pyproject.toml                         # Poetry dependencies
+```
+
+### memogarden-api Repository
+
+- **Git Repository:** Separate from root
+- **Path:** `/home/kureshii/memogarden/memogarden-api`
+- **Focus:** Flask HTTP API implementation
+- **Test before committing:** `cd /home/kureshii/memogarden/memogarden-api && poetry run pytest tests/ -q`
+- **Includes:**
+  - `api/v1/` - REST API endpoints (/api/v1/transactions, etc.)
+  - `api/semantic.py` - Semantic API dispatcher (/mg endpoint)
+  - `api/handlers/` - Request handlers for Semantic API
+  - `tests/` - Integration tests
+  - `pyproject.toml` - Poetry configuration
+
+### memogarden-system Repository
+
+- **Git Repository:** Separate from root
+- **Path:** `/home/kureshii/memogarden/memogarden-system`
+- **Focus:** Core database library and utilities
+- **Includes:**
+  - `system/core/` - Database operations (entity, transaction, recurrence)
+  - `system/utils/` - Shared utilities (uid, isodatetime, hash_chain)
+  - `system/exceptions.py` - MemoGarden exception classes
+  - `system/schemas/sql/` - Database schema migrations
 
 ### Root Repository
 
-- **Focus:** Documentation, scripts, skills, planning
+- **Git Repository:** Main repository
 - **Path:** `/home/kureshii/memogarden`
+- **Focus:** Documentation, planning, automation scripts
 - **Includes:**
-  - `AGENTS.md` - Agent guide
-  - `.claude/skills/` - Agent skills
-  - `scripts/` - Convenience scripts
-  - `plan/` - Planning documents
+  - `AGENTS.md` - Agent guide (symlink to CLAUDE.md)
+  - `plan/` - Planning documents (PRD, RFCs, implementation plan)
+  - `scripts/` - Development automation scripts (lint.sh, pre-commit)
+  - `.claude/` - Skills, agents, and configuration
+
+---
+
+## ⚠️ Common Pitfalls
+
+### Pitfall 1: Wrong Repository
+
+```bash
+# ❌ WRONG - Committing to root when changes are in sub-repo
+cd /home/kureshii/memogarden
+git add api/semantic.py  # This won't work - api/ is a separate repo!
+
+# ✅ CORRECT - Commit to the correct repository
+cd /home/kureshii/memogarden/memogarden-api
+git add api/semantic.py
+git commit -m "feat(semantic): add /mg endpoint"
+```
+
+### Pitfall 2: Not Checking Current Directory
+
+```bash
+# ❌ WRONG - Assuming you're in the right directory
+git commit -m "feat: add feature"  # Might commit to wrong repo!
+
+# ✅ CORRECT - Always verify first
+pwd                    # Check where you are
+git status --short     # Check what will be committed
+git commit -m "feat: add feature"
+```
+
+### Pitfall 3: Forgetting Sub-Repos Have Separate History
+
+```bash
+# Root repo has NO knowledge of memogarden-api commits
+# memogarden-api repo has NO knowledge of root repo commits
+
+# Always check which repo you're working in!
+```
 
 ---
 
@@ -191,100 +286,138 @@ def detect_repository_root() -> str:
     """
     Auto-detect which repository needs the commit based on changed files.
 
+    CRITICAL: MemoGarden has THREE separate git repositories:
+    - /home/kureshii/memogarden (root - docs, plans, scripts)
+    - /home/kureshii/memogarden/memogarden-api (Flask API)
+    - /home/kureshii/memogarden/memogarden-system (Core library)
+
     Returns absolute path to repository root.
     """
-    # Check if any changed files are in memogarden-core
-    result = subprocess.run(
-        ["git", "diff", "--name-only", "HEAD"],
-        cwd="/home/kureshii/memogarden/memogarden-core",
-        capture_output=True
-    )
-    core_files = result.stdout.strip().splitlines() if result.returncode == 0 else []
+    current_dir = os.getcwd()
 
-    # Check if any changed files are in root directory
-    result = subprocess.run(
-        ["git", "diff", "--name-only", "HEAD"],
-        cwd="/home/kureshii/memogarden",
-        capture_output=True
-    )
-    root_files = result.stdout.strip().splitlines() if result.returncode == 0 else []
+    # If already in a known repository root, return it
+    if current_dir == "/home/kureshii/memogarden/memogarden-api":
+        return current_dir
+    elif current_dir == "/home/kureshii/memogarden/memogarden-system":
+        return current_dir
+    elif current_dir == "/home/kureshii/memogarden":
+        return current_dir
 
-    # Determine correct repository
-    if core_files:
-        return "/home/kureshii/memogarden/memogarden-core"
-    elif root_files:
+    # Check if current directory is inside one of the repos
+    if current_dir.startswith("/home/kureshii/memogarden/memogarden-api"):
+        return "/home/kureshii/memogarden/memogarden-api"
+    elif current_dir.startswith("/home/kureshii/memogarden/memogarden-system"):
+        return "/home/kureshii/memogarden/memogarden-system"
+    elif current_dir.startswith("/home/kureshii/memogarden"):
         return "/home/kureshii/memogarden"
-    else:
-        # Default to current directory
-        return os.getcwd()
+
+    # Default to current directory
+    return current_dir
+```
+
+**Detection Steps:**
+1. **Check current directory** - Most reliable indicator
+2. **Check path prefix** - Detect if we're in a subdirectory
+3. **Default** - Current directory if no match
+
+**CRITICAL: Always Verify**
+```bash
+# Before any git operation, ALWAYS run:
+pwd
+git status --short
+
+# This prevents committing to the wrong repository!
 ```
 
 **Priority Order:**
-1. **Core** → When core files changed
-2. **Root** → When only root files changed
-3. **Default** → Current directory if no changed files detected
+1. **memogarden-api** → When working in `api/` directory
+2. **memogarden-system** → When working in `system/` directory
+3. **root** → When working in `plan/`, `scripts/`, `.claude/`
 
 ---
 
 ## Examples
 
-### Example 1: Commit Feature Implementation (Auto-Detection)
+### Example 1: Commit API Feature (memogarden-api repo)
 
 **Before (manual directory navigation - error-prone):**
 ```bash
 # Manual directory checking - easy to make mistakes!
-cd /home/kureshii/memogarden/memogarden-core
-git commit -m "feat(transaction): add transaction creation endpoint"
+cd /home/kureshii/memogarden  # Wrong repo!
+git add api/semantic.py  # Error: api/ is a separate repo!
 ```
 
-**After (automatic repository detection - eliminates errors):**
+**After (correct repository detection):**
 ```bash
-# Skill auto-detects memogarden-core repository from changed file paths
-git add memogarden_core/api/v1/transactions.py
-git add tests/api/test_transactions.py
+# Verify we're in the correct repository
+pwd  # Should show: /home/kureshii/memogarden/memogarden-api
+git status --short
 
-git commit -m "feat(transaction): add transaction creation endpoint
+# Stage and commit
+git add api/semantic.py api/handlers/core.py
+git commit -m "feat(semantic): implement Core bundle verbs
 
-- POST /api/v1/transactions with validation
-- Add TransactionCreate and TransactionResponse schemas
-- Include tests for successful creation and validation errors
-- Auto-generate entity ID and create entity registry entry"
+- Add /mg endpoint dispatcher with operation-based routing
+- Implement create, get, edit, forget, query verbs
+- Add Pydantic schemas for request/response validation
+- 22 tests, all passing"
 
-# Skill automatically navigates to /home/kureshii/memogarden/memogarden-core
+# ✅ Commit goes to memogarden-api repository
 ```
 
-### Example 2: Commit Root Documentation (Auto-Detection)
+### Example 2: Commit Documentation (root repo)
 
 **Before (manual directory navigation - error-prone):**
 ```bash
-# Manual directory checking - easy to make mistakes!
+# Wrong directory!
+cd /home/kureshii/memogarden/memogarden-api
+git add ../plan/rfc_005.md  # Error: ../plan/ not in this repo!
+```
+
+**After (correct repository detection):**
+```bash
+# Verify we're in the correct repository
 cd /home/kureshii/memogarden
-git commit -m "docs: create change-commit skill"
+pwd  # Should show: /home/kureshii/memogarden
+git status --short
+
+# Stage and commit
+git add plan/rfc_005_memogarden_api_design_v7.md
+git commit -m "docs: add Semantic API specification (RFC-005 v7)
+
+- Define message-passing interface for /mg endpoint
+- Specify request/response envelope format
+- Document all verb bundles (Core, Soil, Context)
+- Add null semantics and UUID prefix handling"
+
+# ✅ Commit goes to root repository
 ```
 
-**After (automatic repository detection - eliminates errors):**
+### Example 3: Multi-Repository Session
+
+**Scenario:** Working on Session 1 which touched both repos
+
 ```bash
-# Skill auto-detects root repository from skill file path
-git add .claude/skills/change-commit/
-git add plan/
+# First commit - memogarden-api repo
+cd /home/kureshii/memogarden/memogarden-api
+pwd  # Verify!
+git add api/semantic.py api/handlers/ tests/test_semantic_api.py
+git commit -m "feat(semantic): implement Session 1 Core bundle verbs"
 
-git commit -m "docs: update change-commit skill
+# Second commit - memogarden-system repo
+cd /home/kureshii/memogarden/memogarden-system
+pwd  # Verify!
+git add system/core/entity.py
+git commit -m "feat(entity): add update_data method for Semantic API"
 
-- Add auto-detection for correct repository
-- Prevents 'pathspec did not match' errors
-- Eliminates manual directory checking
-- Separate concerns: Backend (core) vs Documentation (root)"
+# Third commit - root repo
+cd /home/kureshii/memogarden
+pwd  # Verify!
+git add scripts/lint.sh scripts/pre-commit
+git commit -m "chore: add development automation scripts"
 
-# Skill automatically navigates to /home/kureshii/memogarden
+# ✅ Three separate commits to three separate repos
 ```
-
-**Key Benefits:**
-- ✅ Eliminates "pathspec did not match" errors
-- ✅ No manual directory checking required
-- ✅ Automatic repository detection from changed files
-- ✅ Supports both repositories in monorepo structure
-- ✅ Prevents committing to wrong repository
-- ✅ Clear separation: Backend (core) vs Documentation (root)
 
 ---
 
