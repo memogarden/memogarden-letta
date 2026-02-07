@@ -40,7 +40,7 @@ This document consolidates all implementation planning for MemoGarden across mul
 | **Core Storage** | ✅ Implemented | 70% | Entity registry, Transaction/Recurrence CRUD. Missing: user relations, context tracking |
 | **Authentication** | ✅ Implemented | 95% | JWT + API key auth complete. Missing: permissions enforcement |
 | **REST API** | ⚠️ Partial | 50% | Entity CRUD for Transaction/Recurrence only. **Note:** REST API is Entity-only for external CRUD apps. Full MemoGarden capabilities (Facts, Relations, Context) accessed via Semantic API. |
-| **Semantic API** | ❌ Not Implemented | 0% | /mg endpoint, all 17 verbs |
+| **Semantic API** | ⚠️ Partial | 35% | Core bundle complete (6 verbs). Soil/Relations/Context/Search bundles missing. |
 | **Context Mechanism** | ❌ Not Implemented | 0% | RFC-003: ContextFrame, View stream, enter/leave/focus/rejoin |
 | **Fossilization** | ❌ Not Implemented | 0% | RFC-002: Time horizon decay, item compression |
 | **Relations API** | ❌ Not Implemented | 5% | Schema exists, no operations |
@@ -165,6 +165,15 @@ Entity types:
 - [x] Health check endpoint
 - [x] Database initialization on startup
 
+**Semantic API (Session 1 - Core Bundle Complete):**
+- [x] `semantic.py` - `/mg` endpoint dispatcher
+- [x] `handlers/core.py` - Core bundle verb handlers (create, get, edit, forget, query)
+- [x] `schemas/semantic.py` - Pydantic request/response schemas
+- [x] Response envelope with ok, actor, timestamp, result/error
+- [x] UUID prefix handling (accept both prefixed and non-prefixed)
+- [x] Authentication middleware for all Semantic API requests
+- [x] Baseline entity type validation (Transaction, Recurrence, Artifact, Label, Operator, Agent, Entity)
+
 **Authentication (RFC-001 v4):**
 - [x] `middleware/service.py` - User and API key CRUD
 - [x] `middleware/token.py` - JWT token generation/validation
@@ -206,7 +215,8 @@ Entity types:
 - [x] `test_transactions.py` - 20 tests for transaction CRUD
 - [x] `test_recurrences.py` - 12 tests for recurrence CRUD
 - [x] `test_auth.py` - 9 tests for authentication
-- [x] **All 44 tests passing (100%)**
+- [x] `test_semantic_api.py` - 22 tests for Semantic API Core bundle (Session 1)
+- [x] **All 66 tests passing (100%)**
 
 ### ✅ Documentation
 
@@ -225,22 +235,25 @@ Entity types:
 
 #### 1.1 Semantic API (RFC-005 v7)
 
-**Status:** ❌ Not Implemented
+**Status:** ⚠️ Partial (Session 1 Complete - Core Bundle)
 
-**Required Components:**
+**Completed (Session 1):**
 
-1. **`/mg` Endpoint** - Message-passing interface for apps
-   - [ ] Request envelope parsing (op, params)
-   - [ ] Response envelope (ok, actor, timestamp, result/error)
-   - [ ] Actor tracking (user vs agent)
+1. **`/mg` Endpoint** ✅
+   - [x] Request envelope parsing (op, params)
+   - [x] Response envelope (ok, actor, timestamp, result/error)
+   - [x] Actor tracking (user vs agent)
+   - [x] Authentication middleware for all requests
 
-2. **Core Bundle Verbs:**
-   - [ ] `create` - Create entity
-   - [ ] `edit` - Edit entity (set/unset semantics)
-   - [ ] `forget` - Soft delete entity
-   - [ ] `get` - Get entity/fact/relation by UUID
-   - [ ] `query` - Query with filters, linked queries, pagination
-   - [ ] `register` - Register custom schema
+2. **Core Bundle Verbs:** ✅
+   - [x] `create` - Create entity (baseline types)
+   - [x] `edit` - Edit entity (set/unset semantics)
+   - [x] `forget` - Soft delete entity
+   - [x] `get` - Get entity by UUID
+   - [x] `query` - Query with basic filters and pagination
+   - [ ] `register` - Register custom schema (DEFERRED)
+
+**Remaining Work:**
 
 3. **Soil Bundle Verbs:**
    - [ ] `add` - Add fact (bring external data into MemoGarden)
@@ -265,15 +278,19 @@ Entity types:
    - [ ] `focus` - Switch primary scope
    - [ ] `rejoin` - Merge subordinate context
 
-**Files to Create:**
-- `/memogarden-api/api/semantic.py` - Semantic API dispatcher
-- `/memogarden-api/api/handlers/core.py` - Core verb handlers
-- `/memogarden-api/api/handlers/soil.py` - Soil verb handlers
-- `/memogarden-api/api/handlers/relations.py` - Relation verb handlers
-- `/memogarden-api/api/handlers/semantic.py` - Search verb handler
-- `/memogarden-api/api/handlers/context.py` - Context verb handlers
+**Files Created:**
+- [x] `/memogarden-api/api/semantic.py` - Semantic API dispatcher
+- [x] `/memogarden-api/api/handlers/core.py` - Core verb handlers
+- [x] `/memogarden-api/api/schemas/semantic.py` - Pydantic schemas
+- [x] `/memogarden-api/tests/test_semantic_api.py` - 22 tests, all passing
 
-**Dependencies:** None (can start immediately)
+**Files to Create:**
+- [ ] `/memogarden-api/api/handlers/soil.py` - Soil verb handlers
+- [ ] `/memogarden-api/api/handlers/relations.py` - Relation verb handlers
+- [ ] `/memogarden-api/api/handlers/semantic.py` - Search verb handler
+- [ ] `/memogarden-api/api/handlers/context.py` - Context verb handlers
+
+**Dependencies:** None (Core bundle complete, Soil bundle next)
 
 #### 1.2 Audit Facts (RFC-005 v7 Section 7)
 
@@ -817,26 +834,58 @@ Entity types:
 4. **Test-Driven:** Tests written alongside implementation
 5. **Documentation:** Code is documented as it's written
 
-### Session 1: Semantic API - Core Bundle Verbs (2-3 hours)
+### Session Status
+
+| Session | Name | Status | Date | Tests |
+|---------|------|--------|------|-------|
+| 1 | Semantic API - Core Bundle Verbs | ✅ Completed | 2026-02-07 | 22/22 passing |
+| 2 | Semantic API - Soil Bundle Verbs | ⏳ Not Started | - | 0/0 |
+| 3 | User Relations | ⏳ Not Started | - | 0/0 |
+| 4 | Context Framework - Basic | ⏳ Not Started | - | 0/0 |
+| 5 | Context Verbs and Capture | ⏳ Not Started | - | 0/0 |
+| 6 | Audit Facts | ⏳ Not Started | - | 0/0 |
+| 7 | Relations Bundle Verbs | ⏳ Not Started | - | 0/0 |
+| 8 | Search Verb | ⏳ Not Started | - | 0/0 |
+| 9 | Config-Based Path Resolution | ⏳ Not Started | - | 0/0 |
+| 10 | Schema Access Utilities | ⏳ Not Started | - | 0/0 |
+| 11 | REST API - Generic Entities | ⏳ Not Started | - | 0/0 |
+| 12 | Cross-Database Transactions | ⏳ Not Started | - | 0/0 |
+| 13 | Fossilization - Basic Sweep | ⏳ Not Started | - | 0/0 |
+
+---
+
+### Session 1: Semantic API - Core Bundle Verbs ✅ COMPLETED
 
 **Goal:** Basic Entity CRUD via Semantic API
 
-**Tasks:**
-1. Implement `/mg` endpoint dispatcher (request envelope → handler → response envelope)
-2. Implement `create` verb - Create entity (any type)
-3. Implement `get` verb - Get entity/fact/relation by UUID
-4. Implement `edit` verb - Edit entity (set/unset semantics)
-5. Implement `forget` verb - Soft delete entity
-6. Implement `query` verb - Query entities with filters
-7. Implement `register` verb - Register custom schema
-8. Add tests for Core bundle verbs
+**Status:** ✅ Completed 2026-02-07
 
-**Invariants to Enforce:**
-- Response envelope includes `ok`, `actor`, `timestamp`, `result`/`error`
-- UUID prefix handling (accept both prefixed and non-prefixed)
-- Null semantics (null = "Unknown", not "intentionally empty")
+**Completed Tasks:**
+1. ✅ Implement `/mg` endpoint dispatcher (request envelope → handler → response envelope)
+2. ✅ Implement `create` verb - Create entity (baseline types)
+3. ✅ Implement `get` verb - Get entity by UUID
+4. ✅ Implement `edit` verb - Edit entity (set/unset semantics)
+5. ✅ Implement `forget` verb - Soft delete entity
+6. ✅ Implement `query` verb - Query entities with basic filters
+7. ✅ Add tests for Core bundle verbs (22 tests passing)
 
-**Deliverables:** Working `/mg` endpoint with Core verbs, testable
+**Deferred Tasks:**
+- ❌ `register` verb - Custom schema registration (deferred to future session)
+- ❌ Full query DSL with operators (any, not, etc.) - basic equality only
+- ❌ Domain-specific table updates in `edit` - only entity.data updated
+
+**Implemented Files:**
+- `/memogarden-api/api/semantic.py` - `/mg` endpoint dispatcher
+- `/memogarden-api/api/handlers/core.py` - Core verb handlers (create, get, edit, forget, query)
+- `/memogarden-api/api/schemas/semantic.py` - Pydantic request/response schemas
+- `/memogarden-api/tests/test_semantic_api.py` - 22 tests, all passing
+
+**Invariants Enforced:**
+- ✅ Response envelope includes `ok`, `actor`, `timestamp`, `result`/`error`
+- ✅ UUID prefix handling (accept both prefixed and non-prefixed)
+- ✅ Null semantics (null = "Unknown", not "intentionally empty")
+- ✅ Authentication required for all `/mg` endpoints
+- ✅ Baseline entity types supported (Transaction, Recurrence, Artifact, Label, Operator, Agent, Entity)
 
 **Dependencies:** None
 
@@ -1344,7 +1393,7 @@ This section consolidates all invariants from RFCs that must be enforced via imp
    - Needed: Detailed, actionable error messages per RFC-006
 
 4. **Test Coverage:**
-   - Current: 44 tests for transactions/recurrences/auth
+   - Current: 66 tests (44 for transactions/recurrences/auth, 22 for Semantic API Core bundle)
    - Needed: Comprehensive tests for all features
 
 ---
@@ -1377,17 +1426,20 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2026-02-07 | Update Session 1 status to completed, add session status table |
 | 1.0 | 2026-02-07 | Initial implementation plan, consolidates rfc-004-implementation-plan.md |
 
 ---
 
-**Status:** Active Development
+**Status:** Active Development - Session 1 Complete
 
 **Next Steps:**
-1. Review and prioritize Phase 1 tasks
-2. Set up Semantic API development environment
-3. Implement Core bundle verbs first (highest value)
-4. Write tests alongside implementation
+1. ✅ ~~Review and prioritize Phase 1 tasks~~ (Completed - Session 1)
+2. ✅ ~~Set up Semantic API development environment~~ (Completed)
+3. ✅ ~~Implement Core bundle verbs first (highest value)~~ (Completed)
+4. ⏳ **Start Session 2: Semantic API - Soil Bundle Verbs**
+5. Continue implementing remaining Semantic API bundles (Soil, Relations, Context, Search)
+6. Write tests alongside implementation
 
 ---
 

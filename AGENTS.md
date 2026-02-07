@@ -16,29 +16,111 @@ This document provides context and guidelines for AI assistants (Claude, GPT, et
 
 ## Repository Structure
 
+⚠️ **CRITICAL:** MemoGarden has **THREE separate git repositories**. Always check which repository you're working in before committing changes.
+
 ```
-/home/kureshii/memogarden/
-├── plan/
-│   ├── budget_prd.md                   # Budget App Product Requirements (financial focus)
-│   ├── memogarden_prd_v4.md            # Complete Platform PRD (Soil + Core + applications)
-│   └── implementation.md               # Implementation plan (read this!)
-├── memogarden-core/                    # Flask backend (SQLite, no ORM)
-│   └── docs/
-│       └── architecture.md             # Technical architecture and design patterns
-├── memogarden-budget/                  # Flutter app (web + Android) [to be created]
-├── scripts/                            # Convenience scripts
-│   ├── run.sh                          # Start development server
-│   ├── test.sh                         # Run tests
-│   └── test-coverage.sh                # Run tests with coverage
-├── AGENTS.md                           # This file
-└── CLAUDE.md -> AGENTS.md             # Symlink for Claude Code
+/home/kureshii/memogarden/                    # Root repository (git #1)
+├── .git/                                      # Root git repository
+├── plan/                                      # Planning documents
+│   ├── budget_prd.md                          # Budget App Requirements
+│   ├── memogarden_prd_v4.md                   # Complete Platform PRD
+│   ├── memogarden-implementation-plan.md      # Implementation plan
+│   └── *.md                                   # RFC documents
+├── scripts/                                   # Development scripts
+│   ├── run.sh                                # Start server (from memogarden-api)
+│   ├── test.sh                               # Run tests (from memogarden-api)
+│   ├── lint.sh                               # Run ruff linter
+│   └── pre-commit                            # Pre-commit hook
+├── AGENTS.md                                  # This file
+├── CLAUDE.md -> AGENTS.md                     # Symlink
+│
+├── memogarden-api/                            # Flask API package (git #2 - SEPARATE)
+│   ├── .git/                                  # Separate git repository!
+│   ├── api/                                   # Flask application
+│   │   ├── v1/                                # REST API endpoints
+│   │   │   ├── core/
+│   │   │   │   ├── transactions.py           # Transaction CRUD
+│   │   │   │   └── recurrences.py             # Recurrence CRUD
+│   │   ├── semantic.py                        # Semantic API (/mg endpoint)
+│   │   ├── handlers/                          # Semantic API handlers
+│   │   ├── middleware/                        # Auth, decorators
+│   │   └── main.py                            # Flask app
+│   ├── tests/                                 # Integration tests
+│   │   ├── test_transactions.py
+│   │   ├── test_recurrences.py
+│   │   ├── test_auth.py
+│   │   ├── test_semantic_api.py
+│   │   └── conftest.py                        # Test fixtures
+│   └── pyproject.toml                         # Poetry dependencies
+│
+├── memogarden-system/                         # System package (git #3 - SEPARATE)
+│   ├── .git/                                  # Separate git repository!
+│   ├── system/                                # Core library
+│   │   ├── core/                              # Database operations
+│   │   │   ├── __init__.py                     # Core.get_core()
+│   │   │   ├── entity.py                       # Entity operations
+│   │   │   ├── transaction.py                  # Transaction operations
+│   │   │   └── recurrence.py                   # Recurrence operations
+│   │   ├── utils/                             # Shared utilities
+│   │   │   ├── uid.py                          # UUID utilities
+│   │   │   ├── isodatetime.py                  # Timestamp utilities
+│   │   │   ├── hash_chain.py                   # Hash computation
+│   │   │   └── secret.py                       # Secret generation
+│   │   ├── exceptions.py                      # MemoGarden exceptions
+│   │   ├── config.py                          # Configuration
+│   │   └── schemas/sql/                       # Database schema
+│   │       ├── core.sql                       # Core schema
+│   │       └── migrations/                    # Schema migrations
+│   └── pyproject.toml                         # Poetry dependencies
+│
+└── memogarden-budget/                         # Flutter app (FUTURE - to be created)
 ```
 
-### GitHub Repositories
+### ⚠️ Git Repository Boundaries
 
-- **Core API**: https://github.com/memogarden/memogarden-core
-- **Budget App**: https://github.com/memogarden/memogarden-budget (to be created)
-- **Organization**: https://github.com/memogarden
+**Each repository has its own git history:**
+
+1. **Root Repository** (`/home/kureshii/memogarden`)
+   - Contains: Planning documents, automation scripts, agent skills
+   - Git command: `git status` (from root directory)
+   - Commits here affect: docs, plans, scripts, .claude/
+
+2. **API Repository** (`/home/kureshii/memogarden/memogarden-api`)
+   - Contains: Flask application, Semantic API, tests
+   - Git command: `git status` (from memogarden-api directory)
+   - Commits here affect: api/, tests/
+   - **Separate from root repository!**
+
+3. **System Repository** (`/home/kureshii/memogarden/memogarden-system`)
+   - Contains: Database operations, utilities, exceptions
+   - Git command: `git status` (from memogarden-system directory)
+   - Commits here affect: system/
+   - **Separate from root repository!**
+
+### ⚠️ Before Committing: Always Verify
+
+```bash
+# Step 1: Check current directory
+pwd
+
+# Step 2: Check what will be committed
+git status --short
+
+# Step 3: Only then commit
+git commit -m "message"
+```
+
+**Common Mistake:**
+```bash
+# ❌ WRONG - Committing to root when changes are in sub-repo
+cd /home/kureshii/memogarden
+git add api/semantic.py  # Error: api/ is not in this repo!
+
+# ✅ CORRECT - Go to the sub-repo first
+cd /home/kureshii/memogarden/memogarden-api
+git add api/semantic.py
+git commit -m "feat: add semantic API"
+```
 
 ## Documentation Reference
 
