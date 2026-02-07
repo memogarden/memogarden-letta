@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://schemas.memogarden.net/entities/entity.schema.json",
   "title": "Entity (Base Type)",
-  "description": "Base type for all mutable objects in Core. All Entity changes create EntityDelta Items in Soil.",
+  "description": "Base type for all mutable objects in Core. All Entity changes create EntityDelta Facts in Soil.",
   "type": "object",
   "properties": {
     "uuid": {
@@ -59,7 +59,7 @@
     "derived_from": {
       "type": ["string", "null"],
       "pattern": "^(core|soil)_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-      "description": "Provenance (references Item or Entity UUID)"
+      "description": "Provenance (references Fact or Entity UUID)"
     }
   },
   "required": ["uuid", "_type", "hash", "version", "created_at", "updated_at"],

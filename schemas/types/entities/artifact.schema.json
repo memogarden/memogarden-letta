@@ -28,7 +28,7 @@
           "examples": ["text/plain", "text/markdown", "application/json", "text/html"]
         },
         "label_history": {
-          "type": ["array", "null"],
+          "type": "array",
           "description": "Past labels for backward compatibility with old references",
           "items": {
             "type": "string"

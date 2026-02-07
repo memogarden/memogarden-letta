@@ -8,7 +8,7 @@
 
 ## Abstract
 
-This RFC specifies the time horizon mechanism for managing relation lifecycle in MemoGarden. Time horizon is a lightweight heuristic for determining which relations (and by derivation, which items) should be preserved versus fossilized. The mechanism applies only to user relations; system relations are immutable facts that persist until their source is deleted.
+This RFC specifies the time horizon mechanism for managing relation lifecycle in MemoGarden. Time horizon is a lightweight heuristic for determining which relations (and by derivation, which facts) should be preserved versus fossilized. The mechanism applies only to user relations; system relations are immutable facts that persist until their source is deleted.
 
 ## Background
 
@@ -20,7 +20,7 @@ Anderson & Schooler (1991, 1997) demonstrated that human memory is optimized to 
 - **Frequency effect (linear):** More encounters predict proportionally higher probability of future need
 - **Spacing interaction:** Long gaps between accesses predict durable, long-term importance
 
-The practical implication: items accessed with *expanding* gaps (1 day â†’ 1 week â†’ 1 month) exhibit the strongest signal for long-term preservation.
+The practical implication: facts accessed with *expanding* gaps (1 day ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ 1 week ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ 1 month) exhibit the strongest signal for long-term preservation.
 
 ### Access Pattern Signatures
 
@@ -43,11 +43,17 @@ MemoGarden targets resource-constrained hardware (Raspberry Pi-class). The mecha
 
 ---
 
+## Terminology
+
+**Facts** are immutable, append-only records stored in Soil representing unchangeable ground truth of what occurred in the timeline. The term "Fact" reflects their core semantic property: they are not subject to revision, only supersession (replaced by newer facts). This contrasts with mutable state (Entities in Core), which evolve through deltas. Facts are the permanent record; their meaning and relationships derive from connections (relations) to other facts and entities.
+
+---
+
 ## Design Decisions
 
-### D1: Significance Lives on Relations, Not Items
+### D1: Significance Lives on Relations, Not Facts
 
-Items do not have intrinsic significance. Their value derives from their relationships to other items/entities. An item's "significance" is computed from its inbound relations, not stored directly.
+Facts do not have intrinsic significance. Their value derives from their relationships to other facts/entities. A fact's "significance" is computed from its inbound relations, not stored directly.
 
 **Rationale:** Aligns with MemoGarden's artifact-first, relation-centric architecture. Avoids redundant state.
 
@@ -92,9 +98,9 @@ A view is a point-in-time fact ("operator viewed X at time T"), recorded in an e
 
 ### D6: No Grace Period
 
-All items are stored immediately. Fossilization mechanism determines retention based on access patterns. Bulk imports start cold, prove worth through access, or fossilize.
+All facts are stored immediately. Fossilization mechanism determines retention based on access patterns. Bulk imports start cold, prove worth through access, or fossilize.
 
-**Rationale:** Simpler. Eliminates cliff-effect from synchronized expiration. Items with no user relations fossilize when swept.
+**Rationale:** Simpler. Eliminates cliff-effect from synchronized expiration. Facts with no user relations fossilize when swept.
 
 ---
 
@@ -113,9 +119,9 @@ soil_<uuid4>    # e.g., soil_a1b2c3d4-e5f6-7890-abcd-ef1234567890
 core_<uuid4>    # e.g., core_fedcba98-7654-3210-fedc-ba9876543210
 ```
 
-System relations live in Soil â†’ use `soil_` prefix.
-Active user relations live in Core â†’ use `core_` prefix.
-Fossilized user relations move to Soil â†’ receive `soil_` prefix on fossilization.
+System relations live in Soil ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ use `soil_` prefix.
+Active user relations live in Core ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ use `core_` prefix.
+Fossilized user relations move to Soil ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ receive `soil_` prefix on fossilization.
 
 ---
 
@@ -132,6 +138,7 @@ SYSTEM_RELATION_KINDS = {
     'replies_to',    # Message threading
     'continues',     # Branch continuation
     'supersedes',    # Replacement/update
+    'result_of',     # ActionResult is result of Action (audit trail)
 }
 ```
 
@@ -148,9 +155,9 @@ class SystemRelation:
     uuid: str               # Stable identifier (soil_ prefix)
     kind: str               # One of SYSTEM_RELATION_KINDS
     source: str             # UUID of source
-    source_type: str        # 'item' | 'entity' | 'artifact'
+    source_type: str        # 'fact' | 'entity' | 'artifact'
     target: str             # UUID of target
-    target_type: str        # 'item' | 'entity' | 'artifact'
+    target_type: str        # 'fact' | 'entity' | 'artifact'
     created_at: int         # Days since epoch
     evidence: Evidence | None
     metadata: dict | None
@@ -179,9 +186,9 @@ class UserRelation:
     uuid: str               # Stable identifier (core_ when active, soil_ when fossilized)
     kind: str               # One of USER_RELATION_KINDS
     source: str             # UUID of source
-    source_type: str        # 'item' | 'entity' | 'artifact'
+    source_type: str        # 'fact' | 'entity' | 'artifact'
     target: str             # UUID of target
-    target_type: str        # 'item' | 'entity' | 'artifact' | 'fragment'
+    target_type: str        # 'fact' | 'entity' | 'artifact' | 'fragment'
     time_horizon: int       # Future timestamp (days since epoch)
     last_access_at: int     # Timestamp of most recent access (days since epoch)
     created_at: int         # Days since epoch
@@ -224,7 +231,7 @@ Same number of accesses, different spacing, different outcomes:
 | Weekly for 7 weeks | 7 | 7+7+7+7+7+7+7 | ~59 days |
 | Monthly for 7 months | 7 | 30+30+30+30+30+30+30 | ~252 days |
 
-Long gaps signal durable importance â†’ more runway. Burst activity (many accesses, tiny gaps) accumulates minimal runway.
+Long gaps signal durable importance ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ more runway. Burst activity (many accesses, tiny gaps) accumulates minimal runway.
 
 ### Keep/Fossilize Decision
 
@@ -240,7 +247,7 @@ No explicit decay computation required. Time simply passes the horizon by.
 
 ### Safety Coefficient
 
-SAFETY_COEFFICIENT (1.1â€“1.5) provides margin for irregular access patterns:
+SAFETY_COEFFICIENT (1.1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“1.5) provides margin for irregular access patterns:
 
 | Scenario | Gap | Coefficient | Runway |
 |----------|-----|-------------|--------|
@@ -253,11 +260,11 @@ Recommendation: Start with 1.2, tune based on observation.
 
 ## Item Fidelity States
 
-Items track their compression state via a `fidelity` field:
+Facts track their compression state via a `fidelity` field:
 
 | State | Content | References | Notes |
 |-------|---------|------------|-------|
-| `full` | Complete original | Intact | Default for new items |
+| `full` | Complete original | Intact | Default for new facts |
 | `summary` | Compressed representation | Intact | LLM or extractive summary |
 | `stub` | Minimal metadata only | Intact | UUID, timestamps, type preserved |
 | `tombstone` | Deleted marker | May be broken | For deletion under storage pressure |
@@ -278,12 +285,12 @@ class Item:
 ### Item Significance (Derived)
 
 ```python
-def item_time_horizon(item_uuid: str) -> int | None:
+def fact_time_horizon(fact_uuid: str) -> int | None:
     """
     Derived from inbound user relations.
     Returns None if no user relations (orphan).
     """
-    user_rels = get_inbound_user_relations(item_uuid)
+    user_rels = get_inbound_user_relations(fact_uuid)
     if not user_rels:
         return None
     return max(r.time_horizon for r in user_rels)
@@ -300,7 +307,7 @@ def should_fossilize_item(item: Item) -> bool:
         return False
     
     # Check user relations
-    horizon = item_time_horizon(item.uuid)
+    horizon = fact_time_horizon(item.uuid)
     
     if horizon is None:
         # Orphan (no user relations): fossilize
@@ -309,7 +316,7 @@ def should_fossilize_item(item: Item) -> bool:
     return horizon < current_day()
 ```
 
-**Note:** Grace period has been **eliminated**. Items with no user relations fossilize immediately when swept.
+**Note:** Grace period has been **eliminated**. Facts with no user relations fossilize immediately when swept.
 
 ### Fossilization Process
 
@@ -333,8 +340,8 @@ def fossilize_item(item: Item, target_fidelity: str = 'summary'):
     
     # Log event
     create_item(SystemEvent(
-        event_type='item_fossilized',
-        payload={'item_uuid': item.uuid, 'fidelity': target_fidelity}
+        event_type='fact_fossilized',
+        payload={'fact_uuid': item.uuid, 'fidelity': target_fidelity}
     ))
 ```
 
@@ -346,17 +353,17 @@ def fossilize_item(item: Item, target_fidelity: str = 'summary'):
 | Item metadata | Full | Full | UUID, timestamps, type preserved |
 | System relations | Exist | Exist | Facts unchanged |
 | User relations | time_horizon in past | Moved to Soil | Could be pruned for space |
-| Inbound system relations | Exist | Exist | Other items still cite this |
+| Inbound system relations | Exist | Exist | Other facts still cite this |
 
 ### Resurrection
 
 ```python
-def on_fossilized_item_access(item: Item):
+def on_fossilized_fact_access(item: Item):
     """Re-enter engagement cycle."""
     
     create_item(SystemEvent(
-        event_type='fossilized_item_accessed',
-        payload={'item_uuid': item.uuid}
+        event_type='fossilized_fact_accessed',
+        payload={'fact_uuid': item.uuid}
     ))
     
     # Item remains in compressed state unless explicitly expanded
@@ -367,14 +374,14 @@ def on_fossilized_item_access(item: Item):
 
 ## Deletion Under Storage Pressure
 
-When storage exceeds threshold, fossilized items are deleted.
+When storage exceeds threshold, fossilized facts are deleted.
 
 ### Policy
 
 **Priority order for deletion:**
 1. Least-accessed (aligns with time-horizon philosophy)
 2. Oldest as tiebreaker
-3. Size as multiplier (large items evicted sooner at same access level)
+3. Size as multiplier (large facts evicted sooner at same access level)
 
 **Formula (empirical tuning required):**
 ```python
@@ -382,7 +389,7 @@ import math
 
 def eviction_score(item: Item) -> float:
     days_since_access = current_day() - item.last_access_day
-    significance = item_significance(item.uuid) or 1  # Avoid division by zero
+    significance = fact_significance(item.uuid) or 1  # Avoid division by zero
     size_weight = math.log(item.size_bytes + 1)
     
     return days_since_access * size_weight / significance
@@ -394,9 +401,9 @@ Higher score = evict sooner.
 
 ```python
 def delete_under_pressure(target_free_bytes: int):
-    """Delete fossilized items until target space freed."""
+    """Delete fossilized facts until target space freed."""
     
-    candidates = query_fossilized_items_by_eviction_score()
+    candidates = query_fossilized_facts_by_eviction_score()
     freed = 0
     
     for item in candidates:
@@ -412,7 +419,7 @@ def delete_under_pressure(target_free_bytes: int):
 
 ### Degraded Item Transparency
 
-References to degraded items must surface fidelity warnings:
+References to degraded facts must surface fidelity warnings:
 
 ```python
 def resolve_reference(uuid: str) -> ReferenceResult:
@@ -441,8 +448,8 @@ def fossilization_sweep():
     candidates = query_fossilization_candidates()
     metrics = SweepMetrics(
         timestamp=now(),
-        items_scanned=len(candidates),
-        items_fossilized=0,
+        facts_scanned=len(candidates),
+        facts_fossilized=0,
         relations_scanned=0,
         relations_expired=0
     )
@@ -450,12 +457,12 @@ def fossilization_sweep():
     for item in candidates:
         if should_fossilize_item(item):
             fossilize_item(item)
-            metrics.items_fossilized += 1
+            metrics.facts_fossilized += 1
     
     log_sweep_metrics(metrics)
 
 def query_fossilization_candidates() -> list[Item]:
-    """Find items that might need fossilization."""
+    """Find facts that might need fossilization."""
     return query("""
         SELECT i.* FROM item i
         WHERE i.fidelity = 'full'
@@ -473,8 +480,8 @@ def query_fossilization_candidates() -> list[Item]:
 @dataclass
 class SweepMetrics:
     timestamp: datetime
-    items_scanned: int
-    items_fossilized: int
+    facts_scanned: int
+    facts_fossilized: int
     relations_scanned: int
     relations_expired: int
     
@@ -493,7 +500,7 @@ def log_sweep_metrics(metrics: SweepMetrics):
 ### Soil Tables
 
 ```sql
--- Items table (with fidelity tracking)
+-- Facts table (with fidelity tracking)
 CREATE TABLE item (
     uuid TEXT PRIMARY KEY,              -- soil_ prefix
     _type TEXT NOT NULL,
@@ -505,10 +512,10 @@ CREATE TABLE item (
     data JSON NOT NULL                  -- Type-specific fields
 );
 
-CREATE INDEX idx_item_type ON item(_type);
-CREATE INDEX idx_item_realized ON item(realized_at);
-CREATE INDEX idx_item_canonical ON item(canonical_at);
-CREATE INDEX idx_item_fidelity ON item(fidelity);
+CREATE INDEX idx_fact_type ON item(_type);
+CREATE INDEX idx_fact_realized ON item(realized_at);
+CREATE INDEX idx_fact_canonical ON item(canonical_at);
+CREATE INDEX idx_fact_fidelity ON item(fidelity);
 
 -- System relations (immutable facts)
 CREATE TABLE system_relation (
@@ -607,7 +614,7 @@ This RFC intentionally does not address the following areas, which require separ
 
 **Current state:** No UI or tool defined for explicit linking.
 
-**Expected behavior:** Operator can manually link items, creating user relations with initial time horizon.
+**Expected behavior:** Operator can manually link facts, creating user relations with initial time horizon.
 
 ### Gap 2: Relation Inheritance on Item Edit
 
@@ -643,7 +650,7 @@ This RFC intentionally does not address the following areas, which require separ
 
 ### Gap 6: Multi-Hop Significance Propagation
 
-**What's missing:** Should high-significance items boost connected items?
+**What's missing:** Should high-significance facts boost connected facts?
 
 **Current state:** Not implemented. Each relation decays independently.
 
@@ -675,7 +682,7 @@ The following concepts from earlier designs have been removed:
 
 2. **Relation pruning:** Should user relations with horizon far in the past be deleted entirely, or kept indefinitely in Soil?
 
-3. **Orphan handling:** Items with no relations at all. Fossilize immediately, or wait for some access window?
+3. **Orphan handling:** Facts with no relations at all. Fossilize immediately, or wait for some access window?
 
 4. **Summary quality:** Extractive (fast, predictable) vs LLM-generated (better, costly)? Hybrid based on item type?
 
@@ -722,6 +729,7 @@ Parameters adjust based on:
 | 3.0 | 2025-01-16 | Replaced significance with time horizon; separated system/user relations; identified gaps |
 | 4.0 | 2025-01-16 | Full rewrite: consolidated design decisions; complete schemas; detailed fossilization lifecycle |
 | 5.0 | 2025-01-20 | **Design review integration:** UUID prefixes (soil_/core_); Grace period eliminated; `context_link` kind eliminated (co-access via ArtifactDelta.context); Fidelity states added; Deletion under storage pressure policy; Updated gaps and eliminated concepts |
+| 5.1 | 2026-02-07 | Added "result_of" to SYSTEM_RELATION_KINDS for linking Action and ActionResult audit facts |
 
 ---
 

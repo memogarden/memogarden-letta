@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/entities/operator.schema.json",
+  "title": "Operator",
+  "description": "Human operator/user in the system. Lives in System scope for introspection.",
+  "allOf": [
+    {
+      "$ref": "entity.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "Operator"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name (mutable)"
+        },
+        "email": {
+          "type": ["string", "null"],
+          "format": "email",
+          "description": "Email address (mutable)"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "user"],
+          "description": "System role (immutable - use x-immutable annotation)",
+          "x-immutable": true
+        },
+        "auth": {
+          "type": "object",
+          "description": "Authentication credentials (immutable - use x-immutable annotation)",
+          "x-immutable": true,
+          "properties": {
+            "password_hash": {
+              "type": "string",
+              "description": "Hashed password (never store plaintext)"
+            },
+            "api_keys": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Active API key hashes"
+            }
+          },
+          "required": ["password_hash", "api_keys"]
+        },
+        "preferences": {
+          "type": "object",
+          "description": "User preferences (mutable)",
+          "properties": {
+            "theme": {
+              "type": "string"
+            },
+            "timezone": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            }
+          }
+        },
+        "prompt_artifact": {
+          "type": ["string", "null"],
+          "pattern": "^core_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "Reference to Artifact entity containing operator's system prompt"
+        }
+      },
+      "required": ["name", "role", "auth"]
+    }
+  ]
+}

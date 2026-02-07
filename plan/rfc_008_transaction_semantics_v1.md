@@ -1,6 +1,6 @@
 # RFC-008: Transaction Semantics & Consistency Model
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** Draft  
 **Author:** JS  
 **Date:** 2026-02-02
@@ -13,7 +13,7 @@ This RFC specifies MemoGarden's transaction semantics for operations spanning th
 
 MemoGarden's two-database model creates coordination challenges:
 
-- Items in Soil are immutable, append-only facts
+- Facts in Soil are immutable, append-only facts
 - Entities in Core are mutable with delta-tracked changes
 - EntityDeltas (tracking Entity changes) must be stored in Soil atomically with Core updates
 - No distributed transaction protocol (2PC) exists for SQLite
@@ -39,26 +39,26 @@ This RFC defines pragmatic transaction semantics that accept rare inconsistencie
 ### Two-Database Model
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  MemoGarden Handle  â”‚
-â”‚                     â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
-â”‚  â”‚ Transaction   â”‚  â”‚
-â”‚  â”‚ Coordinator   â”‚  â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
-â”‚          â”‚          â”‚
-â”‚    â”Œâ”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”    â”‚
-â”‚    â”‚           â”‚    â”‚
-â”œâ”€â”€â”€â”€â–¼â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â–¼â”€â”€â”€â”€â”¤
-â”‚ Soil DB â”‚  â”‚Core DB â”‚
-â”‚         â”‚  â”‚        â”‚
-â”‚ Items   â”‚  â”‚Entitiesâ”‚
-â”‚ SysRels â”‚  â”‚UsrRels â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+ÃƒÂ¢Ã¢â‚¬ÂÃ…â€™ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  MemoGarden Handle  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡                     ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ…â€™ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ Transaction   ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ Coordinator   ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬ÂÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‹Å“  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡          ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡          ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡    ÃƒÂ¢Ã¢â‚¬ÂÃ…â€™ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â´ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â    ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡    ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡           ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡    ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ…â€œÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â  ÃƒÂ¢Ã¢â‚¬ÂÃ…â€™ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â¤
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ Soil DB ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡Core DB ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡         ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡        ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ Facts   ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡EntitiesÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ SysRels ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡UsrRels ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
+ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬ÂÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‹Å“  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬ÂÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‹Å“
 ```
 
 **Soil (immutable timeline):**
-- Items: Notes, Messages, Emails, ToolCalls, EntityDeltas
+- Facts: Notes, Messages, Emails, ToolCalls, EntityDeltas
 - System Relations: Immutable structural facts
 - Fossilized User Relations: Archived engagement signals
 
@@ -101,7 +101,7 @@ Operations where databases have dependency ordering:
 
 | Operation | Pattern | Rationale |
 |-----------|---------|-----------|
-| `add_item() + add_user_relation()` | Item first, retry relation | Items are primary facts; relations are secondary |
+| `add_item() + add_user_relation()` | Item first, retry relation | Facts are primary facts; relations are secondary |
 
 **Transaction semantics:** Item creation commits independently; relation creation retries on failure.
 
@@ -200,10 +200,10 @@ def commit_transaction(self):
 
 | Scenario | Soil | Core | System State | Recovery |
 |----------|------|------|--------------|----------|
-| Both succeed | âœ“ | âœ“ | NORMAL | None needed |
-| Both fail | âœ— | âœ— | NORMAL | Transaction rolled back |
-| Soil commits, Core fails | âœ“ | âœ— | INCONSISTENT | `memogarden repair` |
-| Process killed between commits | âœ“ | âœ— | INCONSISTENT | Detected on next startup |
+| Both succeed | ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ | ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ | NORMAL | None needed |
+| Both fail | ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ | ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ | NORMAL | Transaction rolled back |
+| Soil commits, Core fails | ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ | ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ | INCONSISTENT | `memogarden repair` |
+| Process killed between commits | ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ | ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ | INCONSISTENT | Detected on next startup |
 
 **Frequency estimate:** Soil-commits-Core-fails occurs ~0.01% per year (36 seconds of vulnerability per year for personal system with 100 transactions/day).
 
@@ -369,7 +369,7 @@ def fossilize_relation(self, relation_uuid: str) -> None:
     """, (relation_uuid,)).fetchone()
     
     # 2. Insert into Soil (change UUID prefix)
-    soil_uuid = f"soil_{relation_uuid[5:]}"  # core_ â†’ soil_
+    soil_uuid = f"soil_{relation_uuid[5:]}"  # core_ ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ soil_
     self._soil_conn.execute("""
         INSERT INTO system_relation 
         (uuid, kind, source, target, created_at, metadata)
@@ -418,7 +418,7 @@ except Exception as e:
 ```
 
 **Rationale:**
-- Items are primary facts (source of truth)
+- Facts are primary facts (source of truth)
 - Relations are secondary (can be reconstructed)
 - Item without relation is valid state (orphan)
 - Relation without item would be invalid (dangling reference)
@@ -450,7 +450,7 @@ mg.update_entity('core_abc', {...}, based_on_hash=H1)
 entity = mg.get_entity('core_abc')  # hash = H1
 mg.update_entity('core_abc', {...}, based_on_hash=H1)
 
-# One succeeds (hash â†’ H2)
+# One succeeds (hash ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H2)
 # Other fails: OptimisticLockError (expected H1, got H2)
 ```
 
@@ -508,7 +508,7 @@ item = mg.add_item('Note', {'text': 'wrong'})
 mg.undo_tool_call(tool_call_uuid)
 # Creates UndoToolCall Item
 # Executes tool-specific undo logic
-# May create new Items (e.g., supersession)
+# May create new Facts (e.g., supersession)
 ```
 
 **Tool support for undo:**
@@ -601,15 +601,15 @@ class SystemStatus(Enum):
 **Mode transitions:**
 ```
 Startup:
-- No issues â†’ NORMAL
-- Orphaned deltas detected â†’ INCONSISTENT
-- Database corruption â†’ SAFE_MODE
-- Operator flag â†’ READ_ONLY
+- No issues ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ NORMAL
+- Orphaned deltas detected ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ INCONSISTENT
+- Database corruption ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ SAFE_MODE
+- Operator flag ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ READ_ONLY
 
 Runtime:
-- NORMAL â†’ INCONSISTENT: Commit failure (Soil ok, Core fail)
-- Any â†’ READ_ONLY: Operator sets mode
-- INCONSISTENT â†’ NORMAL: After successful repair
+- NORMAL ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ INCONSISTENT: Commit failure (Soil ok, Core fail)
+- Any ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ READ_ONLY: Operator sets mode
+- INCONSISTENT ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ NORMAL: After successful repair
 ```
 
 ### Recovery Tools
@@ -646,12 +646,12 @@ Recommended Actions:
 $ memogarden repair rebuild-core
 
 Rebuilding Core from Soil...
-âœ“ Scanned 15,234 EntityDeltas in Soil
-âœ“ Identified 3 out-of-sync entities
-âœ“ Replayed deltas for core_abc123 (H1 â†’ H2)
-âœ“ Replayed deltas for core_def456 (H4 â†’ H5)
-âœ“ Replayed deltas for core_ghi789 (H7 â†’ H8)
-âœ“ Verified hash chains
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Scanned 15,234 EntityDeltas in Soil
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Identified 3 out-of-sync entities
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_abc123 (H1 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H2)
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_def456 (H4 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H5)
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_ghi789 (H7 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H8)
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Verified hash chains
 
 Repair complete. System status: NORMAL
 ```
@@ -776,8 +776,8 @@ def test_power_loss_during_commit():
 2. **Automatic repair:** Should system attempt automatic repair on startup for simple inconsistencies (orphaned deltas)?
    - **Recommendation:** No. Conservative policy: Report, require operator approval.
 
-3. **Metrics storage:** Should transaction metrics (commit latency, failures) be stored in Soil as SystemEvent Items?
-   - **Deferred:** Implementation detail for metrics RFC.
+3. **Metrics storage:** Should transaction metrics (commit latency, failures) be stored in Soil as SystemEvent Facts?
+   - **Resolution:** No. Metrics stored in-memory + journald (not Soil). SystemEvent facts created only for significant operational events (transaction failure spikes, mode transitions). High-frequency performance metrics would pollute semantic data. See RFC-007 v2.1 Section 8.3 for full specification.
 
 ## References
 
@@ -795,6 +795,7 @@ def test_power_loss_during_commit():
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2026-02-02 | Initial specification |
+| 1.1 | 2026-02-06 | Resolved Open Question #3: Metrics storage location (in-memory + journald, not Soil) |
 
 ---
 

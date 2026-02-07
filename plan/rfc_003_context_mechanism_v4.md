@@ -1,9 +1,9 @@
-# RFC-003: Context Mechanism v3
+# RFC-003: Context Mechanism v4
 
 **Status:** Draft  
-**Version:** 3.0  
-**Date:** 2026-02-03  
-**Supersedes:** RFC-003 v2
+**Version:** 4.0  
+**Date:** 2026-02-06  
+**Supersedes:** RFC-003 v3
 
 ---
 
@@ -17,6 +17,8 @@ The mechanism consists of three core components:
 3. **Context Capture:** Automatic snapshot of relevant context into delta metadata
 
 This revision focuses on **behavioral invariants** rather than implementation details, enabling optimization while maintaining semantic correctness.
+
+**v4.0 changes:** Verb alignment with RFC-005 v6 (enter/leave/focus/rejoin).
 
 ---
 
@@ -99,7 +101,7 @@ MemoGarden serves as persistent substrate for human-AI collaboration. Current ch
 **Delta metadata includes:**
 ```json
 {
-  "context": ["entity_1", "entity_2", "entity_3", ...],  // Up to N items
+  "context": ["entity_1", "entity_2", "entity_3", ...],  // Up to N facts
   "context_frame": "scope_abc123_context"  // Which context captured
 }
 ```
@@ -136,7 +138,7 @@ When user visits object while scoped to project(s):
 Delta's `context` field captures the PRIMARY context at time of mutation:
 - If mutated object belongs to scope â†’ scope's ContextFrame containers
 - Otherwise â†’ user's ContextFrame containers
-- Captured context MUST NOT exceed N items (LRU limit)
+- Captured context MUST NOT exceed N facts (LRU limit)
 
 **INV-4: Automatic Capture**  
 Context capture is automatic. System snapshots ContextFrame.containers when creating delta without caller intervention.
@@ -165,8 +167,8 @@ Parent's context does NOT incorporate subordinate's context after merge. Parent 
 
 ### 3.5 Scope Suspension
 
-**INV-8: Stream Suspension on Exit**  
-When user exits scope:
+**INV-8: Stream Suspension on Leave**  
+When user leaves scope (via `leave` verb):
 - User's view-stream continues (user still active)
 - Scope's view-stream suspended (no appends until another contributor enters)
 
@@ -193,12 +195,23 @@ ViewMerge extends View with:
 ### 3.7 Scope Activation
 
 **INV-11: Explicit Scope Control**  
-Scope activation is EXPLICIT:
+Scope activation is EXPLICIT via `enter`, `leave`, `focus` verbs:
+- `enter`: Add scope to user's active set
+- `leave`: Remove scope from user's active set
+- `focus`: Switch primary scope among active scopes
 - System MAY suggest scope activation (object belongs to scope A)
 - User MUST confirm activation
 - Object in multiple scopes â†’ user chooses which to activate
 - System MUST display active scopes to user
 - Users control scope through clear object boundaries
+
+**INV-11a: Focus Separation**  
+Entering a scope does NOT automatically make it primary. User must explicitly `focus` to change primary scope. This enables easier audit of scope transitions.
+
+**INV-11b: Implied Focus**  
+Focus is implied when:
+- Subagent is created (has only one scope)
+- User first registered (has only one scope)
 
 ---
 
@@ -239,315 +252,158 @@ System MUST provide operation to create context break:
 
 ---
 
-### 3.10 View Immutability
+### 3.10 Visit Filtering
 
-**INV-17: User Immutability**  
-Users CANNOT modify Views after creation. Views are write-once from user perspective.
+**INV-17: Substantive vs Primitive Objects**  
+Not all object accesses update context:
+- **Substantive objects:** Added to context when visited (artifacts, notes, contacts)
+- **Primitive objects:** NOT added to context (schemas, system config, metadata-only lookups)
 
-**INV-18: System Fossilization**  
-System MAY compress Views for storage efficiency:
-- Compression MUST preserve semantic meaning
-- Compressed View MUST indicate compression in metadata
-- Example: Multiple edits to same artifact â†’ single summarized edit
-- View UUID remains stable across compression
+**INV-18: Type-Based Classification**  
+Classification is type-based, not operation-based:
+- Accessing artifact content â†’ substantive (updates context)
+- Accessing artifact metadata only â†’ still substantive type, but no visit recorded
+- Accessing schema definition â†’ primitive (never updates context)
 
-**INV-19: Append-Only Streams**  
-View-streams are append-only. No retroactive modification except:
-- Entire View deletion by GC
-- System compression per INV-18
-
----
-
-### 3.11 Context Filtering
-
-**INV-20: Write-Time Filtering**  
-When object visited, system MUST classify as primitive or substantive:
-- **Substantive:** Added to ContextFrame.containers (LRU-N)
-- **Primitive:** NOT added to containers, MAY appear in ViewAction metadata
-
-**INV-21: Classification Stability**  
-Object type classification (primitive/substantive) MUST NOT change at runtime.
-
-**INV-22: Default Policy**  
-System behavior for unclassified types is implementation-defined, but MUST be consistent.
+**INV-19: Hardcoded Initial Classification**  
+For MVP, substantive/primitive classification is hardcoded. Future versions may allow per-type configuration.
 
 ---
 
-### 3.12 Visit Semantics
+### 3.11 Scope Ownership
 
-**INV-23: Visit Updates Context**  
-ANY operation that visits an object MUST update context:
-- Add object to ContextFrame.containers (if substantive)
-- Update LRU ordering
-- Context update synchronous (completes before operation returns)
+**INV-20: One Primary Context Per Owner**  
+Each owner (user or scope) has exactly ONE primary ContextFrame at any time.
 
-**INV-24: Metadata-Only Non-Visiting**  
-Operations accessing only metadata MUST NOT update context:
-- `get_metadata(uuid)` â†’ no context update
-- `search(query)` â†’ no context update (until results accessed)
-
-**INV-25: Explicit Visit Control**  
-Operations MUST provide mechanism to suppress visit tracking when needed.  
-Default behavior SHOULD be visit=true (conservative).
+**INV-21: Subordinate Context Ownership**  
+Forked contexts are owned by the subordinate agent, not the scope. This allows multiple subordinates to fork from same scope simultaneously.
 
 ---
 
-### 3.13 Context Ownership
+### 3.12 View Coalescence
 
-**INV-26: One Primary Context per Owner**  
-Each owner (user or scope) has exactly ONE primary ContextFrame:
-- User cannot have multiple primary contexts simultaneously
-- Scope cannot have multiple primary contexts simultaneously
-- Forked contexts owned by different entities (subordinate, not original owner)
+**INV-22: Action Grouping**  
+Multiple actions within a time window coalesce into single View:
+- Reduces storage overhead
+- Maintains semantic grouping ("one work session")
 
----
-
-## 4. Scope Continuity
-
-**Design Principle:** Scopes are persistent entities representing life goals or major projects, involving multiple contributors (operators and agents) potentially specializing in different roles.
-
-**View-Stream Continuity:**
-- Scope view-stream reflects contributions of all contributors
-- Work handed from one contributor to another
-- No loss of continuity unless intended (context break)
-- Discontinuous timeline natural (contributors come and go)
-
-**Example Timeline:**
-```
-Operator works on Scope A (9am-11am)
-  â†’ Scope A view-stream: [View_1, View_2, View_3]
-  
-Operator exits Scope A, Agent enters (11am-2pm)
-  â†’ Scope A view-stream: [View_1, View_2, View_3, View_4, View_5]
-  
-Agent exits, Operator re-enters (2pm-5pm)
-  â†’ Scope A view-stream: [...View_5, View_6, View_7]
-```
-
-Each contributor maintains own personal view-stream while also appending to scope's shared stream.
+**INV-23: Coalescence Boundaries**  
+View ends when:
+- Explicit boundary (user triggers context break)
+- Inactivity timeout (implementation-defined, suggested: 5 minutes)
+- Mutation to different scope
 
 ---
 
-## 5. Implementation Guidance (Non-Normative)
+### 3.13 Fossilization Integration
 
-These are suggested approaches, not requirements.
+**INV-24: View Stream Compression**  
+Old Views subject to fossilization:
+- Action lists may be summarized
+- Visited object lists preserved (audit trail)
+- Links to fossilized entities remain valid
 
-### 5.1 ContextFrame Schema
+**INV-25: Context Preservation in Deltas**  
+Delta `context` field is preserved during fossilization:
+- Enables retrospective analysis of "what was I thinking about"
+- Not subject to LRU eviction (immutable once captured)
+
+---
+
+### 3.14 Concurrent Access
+
+**INV-26: No Shared ContextFrame**  
+Two contributors cannot share a ContextFrame:
+- Same scope, different users â†’ each has own ContextFrame
+- Scope's ContextFrame reflects aggregate (both Views appended)
+- User A's context is A's alone, B's context is B's alone
+
+---
+
+## 4. API Integration
+
+Context verbs are part of the Core bundle (RFC-005 v6):
+
+### 4.1 Semantic API Verbs
+
+**enter** - Add scope to active set
+```json
+{
+  "op": "enter",
+  "scope": "scp_xxx"
+}
+```
+Response: `{scope, active_scopes: [...]}`
+
+**leave** - Remove scope from active set
+```json
+{
+  "op": "leave", 
+  "scope": "scp_xxx"
+}
+```
+Response: `{scope, active_scopes: [...]}`
+
+**focus** - Switch primary scope
+```json
+{
+  "op": "focus",
+  "scope": "scp_xxx"
+}
+```
+Response: `{scope, primary_scope, active_scopes: [...]}`
+
+**rejoin** - Merge subordinate context back to parent
+```json
+{
+  "op": "rejoin"
+}
+```
+Response: `{merged_at, child_scope, parent_scope}`
+
+### 4.2 Internal API Methods
 
 ```python
-@dataclass
-class ContextFrame:
-    """Core entity representing working context."""
-    uuid: str                    # Entity UUID
-    owner_id: str                # User or Scope UUID
-    owner_type: str              # "user" | "scope"
-    containers: list[str]        # LRU-N of object UUIDs (max N items)
-    views: list[str]             # Timeline of View UUIDs
-    created_at: datetime
-    primary: bool = True         # False for destroyed/merged contexts
-```
+def enter_scope(self, scope_id: str) -> dict:
+    """Add scope to active set."""
 
-**Indexing:**
-```sql
-CREATE INDEX idx_context_owner ON context_frame(owner_id, owner_type, primary);
-```
+def leave_scope(self, scope_id: str) -> dict:
+    """Remove scope from active set."""
 
-### 5.2 View Schema
+def focus_scope(self, scope_id: str) -> dict:
+    """Switch primary scope among active scopes."""
 
-```python
-@dataclass
-class View:
-    """Immutable action record in view-stream."""
-    uuid: str
-    context_frame: str           # Owner's ContextFrame UUID
-    actions: list[ViewAction]
-    started_at: datetime
-    ended_at: datetime | None    # NULL if active
-    prev: str | None             # Previous View UUID (linked list)
-    compressed: bool = False     # True if fossilized
+def rejoin(self) -> dict:
+    """Merge subordinate context back to parent."""
 
-@dataclass
-class ViewAction:
-    """Individual operation in View."""
-    type: str                    # "get_entity", "update_entity", etc.
-    target: str                  # Primary object UUID
-    timestamp: datetime
-    visited: list[str]           # All objects accessed (for metadata)
-    
-@dataclass
-class ViewMerge(View):
-    """Special View marking merge point."""
-    merged_views: list[str]      # Subordinate view UUIDs
-    merge_strategy: str          # "subordinate_complete", etc.
-```
-
-### 5.3 Context Update Hook
-
-```python
-def _track_visit(func):
-    """Decorator to update context after operation."""
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        # Execute operation
-        result = func(self, *args, **kwargs)
-        
-        # Extract visited objects
-        visited = self._extract_visited(func.__name__, args, kwargs, result)
-        
-        # Filter substantive objects
-        substantive = [uuid for uuid in visited if self._is_substantive(uuid)]
-        
-        if substantive:
-            # Get current user and active scopes
-            user_id, _ = get_current_user()
-            scope_ids = self._get_active_scopes(user_id)
-            
-            # Create action
-            action = ViewAction(
-                type=func.__name__,
-                target=substantive[0],
-                timestamp=datetime.utcnow(),
-                visited=visited
-            )
-            
-            # Update contexts
-            view_uuid = self._append_to_streams(
-                user_id=user_id,
-                scope_ids=scope_ids,
-                action=action,
-                visited=substantive
-            )
-        
-        return result
-    return wrapper
-```
-
-### 5.4 Context Capture Implementation
-
-```python
-def _create_delta(self, entity_uuid: str, changes: dict) -> Delta:
-    """Create delta with automatic context capture."""
-    # Determine primary context
-    scope_id = self._get_entity_scope(entity_uuid)
-    
-    if scope_id:
-        # Entity in scope â†’ capture scope's context
-        context_frame = self._get_context_frame(scope_id, "scope")
-    else:
-        # Personal entity â†’ capture user's context
-        user_id, _ = get_current_user()
-        context_frame = self._get_context_frame(user_id, "user")
-    
-    # Snapshot containers (up to N items)
-    context_snapshot = context_frame.containers[:self.config.context_size]
-    
-    delta = Delta(
-        uuid=self._generate_uuid("soil"),
-        entity_uuid=entity_uuid,
-        changes=changes,
-        context=context_snapshot,
-        context_frame=context_frame.uuid,
-        applied_at=datetime.utcnow()
-    )
-    
-    return delta
-```
-
-### 5.5 Dual-Append Strategy
-
-**Option A: Denormalized (Duplicate Views)**
-```python
-def _append_to_streams(self, user_id, scope_ids, action, visited):
-    """Create separate View for each stream."""
-    view_uuid = generate_uuid("core")
-    
-    # User's stream
-    self._create_view_record(view_uuid, user_id, "user", action)
-    
-    # Scope streams (same UUID, duplicated data)
-    for scope_id in scope_ids:
-        self._create_view_record(view_uuid, scope_id, "scope", action)
-    
-    # Update all contexts (LRU)
-    self._update_context(user_id, "user", visited)
-    for scope_id in scope_ids:
-        self._update_context(scope_id, "scope", visited)
-    
-    return view_uuid
-```
-
-**Option B: Normalized (Single View, Multiple References)**
-```python
-def _append_to_streams(self, user_id, scope_ids, action, visited):
-    """Single View referenced by multiple ContextFrames."""
-    view_uuid = generate_uuid("core")
-    
-    # Single View record
-    self._create_view_record(view_uuid, action)
-    
-    # Reference from user's ContextFrame
-    self._add_view_reference(user_id, "user", view_uuid)
-    
-    # Reference from scope ContextFrames
-    for scope_id in scope_ids:
-        self._add_view_reference(scope_id, "scope", view_uuid)
-    
-    # Update contexts
-    # ... same as Option A
-    
-    return view_uuid
-```
-
-Both satisfy invariants. Choice is optimization trade-off.
-
-### 5.6 Context Break Implementation
-
-```python
 def context_break(self) -> None:
     """Create temporal boundary in view-stream."""
-    user_id, _ = get_current_user()
-    context_frame = self._get_context_frame(user_id, "user")
-    
-    # Mark current View as ended
-    if context_frame.views:
-        current_view = self._get_view(context_frame.views[-1])
-        current_view.ended_at = datetime.utcnow()
-        self._save_view(current_view)
-    
-    # Next View will have prev=NULL (implementation detail)
-    # ContextFrame.containers handling per INV-16:
-    # - MAY clear: context_frame.containers = []
-    # - MAY keep: no modification
-    # - MUST ensure: next delta doesn't capture pre-break context
-    
-    # Example: Tag ContextFrame with break marker
-    context_frame.last_break_at = datetime.utcnow()
-    self._save_context_frame(context_frame)
+
+def get_context(self) -> list[str]:
+    """Return current context (LRU-N)."""
+
+def get_active_scopes(self) -> list[str]:
+    """Return list of active scope IDs."""
+
+def get_primary_scope(self) -> Optional[str]:
+    """Return primary scope ID or None."""
 ```
 
-Then in delta creation:
+### 4.3 Visit Tracking
+
 ```python
-def _create_delta(self, entity_uuid, changes):
-    # ... determine context_frame ...
-    
-    # Check for recent context break
-    if context_frame.last_break_at:
-        elapsed = datetime.utcnow() - context_frame.last_break_at
-        if elapsed < timedelta(seconds=1):  # Just broke
-            context_snapshot = []  # Don't capture pre-break context
-        else:
-            context_snapshot = context_frame.containers
-    else:
-        context_snapshot = context_frame.containers
-    
-    # ... create delta with context_snapshot ...
+def get_entity(self, uuid: str, *, visit: bool = True) -> Entity:
+    """Get entity, optionally tracking visit."""
+
+def get_metadata(self, uuid: str) -> ObjectMetadata:
+    """Get metadata without visit."""
 ```
 
 ---
 
-## 6. Edge Cases and Open Questions
+## 5. Edge Cases and Open Questions
 
-### 6.1 Concurrent Scope Access
+### 5.1 Concurrent Scope Access
 
 **Scenario:** Two users in same scope simultaneously, both visit entity X.
 
@@ -559,17 +415,17 @@ def _create_delta(self, entity_uuid, changes):
   - Fork: View appends to subordinate's ContextFrame
   - Both contexts exist (different owners per INV-26)
 
-### 6.2 Subordinate Never Merges
+### 5.2 Subordinate Never Merges
 
 **Scenario:** Agent crashes, forked context never merged.
 
 **Recovery:**
 - Supervisor detects crash, attempts recovery
-- If recovery succeeds: normal merge
+- If recovery succeeds: normal merge via `rejoin`
 - If abandoned: subordinate ContextFrame eligible for GC
 - Subordinate's Views persist (orphaned but queryable)
 
-### 6.3 Stale Context References
+### 5.3 Stale Context References
 
 **Scenario:** Entity X in context, then X superseded/deleted.
 
@@ -577,13 +433,13 @@ def _create_delta(self, entity_uuid, changes):
 
 **Rationale:** Context is historical ("what was I working on"), not current state. Superseded entities still meaningful for retrospection.
 
-### 6.4 View Coalescence Timeout
+### 5.4 View Coalescence Timeout
 
 **Open:** How long after last action before View ends?
 
 **Guidance:** Implementation-defined. Suggested: 5 minutes of inactivity.
 
-### 6.5 Context Size Tuning
+### 5.5 Context Size Tuning
 
 **Open:** Is N=7 optimal?
 
@@ -594,35 +450,23 @@ def _create_delta(self, entity_uuid, changes):
 
 ---
 
-## 7. Integration with Existing RFCs
+## 6. Integration with Existing RFCs
 
-### 7.1 RFC-002: Relation Time Horizons
+### 6.1 RFC-002: Relation Time Horizons
 
 Context mechanism complements time horizons:
 - **Time horizon:** Determines relation significance decay
 - **Context:** Determines "what was I thinking about" for delta
 - **Together:** Enable fossilization policy ("keep deltas where context was significant")
 
-### 7.2 RFC-005: API Design
+### 6.2 RFC-005: API Design
 
-Context tracking integrated into semantic verbs:
-```python
-# Full API
-def get_entity(self, uuid: str, *, visit: bool = True) -> Entity:
-    """Get entity, optionally tracking visit."""
+Context verbs integrated into Core bundle:
+- `enter`, `leave`, `focus`, `rejoin` are Semantic API verbs
+- Response envelope includes `actor` for audit
+- Context verbs bundled with Core (not separate Context bundle)
 
-def get_metadata(self, uuid: str) -> ObjectMetadata:
-    """Get metadata without visit."""
-
-def context_break(self) -> None:
-    """Create temporal boundary in view-stream."""
-
-# Internal (not exposed via HTTP yet)
-def get_context(self) -> list[str]:
-    """Return current context (LRU-N)."""
-```
-
-### 7.3 RFC-007: Runtime Operations
+### 6.3 RFC-007: Runtime Operations
 
 Context mechanisms add background tasks:
 - View coalescence (end inactive Views)
@@ -631,30 +475,30 @@ Context mechanisms add background tasks:
 
 ---
 
-## 8. Future Work (Deferred)
+## 7. Future Work (Deferred)
 
-### 8.1 Automatic Context Inference
+### 7.1 Automatic Context Inference
 
 Detect patterns in user behavior, suggest context activation:
 - "You've opened 3 files from Project A, activate scope?"
 - Machine learning on co-access patterns
 - Fuzzy context boundaries
 
-### 8.2 Context Templates
+### 7.2 Context Templates
 
 Predefined context patterns for common workflows:
 - "Morning review" context
 - "Deep work" context
 - "Triage" context
 
-### 8.3 Multi-Device Context Sync
+### 7.3 Multi-Device Context Sync
 
 Each user-device pair has own view-stream, sync mechanism TBD:
 - Conflict resolution (concurrent edits from phone + laptop)
 - Offline operation
 - Eventual consistency
 
-### 8.4 Context Visualization
+### 7.4 Context Visualization
 
 Dashboard showing:
 - Current context (what's in LRU-N)
@@ -663,7 +507,7 @@ Dashboard showing:
 
 ---
 
-## 9. Implementation Checklist
+## 8. Implementation Checklist
 
 ### Phase 1: Core Mechanism (MVP)
 
@@ -678,13 +522,14 @@ Dashboard showing:
 
 - [ ] Scope entity definition
 - [ ] Dual-append implementation
-- [ ] Scope activation/deactivation verbs
+- [ ] `enter`/`leave`/`focus` verb implementation
 - [ ] Active scope display in UI
 
 ### Phase 3: Fork/Merge
 
 - [ ] Fork context creation
 - [ ] ViewMerge schema and logic
+- [ ] `rejoin` verb implementation
 - [ ] Subordinate context destruction
 - [ ] Merge recovery procedures
 
@@ -697,12 +542,14 @@ Dashboard showing:
 
 ---
 
-## 10. Terminology
+## 9. Terminology
 
 **Context:** The set of objects currently in working memory (ContextFrame.containers)  
 **View:** Immutable record of actions within a time window  
 **View-Stream:** Chronological sequence of Views forming timeline  
 **Primary Context:** The contextually-relevant ContextFrame for an operation  
+**Primary Scope:** The currently-focused scope among active scopes  
+**Active Scopes:** Set of scopes user has entered but not left  
 **Scope:** First-class MemoGarden entity for organizing work (not "Project")  
 **Visit:** Operation that accesses object content and updates context  
 **Substantive Object:** Object type added to context when visited  
@@ -719,7 +566,7 @@ Dashboard showing:
 
 - **RFC-001 v4:** Security & Operations Architecture
 - **RFC-002 v5:** Relation Time Horizon & Fossilization
-- **RFC-005 v3:** API Design (Message-Passing Semantics)
+- **RFC-005 v6:** API Design (Semantic Verbs & Options Schemas)
 - **RFC-007 v1:** Runtime Operations
 - **PRD v0.10.0:** MemoGarden Core Ontology
 
@@ -739,6 +586,7 @@ Dashboard showing:
 | 1.0 | 2025-01-18 | Initial: view-stream, context frames, ViewLinkIndex, ContextLink |
 | 2.0 | 2025-01-20 | Simplification: removed ViewLinkIndex, ContextLink auto-generation, made View ephemeral |
 | 3.0 | 2026-02-03 | **Invariant-focused revision:** 26 behavioral invariants, scope continuity, fork/merge semantics, dual-append clarification, context break specification, fossilization compression, deferred implementation details |
+| 4.0 | 2026-02-06 | **Verb alignment with RFC-005 v6:** Added `focus` verb for explicit primary scope switching. Clarified enter/leave/focus separation (INV-11a, INV-11b). Updated API section with complete verb definitions. Context verbs bundled with Core. Added terminology for primary scope vs active scopes. |
 
 ---
 
@@ -747,9 +595,10 @@ Dashboard showing:
 1. Review invariants with stakeholders
 2. Implement ContextFrame + View schema in Core
 3. Add context tracking to internal API operations
-4. Build scope activation UI
-5. Test fork/merge with real agent delegation
-6. Tune context size (N) based on usage data
+4. Implement `enter`/`leave`/`focus`/`rejoin` verbs
+5. Build scope activation UI
+6. Test fork/merge with real agent delegation
+7. Tune context size (N) based on usage data
 
 ---
 

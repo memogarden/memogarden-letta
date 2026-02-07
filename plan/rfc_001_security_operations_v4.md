@@ -1,10 +1,10 @@
 # RFC-001: MemoGarden Security & Operations Architecture
 
-**Version:** 4.0  
+**Version:** 4.1  
 **Status:** Draft  
 **Author:** MemoGarden Project  
 **Created:** 2025-01-09  
-**Last Updated:** 2025-01-20
+**Last Updated:** 2026-02-06
 
 ## Abstract
 
@@ -41,9 +41,9 @@ A single software edition supports all profiles through configuration, not separ
 
 Profile is set via configuration, with auto-detection as fallback:
 
-- Running as system service with dedicated user + watchdog enabled â†’ Device
-- Running as system service, cgroup-constrained or multi-user â†’ System  
-- Running as user service or foreground process â†’ Personal
+- Running as system service with dedicated user + watchdog enabled Ã¢â€ â€™ Device
+- Running as system service, cgroup-constrained or multi-user Ã¢â€ â€™ System  
+- Running as user service or foreground process Ã¢â€ â€™ Personal
 - Explicit `profile = "device|system|personal"` overrides detection
 
 ### 1.3 System Profile (Default)
@@ -275,7 +275,7 @@ Separate admin account for system operations:
 - Access databases directly
 - Modify files directly
 
-**All tool calls logged to Soil** as ToolCall Items, providing complete audit trail.
+**All tool calls logged to Soil** as Action facts, providing complete audit trail of both agent and operator actions.
 
 ### 5.2 Idempotency
 
@@ -318,7 +318,7 @@ Synchronous tool calls are self-throttling (agent waits for response). Asynchron
 **Availability over confidentiality.** MemoGarden prioritizes data accessibility:
 - Default: No encryption (rely on device-level full-disk encryption)
 - Optional: SQLCipher with operator-managed key
-- No automatic recovery mechanismâ€”operator is responsible for key management
+- No automatic recovery mechanismÃ¢â‚¬â€operator is responsible for key management
 
 **Rationale:** Personal systems fail permanently when encryption keys are lost. Device-level FDE (FileVault, LUKS, BitLocker) provides primary protection. SQLCipher adds defense-in-depth for those who want it.
 
@@ -501,6 +501,39 @@ Same as device, plus:
 - Computationally intensive checks skipped or sampled
 - Focus on detecting obvious corruption
 - Full checks run opportunistically (plugged in, idle)
+
+### 11.5 Audit Trail
+
+**All Semantic API operations create Action facts:**
+- Unified fact type for human and agent actions
+- Captures: actor, operation, parameters, success/failure, timestamp, context
+- Includes read operations (searches, queries) and write operations (edits, additions)
+- Failed operations captured alongside successful ones
+- Context operations (enter/leave/focus/rejoin) included
+
+**Internal API operations log to journald:**
+- Not exposed through Semantic API
+- For technical troubleshooting only
+- Monthly rotation, 1-2 year retention
+
+**Three-layer observability model:**
+1. **MemoGarden facts** (semantic data): Action, EntityDelta, SystemEvent facts queryable via Semantic API
+2. **Internal logs** (technical): journald/stderr for stack traces, SQL queries, performance timing
+3. **OS logs** (infrastructure): systemd journal for service lifecycle, resource exhaustion
+
+**Query examples:**
+```python
+# Find all failed operations
+mg.search(filters={"type": "Action", "result": "failure"})
+
+# Trace agent behavior
+mg.search(filters={"actor": agent_uuid, "type": "Action"})
+
+# Audit specific time period
+mg.search(filters={"type": "Action", "timestamp_after": "2026-02-01"})
+```
+
+See RFC-005 v7 for Action fact schema, RFC-007 v2.1 for system-level monitoring.
 
 ---
 
@@ -714,6 +747,7 @@ The following concepts from earlier designs have been removed:
 | 2.0 | 2025-01-09 | Security architecture, agent coordination |
 | 3.0 | 2025-01-19 | Multi-profile architecture (high/mid/low availability), cross-platform support, multi-operator considerations |
 | 4.0 | 2025-01-20 | **Design review integration:** System profile as default target; Device adds watchdog layer; Encryption default = disabled (availability priority); Progressive decryption eliminated; Profile names changed (Device/System/Personal); Single-operator optimization; Agent budget as operator policy |
+| 4.1 | 2026-02-06 | Added Section 11.5: Audit Trail specification with Action facts and three-layer observability model |
 
 ---
 

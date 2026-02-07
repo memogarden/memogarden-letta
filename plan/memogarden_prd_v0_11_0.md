@@ -1,7 +1,7 @@
 # MemoGarden Product Requirements Document
 
-**Version:** 0.11.0  
-**Date:** 2026-02-02  
+**Version:** 0.11.1  
+**Date:** 2026-02-06  
 **Status:** Active Development
 
 ---
@@ -32,7 +32,7 @@ MemoGarden uses a two-layer storage model:
 
 **Schema files:**
 - SQL schemas: `soil-schema.sql`, `core-schema.sql`
-- Type schemas: `item_schemas.json`, `entity_schemas.json`
+- Type schemas: `fact_schemas.json`, `entity_schemas.json`
 - Relation specification: RFC-002
 - Context mechanism: RFC-003
 - Deployment: RFC-004
@@ -80,13 +80,38 @@ See RFC-008 for detailed transaction semantics.
 
 ### Data Integrity
 
-**Item integrity_hash and Entity hash chains detect corruption:**
+**Fact integrity_hash and Entity hash chains detect corruption:**
 
-- **Items**: SHA256 hash of content fields verified on access
+- **Facts**: SHA256 hash of content fields verified on access
 - **Entities**: Cryptographic hash chain enables tamper detection and lineage reconstruction
 - **System checks**: `memogarden diagnose` reports all detected integrity issues
 
-**SSD health monitoring:** System tracks mission-essential metrics including SSD wear level, reallocated sectors, and temperature. Statistical Process Control (SPC) techniques detect degradation trends before catastrophic failure.
+**SSD health monitoring:** System agent tracks mission-essential metrics including SSD wear level, reallocated sectors, and temperature. Statistical Process Control (SPC) techniques detect degradation trends before catastrophic failure. Metrics stored in-memory and journald; significant operational events create SystemEvent facts.
+
+### Audit Trail
+
+**All Semantic API operations create Action facts:**
+- Unified audit trail for human operators and AI agents
+- Captures: actor, operation, parameters, success/failure, timestamp, context
+- Includes read operations (searches, queries) and write operations (edits, mutations)
+- Failed operations captured alongside successful ones
+- Queryable via Semantic API like any other fact
+
+**Three-layer observability:**
+1. **MemoGarden facts** (semantic data): Action, EntityDelta, SystemEvent facts
+2. **Internal logs** (technical troubleshooting): journald/stderr for stack traces and diagnostics
+3. **OS logs** (infrastructure): systemd journal for service lifecycle
+
+**Query examples:**
+```python
+# Find failed operations
+mg.search(filters={"type": "Action", "result": "failure"})
+
+# Trace agent behavior
+mg.search(filters={"actor": agent_uuid})
+```
+
+See RFC-005 v7 for Action fact schema, RFC-007 v2.1 for system agent architecture.
 
 ### Recovery Tools
 
@@ -107,22 +132,22 @@ System provides diagnostic tools and clear error reporting. Operator makes final
 
 ---
 
-## Items and Entities
+## Facts and Entities
 
 MemoGarden distinguishes between two fundamental object types:
 
-| Property | Item | Entity |
+| Property | Fact | Entity |
 |----------|------|--------|
 | **Storage** | Soil | Core |
 | **Mutability** | Immutable | Mutable |
-| **Change mechanism** | Supersession (new Item replaces old) | Delta (tracked modifications) |
+| **Change mechanism** | Supersession (new Fact replaces old) | Delta (tracked modifications) |
 | **UUID prefix** | `soil_` | `core_` |
 | **Examples** | Note, Message, Email, ToolCall, EntityDelta | Artifact, Label, Transaction |
 | **Timeline presence** | Yes (appears at a point in time) | No (spans time; deltas appear in timeline) |
 
-### Item (Base Type)
+### Fact (Base Type)
 
-Items represent immutable facts in the timeline. All changes to Items create new Items with supersession links.
+Facts represent immutable, unchangeable ground truth in the timeline. All changes to Facts create new Facts with supersession links.
 
 **Core properties:**
 - **uuid**: Unique identifier with `soil_` prefix
@@ -131,7 +156,7 @@ Items represent immutable facts in the timeline. All changes to Items create new
 - **canonical_at**: When user says it happened (user-controllable, subjective time)
 - **integrity_hash**: SHA256 hash for corruption detection
 - **fidelity**: Compression state (`full` | `summary` | `stub` | `tombstone`)
-- **superseded_by**: UUID of Item that replaces this one
+- **superseded_by**: UUID of Fact that replaces this one
 - **data**: Type-specific fields following standard schemas
 - **metadata**: Provider-specific extensions (not validated, rarely indexed)
 
@@ -139,21 +164,21 @@ Items represent immutable facts in the timeline. All changes to Items create new
 
 | State | Content | Use Case |
 |-------|---------|----------|
-| `full` | Complete original | Default for new items |
+| `full` | Complete original | Default for new facts |
 | `summary` | Compressed representation | LLM or extractive summary |
 | `stub` | Minimal metadata only | UUID, timestamps, type preserved |
 | `tombstone` | Deleted marker | Deletion under storage pressure |
 
 **Data vs Metadata separation:**
 
-Items separate standard schema fields (`data`) from provider-specific extensions (`metadata`). This enables:
+Facts separate standard schema fields (`data`) from provider-specific extensions (`metadata`). This enables:
 - Provider plugins without core schema changes
 - Clean standard schemas for interoperability
 - Debugging data (original headers) without polluting core
 
 ### Entity (Base Type)
 
-Entities represent mutable objects with hash-chained version control. All Entity mutations create `EntityDelta` Items in Soil.
+Entities represent mutable objects with hash-chained version control. All Entity mutations create `EntityDelta` Facts in Soil.
 
 **Core properties:**
 - **uuid**: Stable identifier with `core_` prefix
@@ -164,7 +189,7 @@ Entities represent mutable objects with hash-chained version control. All Entity
 - **created_at**, **updated_at**: Timestamps
 - **group_id**: Optional grouping (references another Entity)
 - **superseded_by**: Reclassification to another Entity (soft delete/replacement)
-- **derived_from**: Provenance (references Item or Entity UUID)
+- **derived_from**: Provenance (references Fact or Entity UUID)
 
 **Hash chain properties:**
 - Enables full lineage reconstruction
@@ -200,9 +225,9 @@ def update_entity(uuid: str, new_data: dict, based_on_hash: str) -> Result:
 
 ---
 
-## Item Types
+## Fact Types
 
-All Item types are defined in `item_schemas.json`. This section provides usage guidance and examples.
+All Fact types are defined in `fact_schemas.json`. This section provides usage guidance and examples.
 
 ### Note
 
@@ -243,7 +268,7 @@ Records tool invocations by user or agent. Captures operational history for cont
 
 **Key fields:** `tool`, `operation`, `params`, `result`, `caller`, `context`
 
-**Usage:** Search events create ToolCall items that serve as relation signals. Tool execution history enables debugging and provenance tracking.
+**Usage:** Search events create ToolCall facts that serve as relation signals. Tool execution history enables debugging and provenance tracking.
 
 ### EntityDelta
 
@@ -271,8 +296,8 @@ System-generated notifications and state changes.
 **Event types:**
 - `entity_created`: Entity creation notification
 - `fossilization_sweep`: Background compression cycle
-- `item_fossilized`: Item compression complete
-- `fossilized_item_accessed`: Access to compressed content
+- `fact_fossilized`: Fact compression complete
+- `fossilized_fact_accessed`: Access to compressed content
 - `integrity_check_failed`: Corruption detection
 
 ---
@@ -296,7 +321,7 @@ Structured document or content object. Lives in Core (mutable, user-controlled).
 
 ### Label
 
-Named reference to Items or Entities. User-created organizational structure.
+Named reference to Facts or Entities. User-created organizational structure.
 
 **Key fields:** `name`, `target_uuid`, `target_type`
 
@@ -314,7 +339,7 @@ Budget/financial transaction entity. Already implemented in `core-schema.sql`.
 
 ## Relations
 
-Relations represent connections between Items and Entities. MemoGarden distinguishes between **system relations** (immutable structural facts) and **user relations** (engagement signals that decay over time).
+Relations represent connections between Facts and Entities. MemoGarden distinguishes between **system relations** (immutable structural facts) and **user relations** (engagement signals that decay over time).
 
 **Full specification in RFC-002.** This section provides an overview only.
 
@@ -326,13 +351,13 @@ System relations encode structural facts. Stored in Soil, never modified, no tim
 
 | Kind | Meaning | Example |
 |------|---------|---------|
-| `triggers` | Causal chain | Message Ã¢â€ â€™ EntityDelta |
-| `cites` | Reference/quotation | Artifact A Ã¢â€ â€™ Artifact B |
-| `replies_to` | Email threading | Email A Ã¢â€ â€™ Email B (from In-Reply-To) |
-| `derives_from` | Synthesis provenance | Summary Ã¢â€ â€™ source documents |
-| `contains` | Structural containment | Project Ã¢â€ â€™ Artifact |
-| `continues` | Branch continuation | ConversationLog Ã¢â€ â€™ parent |
-| `supersedes` | Replacement/update | Item B Ã¢â€ â€™ Item A |
+| `triggers` | Causal chain | Message ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ EntityDelta |
+| `cites` | Reference/quotation | Artifact A ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Artifact B |
+| `replies_to` | Email threading | Email A ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Email B (from In-Reply-To) |
+| `derives_from` | Synthesis provenance | Summary ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ source documents |
+| `contains` | Structural containment | Project ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Artifact |
+| `continues` | Branch continuation | ConversationLog ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ parent |
+| `supersedes` | Replacement/update | Fact B  Fact A |
 
 **Properties:**
 - Created by system (providers, parsers, agents)
@@ -350,7 +375,7 @@ User relations encode engagement and attention. Active relations stored in Core,
 **Time-horizon mechanism:** Each relation has a `time_horizon` (days since epoch) representing estimated relevance endpoint. Relations decay based on Anderson & Schooler's power law of forgetting. See RFC-002 for lifecycle management.
 
 **Properties:**
-- UUID prefix: `core_` (active) Ã¢â€ â€™ `soil_` (fossilized)
+- UUID prefix: `core_` (active) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `soil_` (fossilized)
 - Last access updates time-horizon
 - Fossilization transfers to Soil when expired
 - Operators can extend time-horizons explicitly
@@ -364,7 +389,7 @@ All relations can include evidence tracking:
 class Evidence:
     source: str              # 'soil_stated' | 'user_stated' | 'agent_inferred' | 'system_inferred'
     confidence: float | None # For inferred only (0.0-1.0)
-    basis: list[str] | None  # UUIDs of supporting items/entities
+    basis: list[str] | None  # UUIDs of supporting facts/entities
     method: str | None       # For inferred: 'rfc_5322_in_reply_to' | 'nlp_extraction' | etc.
 ```
 
@@ -404,7 +429,7 @@ MemoGarden maintains mechanisms for tracking attention patterns to understand op
 ### SQL Schemas
 
 **Soil Database** (`soil-schema.sql`):
-- `item` table: All Item types with polymorphic JSON data field
+- `item` table: All Fact types with polymorphic JSON data field
 - `system_relation` table: Immutable structural connections
 - Indexes optimized for timeline queries
 
@@ -418,20 +443,20 @@ MemoGarden maintains mechanisms for tracking attention patterns to understand op
 
 **Single polymorphic tables:**
 
-MemoGarden uses one table per storage layer (Item table in Soil, Entity table in Core) with JSON `data` fields rather than separate tables per type.
+MemoGarden uses one table per storage layer (Fact table in Soil, Entity table in Core) with JSON `data` fields rather than separate tables per type.
 
 **Rationale:**
 - Soil is timeline-oriented, not relational
 - Provider plugins don't require schema migrations
 - Type inheritance is semantic (Python/JSON schemas), not physical (SQL)
 - Timeline coherence: chronological queries span all types
-- JSON extraction acceptable at personal scale (10k-1M items)
+- JSON extraction acceptable at personal scale (10k-1M facts)
 
-**Alternative rejected:** Separate tables per type (`item_email`, `item_note`) would break timeline coherence and require schema migrations for new providers.
+**Alternative rejected:** Separate tables per type (`fact_email`, `fact_note`) would break timeline coherence and require schema migrations for new providers.
 
 **Data/Metadata separation:**
 
-Items separate standard schema fields (`data`) from provider-specific extensions (`metadata`).
+Facts separate standard schema fields (`data`) from provider-specific extensions (`metadata`).
 
 **Rationale:**
 - Clean standard schemas for interoperability
@@ -441,10 +466,10 @@ Items separate standard schema fields (`data`) from provider-specific extensions
 
 ### JSON Schema Validation
 
-JSON schemas in `item_schemas.json` and `entity_schemas.json` serve as authoritative type definitions. Application code should validate against these schemas before writing to database.
+JSON schemas in `fact_schemas.json` and `entity_schemas.json` serve as authoritative type definitions. Application code should validate against these schemas before writing to database.
 
 **Schema locations:**
-- Item types: `item_schemas.json` (definitions for Note, Message, Email, ToolCall, EntityDelta, SystemEvent)
+- Fact types: `fact_schemas.json` (definitions for Note, Message, Email, ToolCall, EntityDelta, SystemEvent)
 - Entity types: `entity_schemas.json` (definitions for Artifact, Label, Transaction)
 
 ---
@@ -458,9 +483,9 @@ class Provider(Protocol):
     """External data source integration."""
     
     def sync(self, since: datetime = None) -> Iterator[Item]:
-        """Fetch items from source, yield MemoGarden Items.
+        """Fetch facts from source, yield MemoGarden Facts.
         
-        Provider translates source_schema Ã¢â€ â€™ standard_schema Ã¢â€ â€™ Item.
+        Provider translates source_schema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ standard_schema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Item.
         MemoGarden validates and inserts.
         """
         
@@ -473,29 +498,29 @@ class Provider(Protocol):
 ```
 
 **Provider responsibilities:**
-- Populate Item base fields (uuid, _type, realized_at, canonical_at)
+- Populate Fact base fields (uuid, _type, realized_at, canonical_at)
 - Conform to standard schema for known types (Email = RFC 5322)
 - Separate standard fields (`data`) from provider-specific (`metadata`)
 - Create system relations for semantic links (threading, references)
 
 **MemoGarden Core responsibilities:**
 - Define and validate standard schemas
-- Store Items and Relations
+- Store Facts and Relations
 - Does NOT know provider-specific schemas
 
 ---
 
 ## Fossilization
 
-MemoGarden implements background compression of old Items to manage storage on resource-constrained hardware.
+MemoGarden implements background compression of old Facts to manage storage on resource-constrained hardware.
 
 **Full specification in RFC-002.** Key concepts:
 
 ### Mechanism
 
-Items transition through fidelity states:
+Facts transition through fidelity states:
 ```
-full Ã¢â€ â€™ summary Ã¢â€ â€™ stub Ã¢â€ â€™ tombstone
+full ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ summary ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ stub ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ tombstone
 ```
 
 ### Triggers
@@ -507,7 +532,7 @@ full Ã¢â€ â€™ summary Ã¢â€ â€™ stub Ã¢â€ â€™ tombs
 ### Access patterns
 
 - **Fossilized item accessed**: Creates SystemEvent, may reverse compression
-- **Protected items**: Operators can mark items as permanent full fidelity
+- **Protected facts**: Operators can mark facts as permanent full fidelity
 
 ### Relation lifecycle
 
@@ -612,7 +637,7 @@ class EncryptionConfig:
 - **Schemas:**
   - `soil-schema.sql`: Soil database structure
   - `core-schema.sql`: Core database structure
-  - `item_schemas.json`: JSON schemas for all Item types
+  - `fact_schemas.json`: JSON schemas for all Fact types
   - `entity_schemas.json`: JSON schemas for all Entity types
 
 - **Whitepapers:**
@@ -634,7 +659,7 @@ MemoGarden uses prefixed UUIDs to distinguish object types:
 
 | Prefix | Storage | Mutability | Examples |
 |--------|---------|------------|----------|
-| `soil_` | Soil (timeline) | Immutable | Items, fossilized relations |
+| `soil_` | Soil (timeline) | Immutable | Facts, fossilized relations |
 | `core_` | Core (state) | Mutable | Entities, active relations |
 
 **Format:** `{prefix}_{uuid4}`

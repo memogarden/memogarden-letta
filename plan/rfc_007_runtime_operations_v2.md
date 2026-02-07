@@ -1,6 +1,6 @@
-# RFC-006: Runtime Operations & Service Management
+# RFC-007: Runtime Operations & Service Management
 
-**Version:** 2.0  
+**Version:** 2.1  
 **Status:** Draft  
 **Author:** MemoGarden Project  
 **Created:** 2026-02-02
@@ -102,7 +102,7 @@ Resource profiles control operational parameters. Profiles are **operator-declar
 
 #### standard Profile (default)
 
-**Target:** Laptops, desktops, servers, containers (ÃƒÂ¢Ã¢â‚¬Â°Ã‚Â¥2GB RAM)
+**Target:** Laptops, desktops, servers, containers (ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°Ãƒâ€šÃ‚Â¥2GB RAM)
 
 **Runtime parameters:**
 - `max_view_entries`: 1000
@@ -237,7 +237,7 @@ def signal_ready(context: RuntimeContext):
     
     elif context.signal_method == "stdout":
         # User process: print to terminal
-        print(f"ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ MemoGarden ready at http://{config.bind_address}:{config.bind_port}")
+        print(f"ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ MemoGarden ready at http://{config.bind_address}:{config.bind_port}")
         print(f"  Data: {context.data_dir}")
         print(f"  Logs: {context.log_dir}")
         sys.stdout.flush()
@@ -315,7 +315,7 @@ def shutdown_gracefully(server, soil_db, core_db):
 
 **Shutdown timeouts per context:**
 
-| Context | SIGTERM ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ SIGKILL | Reason |
+| Context | SIGTERM ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ SIGKILL | Reason |
 |---------|-------------------|--------|
 | serve (systemd) | 90 seconds | Default systemd TimeoutStopSec |
 | run (user) | 5 seconds | Laptop sleep, user expectation |
@@ -393,7 +393,7 @@ Detected existing config: /etc/memogarden/config.toml
 
 Select resource profile:
   1) embedded  - Conservative resource usage (<2GB RAM)
-  2) standard  - Normal resource usage (ÃƒÂ¢Ã¢â‚¬Â°Ã‚Â¥2GB RAM)
+  2) standard  - Normal resource usage (ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°Ãƒâ€šÃ‚Â¥2GB RAM)
   3) auto      - Detect based on system capabilities
 
 Choice [3]: 3
@@ -406,15 +406,15 @@ Recommended profile: embedded
 Accept recommendation? [Y/n]: y
 
 Installing MemoGarden (system, embedded profile)...
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Created directories
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Created directories
     /var/lib/memogarden/
     /var/log/memogarden/
     /etc/memogarden/
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Created service user: memogarden
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Installed binary: /opt/memogarden/bin/memogarden
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Created config: /etc/memogarden/config.toml (resource_profile="embedded")
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Created systemd unit: /etc/systemd/system/memogarden.service
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Reloaded systemd daemon
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Created service user: memogarden
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Installed binary: /opt/memogarden/bin/memogarden
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Created config: /etc/memogarden/config.toml (resource_profile="embedded")
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Created systemd unit: /etc/systemd/system/memogarden.service
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Reloaded systemd daemon
 
 Installation complete!
 
@@ -442,13 +442,13 @@ Select resource profile:
 Choice [3]: 2
 
 Installing MemoGarden (user, standard profile)...
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Created directories
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Created directories
     ~/.local/share/memogarden/
     ~/.local/state/memogarden/logs/
     ~/.config/memogarden/
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Installed binary: ~/.local/bin/memogarden
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Created config: ~/.config/memogarden/config.toml (resource_profile="standard")
-  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Created systemd user unit: ~/.config/systemd/user/memogarden.service
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Installed binary: ~/.local/bin/memogarden
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Created config: ~/.config/memogarden/config.toml (resource_profile="standard")
+  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Created systemd user unit: ~/.config/systemd/user/memogarden.service
 
 Installation complete!
 
@@ -467,16 +467,16 @@ Silent mode auto-detects and accepts defaults:
 # System installation
 $ sudo memogarden install --yes
 Detecting system capabilities...
-8GB RAM, 8 cores detected ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ resource_profile="standard"
+8GB RAM, 8 cores detected ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ resource_profile="standard"
 Installing to /opt/memogarden/
-ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Installation complete
+ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Installation complete
 
 # User installation
 $ memogarden install --user --yes
 Detecting system capabilities...
-16GB RAM, 16 cores detected ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ resource_profile="standard"
+16GB RAM, 16 cores detected ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ resource_profile="standard"
 Installing to ~/.local/
-ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Installation complete
+ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Installation complete
 ```
 
 **Exit codes:**
@@ -621,7 +621,7 @@ WantedBy=multi-user.target
 **Restart policy:**
 - `Restart=on-failure`: Restart only on non-zero exit
 - `RestartSec=5s`: Wait 5 seconds between restart attempts
-- systemd default: 5 restarts in 10 seconds ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ failure state
+- systemd default: 5 restarts in 10 seconds ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ failure state
 
 **Resource limits (optional, embedded profile):**
 
@@ -1146,14 +1146,14 @@ MemoGarden operates in one of three modes that reflect system health and capabil
 **Automatic transitions (system-initiated):**
 
 Startup sequence determines initial mode:
-- No issues detected â†’ NORMAL
-- Orphaned deltas detected â†’ SAFE MODE
-- Hash chain broken â†’ SAFE MODE
-- Database corruption â†’ SAFE MODE
+- No issues detected Ã¢â€ â€™ NORMAL
+- Orphaned deltas detected Ã¢â€ â€™ SAFE MODE
+- Hash chain broken Ã¢â€ â€™ SAFE MODE
+- Database corruption Ã¢â€ â€™ SAFE MODE
 
 Runtime transitions:
-- NORMAL â†’ SAFE MODE: Transaction commit failure (Soil commits, Core fails)
-- SAFE MODE â†’ NORMAL: After successful `memogarden repair`
+- NORMAL Ã¢â€ â€™ SAFE MODE: Transaction commit failure (Soil commits, Core fails)
+- SAFE MODE Ã¢â€ â€™ NORMAL: After successful `memogarden repair`
 
 **Manual transitions (operator-initiated):**
 
@@ -1220,10 +1220,186 @@ For detailed consistency guarantees and failure modes, see RFC-008 (Transaction 
 
 ## 8. Monitoring & Observability
 
-### 7.1 Metrics Endpoint
+MemoGarden uses a three-layer observability model:
 
-`GET /metrics` (Prometheus format):
+### 8.1 Observability Layers
 
+**Layer 1: MemoGarden Facts (Semantic Data)**
+- **Action facts:** All Semantic API calls (reads/writes, success/failure)
+- **EntityDelta facts:** Data mutations with actor attribution
+- **SystemEvent facts:** Operational state changes (mode transitions, consistency checks, backups, critical alerts)
+- **Purpose:** Queryable by agents and operators via Semantic API
+- **Storage:** Soil database, subject to fossilization
+
+**Layer 2: Internal Logs (Technical Troubleshooting)**
+- Internal API call traces
+- SQL queries and transaction boundaries
+- Stack traces on errors
+- Performance timing (query latency, lock contention)
+- Log levels: DEBUG/INFO/WARNING/ERROR
+- **Output:** journald (systemd) or stderr
+- **Rotation:** Monthly, retention 1-2 years
+- **Purpose:** Advanced troubleshooting by technically inclined operators
+
+**Layer 3: OS Logs (Infrastructure)**
+- Service lifecycle (start/stop/restart)
+- Resource exhaustion (OOM, disk full)
+- Hardware issues
+- **Output:** systemd journal
+- **Purpose:** System administration, not MemoGarden's concern
+
+### 8.2 System Agent
+
+The **system agent** is a privileged, rule-based component responsible for MemoGarden's autonomic survivability. It implements cybernetic control loops that monitor system health and execute recovery protocols.
+
+**Key characteristics:**
+- **Rule-based:** No LLM required (resource-constrained hardware compatible)
+- **Privileged access:** Internal metrics APIs not available through Semantic API
+- **Predetermined algorithms:** SPC-based monitoring, threshold detection, recovery protocols
+- **Context exposure:** Writes health summaries to its memory block visible to conversational agents
+
+**System agent responsibilities:**
+
+1. **Metrics collection and analysis**
+   - Storage health (disk usage, growth rate projection)
+   - Performance (query latency, transaction commit time)
+   - Reliability (failure rates, lock conflicts)
+   - Resource health (SSD SMART attributes, thermal throttling)
+
+2. **Anomaly detection via SPC**
+   - Moving average with 3Ïƒ thresholds
+   - Exponential smoothing for trend detection
+   - Control charts for process stability monitoring
+
+3. **Recovery protocol execution**
+   - Automatic responses to detected conditions
+   - Escalation to operator when auto-recovery insufficient
+   - Logging SystemEvent facts for audit trail
+
+### 8.3 Metrics Implementation
+
+**Storage architecture:**
+- **In-memory:** Last N samples for SPC algorithms (sliding window)
+- **Journald:** Periodic snapshots via structured logging
+- **Not in Soil:** High-frequency metrics would pollute semantic data
+
+**Metrics collected:**
+
+| Metric | Sample Frequency | Window Size | Purpose |
+|--------|------------------|-------------|---------|
+| Disk usage (Soil) | 5 minutes | 24 hours | Storage pressure detection |
+| Disk usage (Core) | 5 minutes | 24 hours | Storage pressure detection |
+| Available disk space | 5 minutes | 24 hours | Capacity planning |
+| Query latency (p50/p95/p99) | Per query | Last 1000 queries | Performance monitoring |
+| Transaction commit time | Per transaction | Last 1000 commits | Performance monitoring |
+| Transaction failure rate | Per transaction | Last 1000 transactions | Reliability monitoring |
+| Optimistic lock conflicts | Per conflict | 24 hours | Concurrency issue detection |
+| Consistency check duration | Per startup | Last 30 days | Health monitoring |
+| SSD wear level | Hourly | 30 days | Hardware health |
+
+**SPC algorithm parameters:**
+- **Control limits:** Î¼ Â± 3Ïƒ (99.7% confidence)
+- **Trend detection:** Exponential smoothing Î±=0.3
+- **Window size:** Metric-dependent (see table above)
+- **Alert threshold:** 2 consecutive samples outside control limits OR 7 consecutive samples showing trend
+
+### 8.4 Recovery Protocols
+
+The system agent implements predetermined responses to detected conditions:
+
+**Disk >85% full:**
+```
+Actions:
+1. Log WARNING to journald
+2. Trigger aggressive fossilization sweep
+3. Create SystemEvent fact: "storage_pressure"
+4. If >95% full: Create SystemEvent fact with severity=critical, alert operator
+```
+
+**Transaction failure rate >5%:**
+```
+Actions:
+1. Log ERROR to journald
+2. Enter READ_ONLY mode (prevent further failures)
+3. Create SystemEvent fact: "transaction_failure_spike"
+4. Alert operator immediately
+5. Wait for operator intervention (memogarden diagnose/repair)
+```
+
+**Query latency p95 >2x baseline:**
+```
+Actions:
+1. Log WARNING to journald
+2. Continue monitoring
+3. If persists >1 hour:
+   - Create SystemEvent fact: "performance_degradation"
+   - Alert operator
+4. Suggest operator actions: check disk I/O, run consistency check
+```
+
+**Startup consistency check finds orphaned deltas:**
+```
+Actions:
+1. Enter SAFE_MODE
+2. Create SystemEvent fact: "consistency_failure"
+3. Log ERROR to journald with diagnostic details
+4. Block mutations until operator runs: memogarden repair
+```
+
+**SSD wear level critical (>90% lifetime writes):**
+```
+Actions:
+1. Create SystemEvent fact: "hardware_failure_imminent"
+2. Alert operator immediately
+3. No auto-recovery available (hardware replacement required)
+```
+
+### 8.5 Operator Access to Metrics
+
+Operators can view metrics and system health through standard OS tools:
+
+```bash
+# View MemoGarden service logs
+journalctl -u memogarden -f
+
+# Check service status and recent events
+systemctl status memogarden
+
+# Search for specific event types
+journalctl -u memogarden | grep "storage_pressure"
+
+# View system agent health summary
+memogarden status
+```
+
+System agent also writes health summary to its Letta memory block, making it visible to conversational agents in context.
+
+### 8.6 Agent Context Exposure
+
+Conversational agents see system health in their context but don't query metrics directly:
+
+```
+System Health: NORMAL
+Disk usage: 67% (trend: +2%/week, projected full in 16 weeks)
+Transaction success rate: 99.8%
+Query latency p95: 45ms (baseline: 40ms)
+Last consistency check: 2026-02-06 03:00 - PASS
+```
+
+Agents can reference this information when answering operator questions but cannot access raw metric time series or trigger recovery protocols (those are system agent privileges).
+
+### 8.7 Prometheus Metrics Endpoint (Optional)
+
+For operators who want to integrate with external monitoring systems (Grafana, Prometheus), MemoGarden can optionally expose a `/metrics` endpoint in Prometheus format.
+
+**Configuration:**
+```toml
+[monitoring]
+prometheus_enabled = false  # Default: disabled
+prometheus_port = 9090      # Separate port from main API
+```
+
+**Example metrics:**
 ```
 # HELP memogarden_uptime_seconds Process uptime
 # TYPE memogarden_uptime_seconds gauge
@@ -1234,42 +1410,14 @@ memogarden_uptime_seconds 3600
 memogarden_db_size_bytes{db="soil"} 10485760
 memogarden_db_size_bytes{db="core"} 5242880
 
-# HELP memogarden_items_total Total items in Soil
-# TYPE memogarden_items_total gauge
-memogarden_items_total 1234
-
-# HELP memogarden_http_requests_total HTTP requests by endpoint
-# TYPE memogarden_http_requests_total counter
-memogarden_http_requests_total{method="GET",endpoint="/health",status="200"} 120
-
-# HELP memogarden_storage_used_percent Storage utilization
-# TYPE memogarden_storage_used_percent gauge
-memogarden_storage_used_percent 0.75
+# HELP memogarden_query_latency_seconds Query latency percentiles
+# TYPE memogarden_query_latency_seconds summary
+memogarden_query_latency_seconds{quantile="0.5"} 0.023
+memogarden_query_latency_seconds{quantile="0.95"} 0.045
+memogarden_query_latency_seconds{quantile="0.99"} 0.089
 ```
 
-### 7.2 Tracing
-
-Structured logs with request IDs:
-
-```python
-import uuid
-
-def handle_request(request):
-    request_id = str(uuid.uuid4())
-    log.info(f"Request started", extra={
-        "request_id": request_id,
-        "method": request.method,
-        "path": request.path
-    })
-    
-    # ... handle request ...
-    
-    log.info(f"Request completed", extra={
-        "request_id": request_id,
-        "status": 200,
-        "duration_ms": 15
-    })
-```
+**Note:** This is optional infrastructure. The system agent's internal metrics collection and SPC monitoring work independently of Prometheus integration.
 
 ---
 
@@ -1340,6 +1488,7 @@ Check for updates and prompt user:
 |---------|------|---------|
 | 1.0 | 2026-02-02 | Initial draft |
 | 2.0 | 2026-02-02 | Added Section 7: System Operating Modes (NORMAL/READ-ONLY/SAFE MODE) |
+| 2.1 | 2026-02-06 | Rewrote Section 8: Monitoring & Observability with three-layer model, system agent architecture, SPC metrics implementation, and recovery protocols |
 
 ---
 
