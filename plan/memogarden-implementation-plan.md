@@ -39,7 +39,7 @@ This document consolidates all implementation planning for MemoGarden across mul
 | **Soil Storage** | ✅ Implemented | 80% | Item CRUD, SystemRelation working. Missing: fossilization, fidelity management |
 | **Core Storage** | ✅ Implemented | 70% | Entity registry, Transaction/Recurrence CRUD. Missing: user relations, context tracking |
 | **Authentication** | ✅ Implemented | 95% | JWT + API key auth complete. Missing: permissions enforcement |
-| **REST API** | ⚠️ Partial | 40% | Transaction/Recurrence endpoints only. Missing: Soil, Relations, Context |
+| **REST API** | ⚠️ Partial | 50% | Entity CRUD for Transaction/Recurrence only. **Note:** REST API is Entity-only for external CRUD apps. Full MemoGarden capabilities (Facts, Relations, Context) accessed via Semantic API. |
 | **Semantic API** | ❌ Not Implemented | 0% | /mg endpoint, all 17 verbs |
 | **Context Mechanism** | ❌ Not Implemented | 0% | RFC-003: ContextFrame, View stream, enter/leave/focus/rejoin |
 | **Fossilization** | ❌ Not Implemented | 0% | RFC-002: Time horizon decay, item compression |
@@ -809,157 +809,499 @@ Entity types:
 
 ## Implementation Roadmap
 
-### Phase 1: Semantic API Foundation (2-3 weeks)
+**Design Principles:**
 
-**Goal:** Enable all MemoGarden operations via Semantic API
+1. **Session-Sized Chunks:** Each session is completable in ~20k tokens (2-4 hours)
+2. **Working State:** Every session leaves the system in a working, testable state
+3. **Incremental Value:** Each session delivers usable functionality
+4. **Test-Driven:** Tests written alongside implementation
+5. **Documentation:** Code is documented as it's written
+
+### Session 1: Semantic API - Core Bundle Verbs (2-3 hours)
+
+**Goal:** Basic Entity CRUD via Semantic API
 
 **Tasks:**
-1. Implement `/mg` endpoint dispatcher
-2. Implement Core bundle verbs (create, edit, forget, get, query, register)
-3. Implement Soil bundle verbs (add, amend, get, query)
-4. Implement Relations bundle verbs (link, unlink, edit, get, query, explore)
-5. Implement Context bundle verbs (enter, leave, focus, rejoin)
-6. Add comprehensive tests for all verbs
+1. Implement `/mg` endpoint dispatcher (request envelope → handler → response envelope)
+2. Implement `create` verb - Create entity (any type)
+3. Implement `get` verb - Get entity/fact/relation by UUID
+4. Implement `edit` verb - Edit entity (set/unset semantics)
+5. Implement `forget` verb - Soft delete entity
+6. Implement `query` verb - Query entities with filters
+7. Implement `register` verb - Register custom schema
+8. Add tests for Core bundle verbs
 
-**Deliverables:**
-- Working Semantic API with all 17 verbs
-- Test suite for Semantic API
-- API documentation
+**Invariants to Enforce:**
+- Response envelope includes `ok`, `actor`, `timestamp`, `result`/`error`
+- UUID prefix handling (accept both prefixed and non-prefixed)
+- Null semantics (null = "Unknown", not "intentionally empty")
+
+**Deliverables:** Working `/mg` endpoint with Core verbs, testable
 
 **Dependencies:** None
 
-### Phase 2: Core Platform Features (3-4 weeks)
+### Session 2: Semantic API - Soil Bundle Verbs (2-3 hours)
 
-**Goal:** Implement context, user relations, and audit trail
-
-**Tasks:**
-1. Implement UserRelation operations (time horizon logic)
-2. Implement Context mechanism (ContextFrame, View stream)
-3. Implement Audit facts (Action, ActionResult)
-4. Add context capture to all entity mutations
-5. Test all RFC-003 invariants
-
-**Deliverables:**
-- Complete context mechanism
-- User relations with time horizon
-- Full audit trail
-
-**Dependencies:** Phase 1
-
-### Phase 3: REST API Completion (2 weeks)
-
-**Goal:** Complete REST API for all resources
+**Goal:** Fact operations via Semantic API
 
 **Tasks:**
-1. Implement Soil Item endpoints
-2. Implement generic Entity endpoints
-3. Implement SystemRelation endpoints
-4. Add Pydantic schemas for all resources
+1. Implement `add` verb - Add fact (bring external data into MemoGarden)
+2. Implement `amend` verb - Amend fact (create superseding fact)
+3. Extend `query` verb - Support fact queries (type, start, end, filters)
+4. Add tests for Soil bundle verbs
 
-**Deliverables:**
-- Complete REST API
-- REST API documentation
+**Invariants to Enforce:**
+- Facts are immutable (amend creates new fact with `supersedes` link)
+- `integrity_hash` computed on all fact creation
+- `_type` validated against registered schemas
 
-**Dependencies:** Phase 1
+**Deliverables:** Complete Soil bundle, testable
 
-### Phase 4: Search and Discovery (2-3 weeks)
+**Dependencies:** Session 1
 
-**Goal:** Enable semantic search and graph exploration
+### Session 3: User Relations (2-3 hours)
 
-**Tasks:**
-1. Implement search verb (semantic, fuzzy, auto)
-2. Implement explore verb (graph traversal)
-3. Add embedding generation (if using semantic search)
-4. Implement continuation token pagination
-5. Performance testing
-
-**Deliverables:**
-- Working search and explore verbs
-- Search performance benchmarks
-
-**Dependencies:** Phase 1, Phase 3
-
-### Phase 5: Fossilization (3-4 weeks)
-
-**Goal:** Implement automatic storage management
+**Goal:** Engagement signals with time horizon (RFC-002)
 
 **Tasks:**
-1. Implement fossilization sweep
-2. Implement summary generation
-3. Implement fidelity state transitions
-4. Implement storage pressure eviction
-5. Implement relation fossilization
-6. Add metrics collection
+1. Create `system/core/relation.py` - UserRelation operations
+2. Implement `create()` - Create user relation with initial time_horizon
+3. Implement `update_time_horizon()` - Apply SAFETY_COEFFICIENT on access
+4. Implement `expire()` - Mark relation for fossilization
+5. Implement `list_inbound()`/`list_outbound()` - Query relations
+6. Add `link` verb to Semantic API
+7. Add tests for time horizon computation
 
-**Deliverables:**
-- Complete fossilization engine
-- Fossilization tests
-- Configuration tuning guide
+**Invariants to Enforce (RFC-002):**
+- `time_horizon += delta * SAFETY_COEFFICIENT` (default: 1.2)
+- `relation_is_alive()` ⇔ `time_horizon >= current_day()`
+- Fact significance = max(inbound_relation.time_horizons)
+- Orphaned facts (no relations) have None significance
 
-**Dependencies:** Phase 2 (context, user relations)
+**Deliverables:** Working user relations with time horizon, testable
 
-### Phase 6: Provider Plugins (2-3 weeks)
+**Dependencies:** Session 1 (Semantic API foundation)
 
-**Goal:** Enable data import from external sources
+### Session 4: Context Framework - Basic Operations (2-3 hours)
 
-**Tasks:**
-1. Define Provider protocol
-2. Implement Gmail provider
-3. Implement mbox provider
-4. Implement provider registry
-5. Add provider tests
-
-**Deliverables:**
-- Working email import
-- Provider framework documentation
-
-**Dependencies:** Phase 3 (Soil Item API)
-
-### Phase 7: Cross-Database Coordination (1-2 weeks)
-
-**Goal:** Enforce transaction semantics across Soil and Core
+**Goal:** ContextFrame and View stream foundation (RFC-003)
 
 **Tasks:**
-1. Implement atomic cross-DB transactions
-2. Implement inconsistency detection
-3. Implement recovery tools (diagnose, repair)
-4. Add failure logging
+1. Create `system/core/context.py` - Context operations
+2. Implement `get_context_frame()` - Get by owner (user or scope)
+3. Implement `update_containers()` - LRU-N eviction (N=7 initially)
+4. Implement `create_view()` - Create View with actions
+5. Implement `append_view()` - Append to ContextFrame's view timeline
+6. Define substantive vs primitive types (hardcoded initially)
+7. Add basic tests
 
-**Deliverables:**
-- Robust cross-DB operations
-- Recovery tools
+**Invariants to Enforce (RFC-003):**
+- INV-1: Unique View UUID
+- INV-12: LRU-N limit (containers ≤ N)
+- INV-17: Substantive vs primitive classification (type-based)
+- INV-20: One ContextFrame per owner
+- INV-26: No shared ContextFrame (even for same scope)
 
-**Dependencies:** Phase 2 (audit facts)
+**Deliverables:** Basic context tracking, testable
 
-### Phase 8: App Framework (4-5 weeks)
+**Dependencies:** Session 3 (user relations for linking)
 
-**Goal:** Enable third-party apps
+### Session 5: Context Verbs and Capture (2-3 hours)
 
-**Tasks:**
-1. Implement IPC protocol
-2. Implement app registry
-3. Implement Python SDK
-4. Implement TypeScript SDK
-5. Create reference app
-6. Add app documentation
-
-**Deliverables:**
-- Complete app framework
-- SDKs for Python and TypeScript
-- Reference app
-
-**Dependencies:** Phase 4 (search)
-
-### Phase 9: Advanced Features (ongoing)
+**Goal:** Context verbs and automatic capture (RFC-003)
 
 **Tasks:**
-1. Encryption at rest
-2. System agent
-3. Performance optimization
-4. Additional SDKs (Dart, Java)
-5. Graph visualization
+1. Implement `enter_scope()` - Add scope to active set
+2. Implement `leave_scope()` - Remove from active set
+3. Implement `focus_scope()` - Switch primary scope
+4. Implement `rejoin()` - Merge subordinate context
+5. Implement context capture decorator for entity mutations
+6. Add `visit_entity()` - Update containers on substantive access
+7. Add tests for all RFC-003 context invariants
 
-**Dependencies:** Various
+**Invariants to Enforce (RFC-003):**
+- INV-2: Synchronized Append (one View UUID to user + all active scopes)
+- INV-3: Primary context capture (scope context if entity in scope, else user)
+- INV-4: Automatic capture (no caller intervention)
+- INV-5: Fork inheritance (subordinate gets copy of parent's containers)
+- INV-8: Stream suspension on leave (scope view-stream suspends)
+- INV-11: Explicit scope control (enter ≠ focus, requires confirmation)
+- INV-11a: Focus separation (enter doesn't auto-focus)
+- INV-11b: Implied focus (subagent with one scope, user first registered)
+
+**Deliverables:** Complete context mechanism with all verbs, testable
+
+**Dependencies:** Session 4 (context framework)
+
+### Session 6: Audit Facts (2-3 hours)
+
+**Goal:** Complete audit trail for all operations (RFC-005 v7 Section 7)
+
+**Tasks:**
+1. Create Action fact schema in `/schemas/types/items/action.schema.json`
+2. Create ActionResult fact schema
+3. Add `result_of` to SYSTEM_RELATION_KINDS
+4. Implement audit decorator for Semantic API operations
+5. Create Action fact on operation start
+6. Create ActionResult fact on operation completion
+7. Link via `result_of` relation
+8. Add tests
+
+**Invariants to Enforce (RFC-005 v7):**
+- Action fact created immediately when operation begins
+- ActionResult fact created when operation completes (success/failure/timeout/cancelled)
+- System relation links ActionResult → Action (kind: `result_of`)
+- Use `bypass_semantic_api=True` to prevent recursion
+- Fossilization policy: search→+7d, mutations→+30d, security→+1y
+
+**Deliverables:** Complete audit trail, testable
+
+**Dependencies:** Session 1, 2, 5 (Semantic API + Context)
+
+### Session 7: Relations Bundle Verbs (2-3 hours)
+
+**Goal:** Complete relation management via Semantic API
+
+**Tasks:**
+1. Implement `unlink` verb - Remove relation
+2. Implement `edit` verb - Edit relation attributes (time_horizon)
+3. Extend `query` verb - Support relation queries
+4. Implement `explore` verb - Graph expansion from anchor
+5. Add tests for relation operations
+
+**Invariants to Enforce (RFC-002):**
+- System relations are immutable (cannot be edited/unlinked)
+- User relations have time_horizon that decays
+- `explore` respects direction (outgoing, incoming, both)
+- Graph traversal respects radius limit
+
+**Deliverables:** Complete Relations bundle, testable
+
+**Dependencies:** Session 3 (user relations), Session 5 (context)
+
+### Session 8: Search Verb (2-3 hours)
+
+**Goal:** Semantic search and discovery
+
+**Tasks:**
+1. Implement `search` verb dispatcher
+2. Implement fuzzy search strategy (text matching with typo tolerance)
+3. Implement auto strategy (system chooses based on query)
+4. Implement coverage levels (names, content, full)
+5. Implement effort modes (quick, standard, deep)
+6. Add continuation token pagination
+7. Add tests
+
+**Invariants to Enforce (RFC-005 v7):**
+- Coverage: names (fast), content (names+body), full (all fields)
+- Strategy: semantic (embeddings), fuzzy (text matching), auto (system choice)
+- Effort: quick (cached), standard (full), deep (exhaustive)
+- Continuation tokens for pagination
+- Threshold filtering (minimum similarity score)
+
+**Deliverables:** Working search, testable
+
+**Dependencies:** Session 1 (Semantic API), Session 2 (Soil bundle)
+
+### Session 9: Config-Based Path Resolution (1-2 hours)
+
+**Goal:** RFC-004 environment variable support
+
+**Tasks:**
+1. Implement `get_db_path(layer)` in `system/host/environment.py`
+2. Add `MEMOGARDEN_SOIL_DB` env var support
+3. Add `MEMOGARDEN_CORE_DB` env var support
+4. Add `MEMOGARDEN_DATA_DIR` env var support
+5. Update Soil to use config-based paths
+6. Update Core to use config-based paths
+7. Add tests
+
+**Invariants to Enforce (RFC-004):**
+- Resolution order: layer-specific override → shared data dir → current directory
+- Backward compatible (explicit paths still work)
+- Default paths: `./{layer}.db`
+
+**Deliverables:** Config-based path resolution, testable
+
+**Dependencies:** None (standalone utility)
+
+### Session 10: Schema Access Utilities (1-2 hours)
+
+**Goal:** RFC-004 schema bundling and runtime access
+
+**Tasks:**
+1. Create `system/schemas.py` module
+2. Implement `get_sql_schema(layer)` - Return soil.sql or core.sql
+3. Implement `get_type_schema(category, type_name)` - Return JSON schema
+4. Implement `list_type_schemas(category)` - List available schemas
+5. Update Soil/Core to use `get_sql_schema()`
+6. Add schema bundling to pyproject.toml
+7. Add tests
+
+**Invariants to Enforce (RFC-004):**
+- Try importlib.resources first (bundled package)
+- Fall back to file reading (development mode)
+- Raise FileNotFoundError if schema not found
+
+**Deliverables:** Schema access utilities, testable
+
+**Dependencies:** None (standalone utility)
+
+### Session 11: REST API - Generic Entities (2-3 hours)
+
+**Goal:** Entity CRUD for external apps
+
+**Tasks:**
+1. Implement `POST /api/v1/entities` - Create entity
+2. Implement `GET /api/v1/entities` - List with filters
+3. Implement `GET /api/v1/entities/{uuid}` - Get single
+4. Implement `PATCH /api/v1/entities/{uuid}` - Edit (set/unset)
+5. Implement `DELETE /api/v1/entities/{uuid}` - Forget
+6. Add Pydantic schemas
+7. Add tests
+
+**Note:** REST API is Entity-only for external CRUD apps. Full capabilities (Facts, Relations, Context) accessed via Semantic API.
+
+**Deliverables:** Complete Entity REST API, testable
+
+**Dependencies:** Session 1 (Semantic API patterns)
+
+### Session 12: Cross-Database Transactions (2-3 hours)
+
+**Goal:** RFC-008 transaction semantics
+
+**Tasks:**
+1. Implement `begin_transaction()` - EXCLUSIVE locks on both databases
+2. Implement `commit_transaction()` - Soil first, then Core
+3. Implement `rollback_transaction()` - Best-effort rollback
+4. Implement transaction context manager
+5. Add startup consistency checks (orphaned deltas, broken chains)
+6. Implement `update_entity()` with cross-DB coordination
+7. Add tests for all commit scenarios
+
+**Invariants to Enforce (RFC-008):**
+- EXCLUSIVE locks on both databases for cross-DB operations
+- Commit ordering: **Soil first** (source of truth), then Core
+- Single-DB operations: Standard SQLite ACID
+- System status modes: NORMAL, INCONSISTENT, READ_ONLY, SAFE_MODE
+- Startup checks for orphaned EntityDeltas and broken hash chains
+- Optimistic locking: Update requires matching based_on_hash
+
+**Failure Modes:**
+- Both succeed → NORMAL
+- Both fail → NORMAL (rolled back)
+- Soil commits, Core fails → INCONSISTENT (requires repair)
+- Process killed between commits → INCONSISTENT (detected on startup)
+
+**Deliverables:** Robust cross-DB transactions, testable
+
+**Dependencies:** Session 6 (audit facts), Session 4 (context)
+
+### Session 13: Fossilization - Basic Sweep (2-3 hours)
+
+**Goal:** RFC-002 automatic storage management
+
+**Tasks:**
+1. Implement `fossilization_sweep()` - Background task
+2. Implement `query_fossilization_candidates()` - Find expired items
+3. Implement `should_fossilize_item()` - Check time_horizon
+4. Implement `fossilize_item()` - Compress to summary
+5. Add extractive summary generation
+6. Implement SweepMetrics collection
+7. Add tests
+
+**Invariants to Enforce (RFC-002):**
+- Item fossilizes when `max(time_horizon of inbound relations) < current_day()`
+- Orphaned items (no relations) fossilize immediately
+- Fidelity states: full → summary → stub → tombstone
+- System relations persist (immutable)
+- User relations move from Core to Soil (prefix change: core_ → soil_)
+
+**Deliverables:** Working fossilization sweep, testable
+
+**Dependencies:** Session 3 (user relations), Session 4 (context capture)
+
+### Remaining Sessions (Future Work)
+
+**Provider Plugins:** Email import (Gmail, mbox), provider registry
+
+**App Framework (RFC-009):** IPC protocol, app SDKs, reference app
+
+**Encryption (RFC-001):** SQLCipher integration, key management
+
+**System Agent (RFC-007):** Background tasks, health monitoring
+
+---
+
+## Critical Invariants
+
+This section consolidates all invariants from RFCs that must be enforced via implementation and testing.
+
+### RFC-002: Relation Time Horizon & Fossilization
+
+**Time Horizon Computation:**
+- **INV-TH-001:** `time_horizon += delta * SAFETY_COEFFICIENT` on each access (SAFETY_COEFFICIENT = 1.2)
+- **INV-TH-002:** `relation_is_alive() ⇔ time_horizon >= current_day()`
+- **INV-TH-003:** Fact significance = `max(inbound_user_relations.time_horizon)` (None if orphaned)
+- **INV-TH-004:** Orphaned facts (no inbound relations) fossilize immediately on sweep
+
+**Fidelity States:**
+- **INV-TH-005:** Fidelity progression: full → summary → stub → tombstone
+- **INV-TH-006:** `fossilized_at` timestamp set when fidelity changes from full
+- **INV-TH-007:** System relations persist unchanged (not subject to fossilization)
+- **INV-TH-008:** User relations move from Core to Soil (UUID prefix: core_ → soil_)
+
+**System vs User Relations:**
+- **INV-TH-009:** System relation kinds are immutable (triggers, cites, replies_to, derives_from, contains, continues, supersedes, result_of)
+- **INV-TH-010:** User relation kinds decay over time (currently: explicit_link only)
+
+### RFC-003: Context Mechanism (26 Invariants)
+
+**View Identity (INV-1):**
+- Each View has exactly ONE UUID
+- Same View UUID appended to user and all active scope ContextFrames (synchronized)
+
+**Context Update (INV-2, INV-3, INV-4):**
+- INV-2: Synchronized Append - one View UUID to all ContextFrames atomically
+- INV-3: Primary Context Capture - scope's context if entity in scope, else user's
+- INV-4: Automatic Capture - snapshot happens without caller intervention
+
+**Fork and Merge (INV-5, INV-6, INV-7):**
+- INV-5: Fork Inheritance - subordinate gets copy of parent's containers at fork time
+- INV-6: Merge Termination - ViewMerge appended to both, subordinate ContextFrame destroyed
+- INV-7: No Automatic Context Inheritance - parent does NOT absorb subordinate's context after merge
+
+**Scope Suspension (INV-8):**
+- User's view-stream continues on leave, scope's view-stream suspends (no appends)
+
+**View Chaining (INV-9, INV-10):**
+- INV-9: Linked List via `prev` pointer
+- INV-10: ViewMerge has `prev` + `metadata.merged_views` array
+
+**Scope Activation (INV-11, INV-11a, INV-11b):**
+- INV-11: Explicit scope control (enter ≠ focus, requires confirmation for multi-scope objects)
+- INV-11a: Focus Separation - entering scope does NOT auto-focus
+- INV-11b: Implied Focus - subagent with one scope, user first registered
+
+**Context Size (INV-12, INV-13):**
+- INV-12: LRU-N Limit - containers ≤ N (N=7 initially)
+- INV-13: Tunable N - subject to empirical adjustment
+
+**Context Persistence (INV-14, INV-15, INV-16):**
+- INV-14: Cross-Session Persistence - context persists across logout/login
+- INV-15: Persistent Users Only - operators and primary agents, NOT subagents
+- INV-16: Explicit Context Break - temporal boundary in view-stream
+
+**Visit Filtering (INV-17, INV-18, INV-19):**
+- INV-17: Substantive vs Primitive - not all accesses update context
+- INV-18: Type-Based Classification - substantive/primitive is type property
+- INV-19: Hardcoded Initial Classification - Artifact=substantive, Schema=primitive
+
+**Scope Ownership (INV-20, INV-21):**
+- INV-20: One ContextFrame Per Owner
+- INV-21: Subordinate Context Ownership - owned by agent, not scope
+
+**View Coalescence (INV-22, INV-23):**
+- INV-22: Action Grouping - multiple actions coalesce into single View
+- INV-23: Coalescence Boundaries - explicit break, inactivity timeout (5s), mutation to different scope
+
+**Fossilization Integration (INV-24, INV-25):**
+- INV-24: View Stream Compression - old Views subject to fossilization
+- INV-25: Context Preservation - delta `context` field preserved during fossilization
+
+**Concurrent Access (INV-26):**
+- No Shared ContextFrame - same scope, different users → each has own ContextFrame
+
+### RFC-005: Semantic API
+
+**Verb Semantics:**
+- **INV-API-001:** Facts use `add` (bring external data in) / `amend` (correct/rectify)
+- **INV-API-002:** Entities use `create` (bring into being) / `edit` (revise and publish)
+- **INV-API-003:** `forget` marks entity inactive but traces remain in Soil
+- **INV-API-004:** `query` filter operators: bare value (=), `{"any": [...]}` (OR), `{"not": value}` (negation)
+
+**Null Semantics:**
+- **INV-API-005:** `null` = "not yet known" (Unknown), not "intentionally empty"
+
+**Response Envelope:**
+- **INV-API-006:** All responses include `ok`, `actor`, `timestamp`, `result`/`error`
+
+**Audit Facts (Section 7):**
+- **INV-API-007:** Action fact created immediately when operation starts
+- **INV-API-008:** ActionResult fact created when operation completes
+- **INV-API-009:** System relation `result_of` links ActionResult → Action
+- **INV-API-010:** Use `bypass_semantic_api=True` to prevent audit recursion
+- **INV-API-011:** Fossilization: high-frequency (search) → +7d, mutations → +30d, security → +1y
+
+### RFC-008: Transaction Semantics
+
+**Transaction Scope:**
+- **INV-TX-001:** Single-DB operations: Standard SQLite ACID
+- **INV-TX-002:** Cross-DB operations: Best-effort atomicity with app-level coordination
+- **INV-TX-003:** Split operations: Item commits independently, relation retries on failure
+
+**Isolation and Locking:**
+- **INV-TX-004:** SERIALIZABLE via `BEGIN EXCLUSIVE` on both databases
+- **INV-TX-005:** One transaction per handle (no nesting, no SAVEPOINTs)
+- **INV-TX-006:** Other handles block on `busy_timeout` (5s default)
+
+**Commit Ordering:**
+- **INV-TX-007:** Commit ordering: Soil first, then Core (Soil is source of truth)
+- **INV-TX-008:** If Soil commits but Core fails → system marked INCONSISTENT
+- **INV-TX-009:** Process killed between commits → INCONSISTENT (detected on next startup)
+
+**Rollback:**
+- **INV-TX-010:** Best-effort rollback (if one DB committed, rollback is no-op on that DB)
+
+**Optimistic Locking:**
+- **INV-TX-011:** `entity.hash = SHA256(JSON(state) + entity.previous_hash)`
+- **INV-TX-012:** Update requires `based_on_hash` to match current hash
+- **INV-TX-013:** Hash mismatch → OptimisticLockError (application provides resolution)
+
+**System Status:**
+- **INV-TX-014:** Modes: NORMAL, INCONSISTENT, READ_ONLY, SAFE_MODE
+- **INV-TX-015:** No issues → NORMAL
+- **INV-TX-016:** Orphaned deltas → INCONSISTENT
+- **INV-TX-017:** Database corruption → SAFE_MODE
+
+**Startup Consistency Check:**
+- **INV-TX-018:** Check for orphaned EntityDeltas (Soil committed, Core did not)
+- **INV-TX-019:** Check for broken hash chains (previous_hash doesn't match)
+- **INV-TX-020:** System starts regardless of state (always-available startup)
+
+**Undo vs Rollback:**
+- **INV-TX-021:** Transaction rollback: uncommitted changes discarded (immediate, before commit)
+- **INV-TX-022:** Undo operation: compensating ToolCall within 5 minutes (committed operations)
+
+### RFC-004: Package Deployment
+
+**Path Resolution:**
+- **INV-PKG-001:** Resolution order: layer-specific env var → shared data dir → current dir
+- **INV-PKG-002:** Backward compatible - explicit paths still work
+- **INV-PKG-003:** Default paths: `./{layer}.db`
+
+**Schema Access:**
+- **INV-PKG-004:** Try importlib.resources first (bundled package)
+- **INV-PKG-005:** Fall back to file reading (development mode)
+- **INV-PKG-006:** Raise FileNotFoundError if schema not found in either location
+
+### General Invariants
+
+**UUID Prefixes:**
+- **INV-GEN-001:** Soil UUIDs use `soil_` prefix
+- **INV-GEN-002:** Core UUIDs use `core_` prefix
+- **INV-GEN-003:** APIs accept both prefixed and non-prefixed UUIDs
+- **INV-GEN-004:** Responses always include prefix
+
+**Hash Chains:**
+- **INV-GEN-005:** Entity `hash` = SHA256(data + type + created_at + previous_hash)
+- **INV-GEN-006:** `previous_hash` is NULL for initial entities
+- **INV-GEN-007:** `version` monotonically increases on each update
+
+**Fact Immutability:**
+- **INV-GEN-008:** Fact `realized_at` never changes after creation
+- **INV-GEN-009:** Fact `canonical_at` is user-controllable but immutable once set
+- **INV-GEN-010:** Fact modifications create new Facts with `supersedes` links
 
 ---
 
