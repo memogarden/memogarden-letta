@@ -1,5 +1,27 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
+# =============================================================================
+# MemoGarden Devcontainer - System Layer
+# =============================================================================
+#
+# This Dockerfile installs SYSTEM-LEVEL packages that require root access.
+#
+# Responsibility split:
+# - Dockerfile (this file): System packages, global tools, Python runtime
+# - post-create.sh: User-specific tools (Poetry), project dependencies
+#
+# What goes here (as root):
+# - System packages via apt (Python 3.13, build tools, git)
+# - Global tools: gh (GitHub CLI), pip tools (pytest, ruff, black, mypy)
+# - Python runtime configuration
+#
+# What does NOT go here:
+# - Poetry (installed by post-create.sh for vscode user)
+# - Project dependencies (installed by post-create.sh via poetry install)
+# - User configuration (handled in post-create.sh)
+#
+# =============================================================================
+
 # Install deadsnakes PPA for Python 3.13
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
@@ -20,15 +42,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 # Set Python 3.13 as default
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.13 1
-
-# Add Poetry to PATH globally
-ENV PATH="/root/.local/bin:${PATH}"
-
-# Install Poetry (will be reinstalled for vscode user in post-create script)
-# This installation is just for build-time verification
-RUN curl -sSL https://install.python-poetry.org | python3 - \
-    && poetry config virtualenvs.create true \
-    && poetry config virtualenvs.in-project true
 
 # Install common development tools (globally via pip)
 RUN pip3 install --no-cache-dir --ignore-installed \
@@ -62,5 +75,6 @@ RUN chown -R vscode:vscode /workspace
 # Switch to vscode user (matches VSCode remote user)
 USER vscode
 
-# Set PATH for all users (Poetry is now in /usr/local/bin)
+# Set PATH for vscode user
+# Includes system paths and user-local bin for Poetry (installed by post-create.sh)
 ENV PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.local/bin"

@@ -19,7 +19,7 @@
         "eamodio.gitlens"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.defaultInterpreterPath": "/usr/bin/python3",
         "python.formatting.provider": "black",
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": false,
@@ -42,19 +42,9 @@
     }
   },
 
-  "features": {
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.13",
-      "installTools": true
-    },
-    "ghcr.io/devcontainers/features/git:1": {
-      "version": "latest",
-      "ppa": true
-    },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "lts"
-    }
-  },
+  // NOTE: We don't use "features" here because Dockerfile manually installs everything.
+  // Using features would conflict with our manual Python 3.13 installation from deadsnakes PPA.
+  // All tools are installed in Dockerfile (system) or post-create.sh (user-specific).
 
   "postCreateCommand": "bash .devcontainer/post-create.sh",
 

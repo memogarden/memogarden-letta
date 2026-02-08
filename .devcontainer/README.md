@@ -1,13 +1,29 @@
 # MemoGarden Devcontainer
 
-This directory contains the configuration for developing MemoGarden in a containerized environment.
+This directory contains the VSCode devcontainer configuration for MemoGarden development.
+
+## Architecture Overview
+
+The devcontainer uses a **two-layer architecture** with clear separation of concerns:
+
+### Layer 1: System Layer (`Dockerfile`)
+- **Runs as:** `root` at build time
+- **Installs:** System packages (Python 3.13, gh, global tools)
+- **Not:** User-specific tools (Poetry), project dependencies
+
+### Layer 2: User Layer (`post-create.sh`)
+- **Runs as:** `vscode` on first container creation
+- **Installs:** Poetry, project dependencies, user config
+- **Not:** System packages (handled by Dockerfile)
+
+**Why?** This avoids permission issues (Poetry installed as root is inaccessible to vscode user) and provides clear separation of concerns.
 
 ## What This Provides
 
 - **Python 3.13** environment isolated from your system Python
-- **Poetry** for dependency management across all three repositories
+- **Poetry** for dependency management across all three repositories (installed as vscode user)
 - **Pre-installed VSCode extensions** for Python, Poetry, and testing
-- **Development tools**: pytest, ruff, black, mypy
+- **Development tools**: pytest, ruff, black, mypy, gh (GitHub CLI)
 - **Convenient aliases** for common tasks
 
 ## Quick Start
@@ -126,10 +142,20 @@ poetry run pytest tests/test_transactions.py
 /devcontainer/
 ├── devcontainer.json    # Main VSCode devcontainer config
 ├── docker-compose.yml   # Docker Compose configuration
-├── Dockerfile           # Container image definition
-├── post-create.sh       # Setup script (runs on container create)
+├── Dockerfile           # Container image definition (system layer)
+├── post-create.sh       # Setup script (user layer, runs on container create)
 └── README.md            # This file
 ```
+
+### Responsibility Split
+
+| File | Runs As | When | What |
+|------|---------|------|------|
+| `Dockerfile` | root | Build time | System packages, global tools |
+| `post-create.sh` | vscode | First start | Poetry, project deps, user config |
+| `devcontainer.json` | - | VSCode UI | Extensions, settings, port forwarding |
+
+**Note:** We don't use devcontainer "features" because they conflict with our manual Python 3.13 installation from the deadsnakes PPA (not available in the default features).
 
 ## Customization
 

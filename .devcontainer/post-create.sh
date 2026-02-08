@@ -1,6 +1,24 @@
 #!/bin/bash
 set -e
 
+# =============================================================================
+# MemoGarden Devcontainer - User Layer (post-create)
+# =============================================================================
+#
+# This script runs ONCE when the devcontainer is first created.
+# It runs as the 'vscode' user and sets up user-specific configuration.
+#
+# What happens here:
+# - Install Poetry (user-specific Python package manager)
+# - Install project dependencies via Poetry
+# - Configure user shell (.bashrc aliases)
+#
+# What does NOT happen here:
+# - System package installation (handled by Dockerfile)
+# - Global tool installation (handled by Dockerfile)
+#
+# =============================================================================
+
 echo "🌱 Setting up MemoGarden Development Environment..."
 
 # Colors for output
@@ -63,14 +81,10 @@ echo "  - pytest: $(pytest --version 2>&1 | head -n1)"
 echo "  - ruff: $(ruff --version)"
 echo "  - black: $(black --version)"
 
-# Create helpful aliases and set up PATH
+# Create helpful aliases
 echo ""
 echo "📝 Creating helper aliases..."
 cat >> /home/vscode/.bashrc << 'EOF'
-
-# MemoGarden PATH setup
-# Poetry is globally installed in /usr/local/bin, plus user-local bin
-export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.local/bin"
 
 # MemoGarden Development Aliases
 alias mg-api='cd /workspaces/memogarden/memogarden-api && poetry run flask --app api/main run --debug'
