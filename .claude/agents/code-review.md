@@ -40,6 +40,11 @@ You focus on **implementation quality** (not project requirements - that's chang
    - Check proper error handling with `MemoGardenError` subclasses
    - Ensure partial update pattern with `exclude_unset=True`
    - Validate clear, detailed validation error messages (Validation Message Principle)
+   - **Handlers MUST use public APIs, not private connections**
+     - Handlers should call methods on `core` or `soil` objects
+     - Handlers should NOT access `_conn` or `_get_connection()` directly
+     - This maintains encapsulation and allows for proper connection lifecycle management
+     - Exception: Temporary workaround until public API method exists (must add TODO comment)
 
 5. **Database Layer Patterns**
    - Verify raw SQL queries (parameterized for security)

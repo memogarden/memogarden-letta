@@ -220,6 +220,40 @@ Before working on any task, read these documents in order:
 
 ### Running Tests
 
+**STANDARD WAY:** Use `poetry run pytest` for all packages (ensures correct Poetry environment).
+
+**MemoGarden API Tests:**
+
+```bash
+# Option 1: Use test script (recommended)
+./scripts/test.sh
+
+# Option 2: Change directory first
+cd memogarden-api && poetry run pytest
+
+# With verbose output
+./scripts/test.sh -xvs
+# or
+cd memogarden-api && poetry run pytest -xvs
+```
+
+**MemoGarden System Tests:**
+
+```bash
+# Change directory first
+cd memogarden-system
+
+# Run tests with Poetry
+poetry run pytest
+
+# With verbose output
+poetry run pytest -xvs
+```
+
+**Why:** Running from root causes pytest to collect tests from other directories (e.g., `hacm/tests/`), leading to import errors. The `memogarden-api/pyproject.toml` configures test discovery correctly.
+
+See [`memogarden-api/tests/README.md`](memogarden-api/tests/README.md) for complete testing documentation.
+
 For testing workflows, philosophy, and debugging test failures, use the **memogarden-testing** skill.
 
 ### Writing a New API Endpoint

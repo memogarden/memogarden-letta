@@ -170,31 +170,72 @@ Or use the Bash tool with `run_in_background=True` parameter (when available).
 
 ## Running Tests
 
-### Using the convenience script (recommended)
+### ⚠️ STANDARD WAY (Updated for current structure)
+
+**IMPORTANT:** Both packages use the SAME Poetry environment at `/workspaces/memogarden/.venv`. Always use `poetry run pytest` to ensure the correct environment is used.
+
+**MemoGarden API Tests:**
 
 ```bash
-# Run all tests
+# Option 1: Use test script (recommended)
 ./scripts/test.sh
 
+# Option 2: Change directory first
+cd memogarden-api && poetry run pytest
+
+# With verbose output
+./scripts/test.sh -xvs
+# or
+cd memogarden-api && poetry run pytest -xvs
+```
+
+**MemoGarden System Tests:**
+
+```bash
+# Change directory first
+cd memogarden-system
+
+# Run tests with Poetry
+poetry run pytest
+
+# With verbose output
+poetry run pytest -xvs
+```
+
+**Why:**
+- Running from root causes pytest to collect tests from other directories (e.g., `hacm/tests/`), leading to import errors
+- Using `poetry run pytest` ensures the correct Poetry environment is used (doesn't rely on venv activation)
+- Each package's `pyproject.toml` configures test discovery correctly
+
+### Specific test commands
+
+**API Tests:**
+```bash
 # Run specific test file
-./scripts/test.sh tests/api/test_transactions.py
+cd memogarden-api && poetry run pytest tests/test_semantic_api.py
 
 # Run specific test
-./scripts/test.sh tests/api/test_transactions.py::test_create_transaction
+cd memogarden-api && poetry run pytest tests/test_context.py::test_enter_scope_adds_to_active_set -xvs
+
+# Run with coverage
+cd memogarden-api && poetry run pytest --cov=api --cov-report=html
 ```
 
-### With coverage
-
+**System Tests:**
 ```bash
-./scripts/test-coverage.sh
+# Run specific test file
+cd memogarden-system && poetry run pytest tests/test_core.py
+
+# Run specific test
+cd memogarden-system && poetry run pytest tests/test_core.py::test_entity_create -xvs
+
+# Run with coverage
+cd memogarden-system && poetry run pytest --cov=system --cov-report=html
 ```
 
-### Manual test execution
-
-```bash
-cd /home/kureshii/memogarden/memogarden-core
-poetry run pytest
-```
+For complete testing documentation:
+- API Tests: [`memogarden-api/tests/README.md`](../../../memogarden-api/tests/README.md)
+- System Tests: [`memogarden-system/tests/README.md`](../../../memogarden-system/tests/README.md)
 
 For detailed testing philosophy and patterns, use the **memogarden-testing** skill.
 
