@@ -38,13 +38,23 @@ RUN pip3 install --no-cache-dir --ignore-installed \
     ruff==0.2.0 \
     mypy==1.8.0
 
+# Install GitHub CLI (gh)
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y gh \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set default working directory
 WORKDIR /workspace
 
 # Verify installations
 RUN python3 --version \
     && poetry --version \
-    && pytest --version
+    && pytest --version \
+    && gh --version
 
 # The base image already has a vscode user, just ensure workspace ownership
 RUN chown -R vscode:vscode /workspace
