@@ -1,5 +1,5 @@
 #!/bin/bash
 # Run MemoGarden API test suite
 
-cd /home/kureshii/memogarden/api
+cd "$(dirname "$0")/../memogarden-api"
 poetry run pytest "$@"

@@ -63,10 +63,14 @@ echo "  - pytest: $(pytest --version 2>&1 | head -n1)"
 echo "  - ruff: $(ruff --version)"
 echo "  - black: $(black --version)"
 
-# Create helpful aliases
+# Create helpful aliases and set up PATH
 echo ""
 echo "📝 Creating helper aliases..."
 cat >> /home/vscode/.bashrc << 'EOF'
+
+# MemoGarden PATH setup
+# Poetry is globally installed in /usr/local/bin, plus user-local bin
+export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.local/bin"
 
 # MemoGarden Development Aliases
 alias mg-api='cd /workspaces/memogarden/memogarden-api && poetry run flask --app api/main run --debug'

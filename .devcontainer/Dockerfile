@@ -24,7 +24,8 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1
 # Add Poetry to PATH globally
 ENV PATH="/root/.local/bin:${PATH}"
 
-# Install Poetry
+# Install Poetry (will be reinstalled for vscode user in post-create script)
+# This installation is just for build-time verification
 RUN curl -sSL https://install.python-poetry.org | python3 - \
     && poetry config virtualenvs.create true \
     && poetry config virtualenvs.in-project true
@@ -50,9 +51,8 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 # Set default working directory
 WORKDIR /workspace
 
-# Verify installations
+# Verify installations (Poetry will be installed by post-create script for vscode user)
 RUN python3 --version \
-    && poetry --version \
     && pytest --version \
     && gh --version
 
@@ -62,5 +62,5 @@ RUN chown -R vscode:vscode /workspace
 # Switch to vscode user (matches VSCode remote user)
 USER vscode
 
-# Add Poetry to PATH for vscode user
-ENV PATH="${PATH}:/home/vscode/.local/bin"
+# Set PATH for all users (Poetry is now in /usr/local/bin)
+ENV PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.local/bin"
