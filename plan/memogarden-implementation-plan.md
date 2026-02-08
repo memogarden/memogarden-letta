@@ -839,9 +839,9 @@ Entity types:
 | Session | Name | Status | Date | Tests |
 |---------|------|--------|------|-------|
 | 1 | Semantic API - Core Bundle Verbs | ✅ Completed | 2026-02-07 | 22/22 passing |
-| 2 | Semantic API - Soil Bundle Verbs | ⏳ Not Started | - | 0/0 |
-| 3 | User Relations | ⏳ Not Started | - | 0/0 |
-| 4 | Context Framework - Basic | ⏳ Not Started | - | 0/0 |
+| 2 | Semantic API - Soil Bundle Verbs | ✅ Completed | 2026-02-07 | 21/21 passing |
+| 3 | User Relations | ✅ Completed | 2026-02-08 | 25/25 passing |
+| 4 | Context Framework - Basic | ✅ Completed | 2026-02-08 | 26/26 passing |
 | 5 | Context Verbs and Capture | ⏳ Not Started | - | 0/0 |
 | 6 | Audit Facts | ⏳ Not Started | - | 0/0 |
 | 7 | Relations Bundle Verbs | ⏳ Not Started | - | 0/0 |
@@ -919,52 +919,98 @@ Entity types:
 
 **Dependencies:** Session 1 ✅
 
-### Session 3: User Relations (2-3 hours)
+### Session 3: User Relations ✅ COMPLETED
+
+**Completed:** 2026-02-08
 
 **Goal:** Engagement signals with time horizon (RFC-002)
 
 **Tasks:**
-1. Create `system/core/relation.py` - UserRelation operations
-2. Implement `create()` - Create user relation with initial time_horizon
-3. Implement `update_time_horizon()` - Apply SAFETY_COEFFICIENT on access
-4. Implement `expire()` - Mark relation for fossilization
-5. Implement `list_inbound()`/`list_outbound()` - Query relations
-6. Add `link` verb to Semantic API
-7. Add tests for time horizon computation
+1. ✅ Create `system/core/relation.py` - UserRelation operations
+2. ✅ Implement `create()` - Create user relation with initial time_horizon
+3. ✅ Implement `update_time_horizon()` - Apply SAFETY_COEFFICIENT on access
+4. ✅ Implement `expire()` - Mark relation for fossilization
+5. ✅ Implement `list_inbound()`/`list_outbound()` - Query relations
+6. ✅ Add `link` verb to Semantic API
+7. ✅ Add tests for time horizon computation
 
-**Invariants to Enforce (RFC-002):**
-- `time_horizon += delta * SAFETY_COEFFICIENT` (default: 1.2)
-- `relation_is_alive()` ⇔ `time_horizon >= current_day()`
-- Fact significance = max(inbound_relation.time_horizons)
-- Orphaned facts (no relations) have None significance
+**Implementation:**
+- Created `system/core/relation.py` with RelationOperations class
+- Implemented all operations: create, get_by_id, update_time_horizon, list_inbound, list_outbound, expire, fact_time_horizon, is_alive
+- Added `time` utility module with current_day() and day_to_date() functions
+- Added `link` verb to Semantic API (handler in api/handlers/core.py)
+- Added LinkRequest schema to api/schemas/semantic.py
+- Created comprehensive tests (19 tests passing)
 
-**Deliverables:** Working user relations with time horizon, testable
+**Invariants Enforced (RFC-002):**
+- ✅ `time_horizon += delta * SAFETY_COEFFICIENT` (default: 1.2)
+- ✅ `relation_is_alive()` ⇔ `time_horizon >= current_day()`
+- ✅ Fact significance = max(inbound_relation.time_horizons)
+- ✅ Orphaned facts (no relations) have None significance
 
-**Dependencies:** Session 1 (Semantic API foundation)
+**Deliverables:** Complete user relations with time horizon, all tests passing
 
-### Session 4: Context Framework - Basic Operations (2-3 hours)
+**Test Results:**
+- test_user_relations.py: 19 tests passing
+- test_semantic_api.py (link verb): 6 tests passing
+
+**Dependencies:** Session 1 (Semantic API foundation) ✅
+
+### Session 4: Context Framework - Basic Operations ✅ COMPLETED
+
+**Completed:** 2026-02-08
 
 **Goal:** ContextFrame and View stream foundation (RFC-003)
 
 **Tasks:**
-1. Create `system/core/context.py` - Context operations
-2. Implement `get_context_frame()` - Get by owner (user or scope)
-3. Implement `update_containers()` - LRU-N eviction (N=7 initially)
-4. Implement `create_view()` - Create View with actions
-5. Implement `append_view()` - Append to ContextFrame's view timeline
-6. Define substantive vs primitive types (hardcoded initially)
-7. Add basic tests
+1. ✅ Create `system/core/context.py` - Context operations
+2. ✅ Implement `get_context_frame()` - Get by owner (user or scope)
+3. ✅ Implement `update_containers()` - LRU-N eviction (N=7 initially)
+4. ✅ Implement `create_view()` - Create View with actions
+5. ✅ Implement `append_view()` - Append to ContextFrame's view timeline
+6. ✅ Define substantive vs primitive types (hardcoded initially)
+7. ✅ Add comprehensive tests (26 tests passing)
 
-**Invariants to Enforce (RFC-003):**
-- INV-1: Unique View UUID
-- INV-12: LRU-N limit (containers ≤ N)
-- INV-17: Substantive vs primitive classification (type-based)
-- INV-20: One ContextFrame per owner
-- INV-26: No shared ContextFrame (even for same scope)
+**Implementation:**
+- Created `system/core/context.py` with ContextOperations class
+- Implemented all operations: get_context_frame, _create_context_frame, get_context_frame_by_uuid, update_containers, create_view, append_view
+- Added substantive vs primitive type classification (SUBSTANTIVE_TYPES, PRIMITIVE_TYPES)
+- Created JSON schemas for View, ViewMerge, and ContextFrame entity types
+- Registered context operations with Core class (core.context property)
+- Added 26 comprehensive tests covering all RFC-003 invariants
 
-**Deliverables:** Basic context tracking, testable
+**Invariants Enforced (RFC-003):**
+- ✅ INV-1: Unique View UUID (core_ prefix added to all View UUIDs)
+- ✅ INV-12: LRU-N limit (containers ≤ N, N=7 initially)
+- ✅ INV-17: Substantive vs primitive classification (type-based)
+- ✅ INV-18: Type-Based Classification
+- ✅ INV-19: Hardcoded Initial Classification
+- ✅ INV-20: One ContextFrame per owner
+- ✅ INV-26: No shared ContextFrame (even for same scope)
 
-**Dependencies:** Session 3 (user relations for linking)
+**Deliverables:** Complete context tracking foundation, all tests passing
+
+**Test Results:**
+- test_context.py: 26 tests passing
+- All 132 tests passing across entire test suite
+
+**Dependencies:** Session 3 (user relations for linking) ✅
+
+**Code Review Fixes Applied:**
+- ✅ C1: Removed unused `datetime`, `timezone` imports
+- ✅ C2: Fixed database query logic for proper INV-20 compliance (operators use NULL, agents/scopes use owner_type)
+- ✅ L2: Added runtime validation for `owner_type` parameter
+- ✅ H2: Added `ViewAction.to_dict()` method to handle `visited: None` properly (converts to empty array)
+- ✅ H3: Added `context_frame_uuid` validation in `create_view()` to prevent orphaned Views
+- ✅ H1: Consistent UUID prefix handling using `uid.add_core_prefix()` helper
+- ✅ M3: Added `append_view_to_contexts()` helper for atomic multi-context append
+- ✅ M1: Documented `view_timeline` limitation (in-memory only, deferred to Session 5)
+
+**Known Limitations (Deferred to Session 5):**
+- `view_timeline` is tracked in-memory only, not persisted to database
+- ContextFrame.view_timeline is always empty when loaded from database
+- This violates INV-14 (Cross-Session Persistence) - will be fixed in Session 5
+- Implementation will require: add view_timeline column to context_frame table, query Views from entity table
 
 ### Session 5: Context Verbs and Capture (2-3 hours)
 
@@ -1437,21 +1483,25 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.3 | 2026-02-08 | Update Session 4 status to completed |
+| 1.2 | 2026-02-08 | Update Session 2 and Session 3 status to completed |
 | 1.1 | 2026-02-07 | Update Session 1 status to completed, add session status table |
 | 1.0 | 2026-02-07 | Initial implementation plan, consolidates rfc-004-implementation-plan.md |
 
 ---
 
-**Status:** Active Development - Session 2 Complete
+**Status:** Active Development - Session 4 Complete
 
 **Next Steps:**
 1. ✅ ~~Review and prioritize Phase 1 tasks~~ (Completed - Session 1)
 2. ✅ ~~Set up Semantic API development environment~~ (Completed)
 3. ✅ ~~Implement Core bundle verbs first (highest value)~~ (Completed)
 4. ✅ ~~Implement Soil bundle verbs (Session 2)~~ (Completed)
-5. ⏳ **Start Session 3: User Relations** (RFC-002 time horizon tracking)
-6. Continue implementing remaining Semantic API bundles (Relations, Context, Search)
-7. Write tests alongside implementation
+5. ✅ ~~Implement User Relations (Session 3)~~ (Completed)
+6. ✅ ~~Implement Context Framework - Basic Operations (Session 4)~~ (Completed)
+7. ⏳ **Start Session 5: Context Verbs and Capture** (RFC-003 Context verbs)
+8. Continue implementing remaining Semantic API bundles (Context, Search, Audit)
+9. Write tests alongside implementation
 
 ---
 

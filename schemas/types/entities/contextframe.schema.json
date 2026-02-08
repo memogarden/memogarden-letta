@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/entities/contextframe.schema.json",
+  "title": "ContextFrame",
+  "description": "Per-user and per-scope working memory that maintains LRU-N of recently visited objects (RFC-003).",
+  "allOf": [
+    {
+      "$ref": "entity.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "ContextFrame"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "owner": {
+              "type": "string",
+              "description": "UUID of the owner (Operator, Agent, or Scope entity)"
+            },
+            "owner_type": {
+              "type": "string",
+              "enum": ["operator", "agent", "scope"],
+              "description": "Type of the owner"
+            },
+            "containers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "LRU-N ordered list of recently visited object UUIDs (N=7 initially)"
+            },
+            "view_timeline": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Chronological list of View UUIDs forming the view-stream"
+            },
+            "parent_frame_uuid": {
+              "type": ["string", "null"],
+              "description": "For subordinate contexts: UUID of parent ContextFrame"
+            },
+            "is_subordinate": {
+              "type": "boolean",
+              "description": "True if this is a forked subordinate context"
+            }
+          },
+          "required": ["owner", "owner_type", "containers", "view_timeline", "is_subordinate"]
+        }
+      }
+    }
+  ]
+}

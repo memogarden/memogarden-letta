@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/entities/view.schema.json",
+  "title": "View",
+  "description": "Immutable record of actions within a time window, forming the view-stream (RFC-003). Views form a temporal linked list via the prev pointer.",
+  "allOf": [
+    {
+      "$ref": "entity.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "View"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "actor": {
+              "type": "string",
+              "description": "UUID of the operator or agent who performed the actions"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Operation type (e.g., 'update_entity', 'create_entity', 'delete_entity')"
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "UUID of the target entity or item"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the action occurred"
+                  },
+                  "visited": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of entity UUIDs visited during this action"
+                  }
+                },
+                "required": ["type", "target", "timestamp"]
+              }
+            },
+            "started_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the view started"
+            },
+            "ended_at": {
+              "type": ["string", "null"],
+              "format": "date-time",
+              "description": "When the view ended (null if still active)"
+            },
+            "prev": {
+              "type": ["string", "null"],
+              "description": "UUID of previous View in the stream (forms linked list, NULL for stream start)"
+            },
+            "context_frame_uuid": {
+              "type": "string",
+              "description": "UUID of the ContextFrame this View belongs to"
+            }
+          },
+          "required": ["actor", "actions", "started_at", "context_frame_uuid"]
+        }
+      }
+    }
+  ]
+}

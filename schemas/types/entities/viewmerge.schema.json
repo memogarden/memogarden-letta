@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/entities/viewmerge.schema.json",
+  "title": "ViewMerge",
+  "description": "Special View type that marks the merge point of a subordinate context back to its parent (RFC-003). Appended to both parent and subordinate view-streams.",
+  "allOf": [
+    {
+      "$ref": "view.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "ViewMerge"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "actor": {
+              "type": "string",
+              "description": "UUID of the operator or agent who performed the merge"
+            },
+            "actions": {
+              "type": "array",
+              "description": "Empty array for ViewMerge (no actions in merge operation)",
+              "maxItems": 0
+            },
+            "started_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the merge occurred"
+            },
+            "ended_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Merge ends immediately after creation"
+            },
+            "prev": {
+              "type": ["string", "null"],
+              "description": "UUID of parent's previous View"
+            },
+            "context_frame_uuid": {
+              "type": "string",
+              "description": "UUID of the ContextFrame this ViewMerge belongs to"
+            },
+            "metadata": {
+              "type": "object",
+              "properties": {
+                "merged_views": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of subordinate view UUIDs being merged"
+                },
+                "parent_context_frame": {
+                  "type": "string",
+                  "description": "UUID of the parent ContextFrame"
+                },
+                "subordinate_context_frame": {
+                  "type": "string",
+                  "description": "UUID of the subordinate ContextFrame being destroyed"
+                }
+              },
+              "required": ["merged_views", "parent_context_frame", "subordinate_context_frame"]
+            }
+          },
+          "required": ["actor", "actions", "started_at", "ended_at", "context_frame_uuid", "metadata"]
+        }
+      }
+    }
+  ]
+}
