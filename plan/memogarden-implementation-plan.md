@@ -1059,7 +1059,12 @@ Entity types:
 - INV-3: Primary context capture not implemented
 - INV-4: Automatic capture not implemented
 - INV-5: Fork inheritance not fully implemented (subordinate contexts)
-- Database locking issue in concurrent test execution (test infrastructure, not code)
+
+**Session 5 Fixes (2026-02-08):**
+- ✅ Fixed database locking in concurrent test execution by switching from shared temp file to in-memory database (`:memory:`)
+  - Updated `tests/conftest.py` to use shared cache in-memory database
+  - All 151 tests now pass reliably without locking issues
+  - Updated test documentation in `tests/README.md`
 
 **Dependencies:** Session 4 (context framework) ✅
 
@@ -1507,6 +1512,7 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.5 | 2026-02-08 | Add Session 5 database locking fix, document type checking fix in core.py |
 | 1.4 | 2026-02-08 | Update Session 5 status to completed |
 | 1.3 | 2026-02-08 | Update Session 4 status to completed |
 | 1.2 | 2026-02-08 | Update Session 2 and Session 3 status to completed |
