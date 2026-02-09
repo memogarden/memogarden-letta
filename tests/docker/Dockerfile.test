@@ -1,0 +1,31 @@
+# Docker image for testing MemoGarden deployment
+FROM debian:bookworm-slim
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    git \
+    curl \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user
+RUN useradd -m -s /bin/bash testuser
+
+# Set working directory
+WORKDIR /home/testuser
+
+# Copy test script
+COPY tests/docker/test-deployment.sh /tmp/test-deployment.sh
+RUN chmod +x /tmp/test-deployment.sh
+
+# Run as testuser
+USER testuser
+
+# Run the deployment test
+CMD ["/tmp/test-deployment.sh"]

@@ -1,0 +1,46 @@
+[Unit]
+Description=MemoGarden API Server
+Documentation=https://github.com/memogarden/memogarden
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=memogarden
+Group=memogarden
+
+# Working directory (relative to installation root)
+WorkingDirectory=/opt/memogarden/memogarden-api
+
+# Environment
+Environment="PATH=/opt/memogarden/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/opt/memogarden/memogarden-api/.env
+
+# Main service command
+ExecStart=/opt/memogarden/.venv/bin/gunicorn --config gunicorn.conf.py api.main:app
+
+# Reload command (graceful restart)
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+TimeoutSec=30
+
+# Logging
+StandardOutput=append:/var/log/memogarden/memogarden.log
+StandardError=append:/var/log/memogarden/memogarden.error
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/memogarden /var/log/memogarden /var/run/memogarden
+
+# Resource limits (adjust for Raspberry Pi)
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target
