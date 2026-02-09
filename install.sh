@@ -25,6 +25,7 @@ MEMOGARDEN_USER="${MEMOGARDEN_USER:-memogarden}"
 MEMOGARDEN_GROUP="${MEMOGARDEN_GROUP:-memogarden}"
 MEMOGARDEN_DATA_DIR="${MEMOGARDEN_DATA_DIR:-/var/lib/memogarden}"
 MEMOGARDEN_INSTALL_DIR="${MEMOGARDEN_INSTALL_DIR:-/opt/memogarden}"
+MEMOGARDEN_POETRY_DIR="${MEMOGARDEN_INSTALL_DIR}/.local/poetry"
 
 # Colors for output
 RED='\033[0;31m'
@@ -247,18 +248,37 @@ step_create_directories() {
 }
 
 step_install_poetry() {
-    log_step "Checking Poetry installation..."
+    log_step "Installing project-specific Poetry..."
 
-    if check_command poetry; then
-        local poetry_version=$(poetry --version)
+    # Install Poetry to project-specific location
+    local poetry_bin="$MEMOGARDEN_POETRY_DIR/bin"
+    local poetry_exec="$poetry_bin/poetry"
+
+    if [ -f "$poetry_exec" ]; then
+        local poetry_version=$("$poetry_exec" --version)
         log_info "Poetry already installed: $poetry_version"
     else
-        log_info "Installing Poetry..."
-        curl -sSL https://install.python-poetry.org | python3 -
-        # Add Poetry to PATH for current session
-        export PATH="$HOME/.local/bin:$PATH"
+        log_info "Installing Poetry to $MEMOGARDEN_POETRY_DIR..."
+        # Create installation directory
+        sudo mkdir -p "$MEMOGARDEN_POETRY_DIR"
+        sudo chown -R "$MEMOGARDEN_USER:$MEMOGARDEN_GROUP" "$MEMOGARDEN_POETRY_DIR"
+
+        # Install Poetry as memogarden user
+        sudo -u "$MEMOGARDEN_USER" bash -c "
+            export POETRY_HOME='$MEMOGARDEN_POETRY_DIR'
+            curl -sSL https://install.python-poetry.org | python3 -
+        "
+
         log_info "Poetry installed successfully"
     fi
+
+    # Configure Poetry for MemoGarden
+    # 1. Use in-project virtualenvs (.venv directory)
+    # 2. Set cache directory to /opt/memogarden/.cache (accessible by memogarden user)
+    sudo -u "$MEMOGARDEN_USER" "$poetry_exec" config virtualenvs.in-project true
+    sudo -u "$MEMOGARDEN_USER" "$poetry_exec" config cache-dir "$MEMOGARDEN_INSTALL_DIR/.cache/pypoetry"
+
+    log_info "Poetry configured for MemoGarden"
 }
 
 step_install_python_dependencies() {
@@ -266,8 +286,11 @@ step_install_python_dependencies() {
 
     cd "$MEMOGARDEN_INSTALL_DIR/memogarden-api"
 
+    # Use project-specific Poetry installation
+    local poetry_exec="$MEMOGARDEN_POETRY_DIR/bin/poetry"
+
     # Install dependencies using Poetry
-    sudo -u "$MEMOGARDEN_USER" poetry install
+    sudo -u "$MEMOGARDEN_USER" "$poetry_exec" install
 
     log_info "Python dependencies installed"
 }
@@ -322,9 +345,9 @@ Type=notify
 User=$MEMOGARDEN_USER
 Group=$MEMOGARDEN_GROUP
 WorkingDirectory=$MEMOGARDEN_INSTALL_DIR/memogarden-api
-Environment="PATH=$MEMOGARDEN_INSTALL_DIR/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PATH=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin:/usr/local/bin:/usr/bin:/bin"
 EnvironmentFile=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.env
-ExecStart=$MEMOGARDEN_INSTALL_DIR/.venv/bin/gunicorn --config gunicorn.conf.py api.main:app
+ExecStart=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin/gunicorn --config gunicorn.conf.py api.main:app
 ExecReload=/bin/kill -s HUP \$MAINPID
 Restart=on-failure
 RestartSec=10
