@@ -1,6 +1,6 @@
 # RFC 005: MemoGarden API Design
 
-**Version:** 7.0  
+**Version:** 7.1  
 **Status:** Draft  
 **Author:** JS  
 **Date:** 2026-02-07
@@ -47,14 +47,14 @@ Three different use cases require three different interfaces:
 Ã¢â€â€š   (supervised, SDK-based)                   Ã¢â€â€š
 Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Â¤
 Ã¢â€â€š   SDKs (Python, TS, Dart, Java)             Ã¢â€â€š
-Ã¢â€â€š   Ã¢â€ â€™ Semantic API only                       Ã¢â€â€š
+Ã¢â€â€š   Ã¢â€ â€™ Semantic API only                       Ã¢â€â€š
 Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Â¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Ëœ
                     Ã¢â€â€š
 Ã¢â€Å’Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Â¬Ã¢â€â‚¬Ã¢â€Â´Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Â
 Ã¢â€â€š   External      Ã¢â€â€š                            Ã¢â€â€š
 Ã¢â€â€š   Integrations  Ã¢â€â€š                            Ã¢â€â€š
 Ã¢â€â€š   (curl, Zapier)Ã¢â€â€š                            Ã¢â€â€š
-Ã¢â€â€š   Ã¢â€ â€™ REST API    Ã¢â€â€š                            Ã¢â€â€š
+Ã¢â€â€š   Ã¢â€ â€™ REST API    Ã¢â€â€š                            Ã¢â€â€š
 Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Â¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Ëœ                            Ã¢â€â€š
          Ã¢â€â€š HTTP                                Ã¢â€â€š
          Ã¢â€“Â¼                                     Ã¢â€“Â¼
@@ -177,9 +177,9 @@ Declaring a profile commits the app to:
 1. **Supporting all verbs** in that profile's bundles
 2. **Exposing capabilities as toolcalls** for agent interaction
 3. **Surfacing relevant UI elements**:
-   - Soil Ã¢â€ â€™ history/audit trail views
-   - Relations Ã¢â€ â€™ graph visualization
-   - Semantic Ã¢â€ â€™ search/suggest interfaces
+   - Soil Ã¢â€ â€™ history/audit trail views
+   - Relations Ã¢â€ â€™ graph visualization
+   - Semantic Ã¢â€ â€™ search/suggest interfaces
 
 See RFC-009 for full application model specification.
 
@@ -410,17 +410,17 @@ No required arguments. Schema left open for future needs.
 | `start_index`, `count` | no | Pagination |
 
 **Filter operators:**
-- Bare value Ã¢â€ â€™ equality
-- `{"any": [...]}` Ã¢â€ â€™ union (OR)
-- `{"all": [...]}` Ã¢â€ â€™ intersection (AND, for multi-value fields)
-- `{"not": value}` Ã¢â€ â€™ negation
-- `{"not": {"any": [...]}}` Ã¢â€ â€™ none of these
+- Bare value Ã¢â€ â€™ equality
+- `{"any": [...]}` Ã¢â€ â€™ union (OR)
+- `{"all": [...]}` Ã¢â€ â€™ intersection (AND, for multi-value fields)
+- `{"not": value}` Ã¢â€ â€™ negation
+- `{"not": {"any": [...]}}` Ã¢â€ â€™ none of these
 
 **Linked filter:**
-- `{"to": "ent_xxx"}` Ã¢â€ â€™ has outgoing edge to X
-- `{"from": "ent_xxx"}` Ã¢â€ â€™ has incoming edge from X
-- `{"with": "ent_xxx"}` Ã¢â€ â€™ either direction
-- `{"via": "relation_type"}` Ã¢â€ â€™ filter by relation type
+- `{"to": "ent_xxx"}` Ã¢â€ â€™ has outgoing edge to X
+- `{"from": "ent_xxx"}` Ã¢â€ â€™ has incoming edge from X
+- `{"with": "ent_xxx"}` Ã¢â€ â€™ either direction
+- `{"via": "relation_type"}` Ã¢â€ â€™ filter by relation type
 
 **Response:** `{results: [...], total, start_index, count}`
 
@@ -561,11 +561,38 @@ Tree format handles "diamond ancestry" naturally.
 
 ## Audit Facts
 
-All Semantic API operations create audit facts that enable complete behavioral traceability. This provides introspection capabilities for debugging, security analysis, and understanding agent behavior.
+**Design Constraint:** Multiple agents coordinate without locks. An agent must be able to see that another agent is performing an operation *before* that operation completes.
 
-### Action Fact (Operation Initiation)
+**Solution:** Two-fact pattern with immediate commit:
+1. **Action fact** - Created when operation starts, committed immediately (visible to other agents during execution)
+2. **ActionResult fact** - Created when operation completes, linked via `result_of` relation
 
-Created immediately when a Semantic API operation begins, before execution:
+**Query Pattern:**
+```python
+# In-progress operations (Action without ActionResult)
+actions = mg.query('Action', {})
+in_progress = [a for a in actions 
+               if not mg.explore(a.uuid, relation_filter={'kind': 'result_of'})]
+
+# Failed operations
+failed = mg.query('ActionResult', {'filter': {'data.result': 'failure'}})
+```
+
+**Commit Strategy:**
+- **Action:** `soil._conn.commit()` immediately after creation (3x write overhead, acceptable for personal system)
+- **ActionResult:** Normal transaction commit when operation completes
+- **Rationale:** Other agents must see "operation in progress" without waiting for completion
+
+**Use Cases:**
+- **Long-running ops:** Agent B queries Actions→sees Agent A's in-progress operation
+- **Async workflows:** Action created synchronously, ActionResult arrives seconds/minutes later
+- **Distributed coordination:** "claim_task" Action prevents duplicate work before task completes
+
+---
+
+### Action Fact Schema (Operation Initiation)
+
+Created immediately when a Semantic API operation begins, *before* execution:
 
 ```python
 {
@@ -602,7 +629,11 @@ Created immediately when a Semantic API operation begins, before execution:
 }
 ```
 
-### ActionResult Fact (Operation Completion)
+**Timing:** Created/committed immediately when operation starts, *before* handler executes.
+
+---
+
+### ActionResult Fact Schema (Operation Completion)
 
 Created when the operation completes (success, failure, timeout, or cancellation):
 
@@ -637,6 +668,12 @@ Created when the operation completes (success, failure, timeout, or cancellation
 }
 ```
 
+**Timing:** Created when operation completes. May be delayed for async operations.
+
+**Relation:** ActionResult → Action via `result_of` system relation.
+
+---
+
 ### Linking Action and Result
 
 A system relation connects Action and ActionResult facts:
@@ -659,18 +696,20 @@ This relation enables queries like:
 result = mg.explore(action_uuid, relation_filter={"kind": "result_of"})
 
 # Find hung operations (actions without results)
-actions = mg.search(filters={"type": "Action", "timestamp_before": threshold})
+actions = mg.query('Action', {'filter': {'timestamp_before': threshold}})
 for action in actions:
     results = mg.explore(action.uuid, relation_filter={"kind": "result_of"})
     if not results:
         log.warning(f"Hung operation: {action.uuid}")
 ```
 
+---
+
 ### Audit Query Examples
 
 **Find all failed operations:**
 ```python
-results = mg.search(filters={"type": "ActionResult", "result": "failure"})
+results = mg.query('ActionResult', {'filter': {'data.result': 'failure'}})
 for result in results:
     action = mg.explore(result.uuid, relation_filter={"kind": "result_of"}, direction="outbound")
     print(f"Failed {action.operation}: {result.error.message}")
@@ -678,31 +717,74 @@ for result in results:
 
 **Trace agent behavior:**
 ```python
-actions = mg.search(filters={"type": "Action", "actor": agent_uuid})
+actions = mg.query('Action', {'filter': {'data.actor': agent_uuid}})
 # Returns chronological list of all operations performed by agent
 ```
 
 **Analyze operation performance:**
 ```python
-results = mg.search(filters={
-    "type": "ActionResult", 
-    "timestamp_after": "2026-02-01T00:00:00Z"
+results = mg.query('ActionResult', {
+    'filter': {'timestamp_after': '2026-02-01T00:00:00Z'}
 })
 latencies = [r.duration_ms for r in results]
 p95 = percentile(latencies, 95)
 ```
 
-### Implementation Notes
+---
+
+### Implementation Note
+
+The `with_audit()` decorator uses `soil._conn.commit()` to immediately persist Action facts. This is temporary until Soil provides `soil.create_and_commit_item()`. See RFC-007 Section 6.5: Connection Lifecycle Refactor for long-term solution.
+
+**Current implementation:**
+```python
+def with_audit(operation: str):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Create Action fact
+            action = soil.add_item('Action', {
+                'actor': current_actor(),
+                'operation': operation,
+                'params': serialize_params(args, kwargs)
+            })
+            
+            # IMMEDIATE COMMIT - other agents can see this now
+            soil._conn.commit()
+            
+            # Execute operation
+            start = time.time()
+            try:
+                result = func(*args, **kwargs)
+                status = 'success'
+                result_data = {'result': result}
+            except Exception as e:
+                status = 'error'
+                result_data = {'error': str(e)}
+                raise
+            finally:
+                # Create ActionResult (commits with transaction)
+                action_result = soil.add_item('ActionResult', {
+                    'status': status,
+                    'duration_ms': int((time.time() - start) * 1000),
+                    **result_data
+                })
+                soil.add_system_relation('result_of', action_result.uuid, action.uuid)
+            
+            return result
+        return wrapper
+    return decorator
+```
+
+**Why this matters:** Without immediate commit, Action facts would only become visible when the entire operation completes—defeating the purpose of progress visibility.
+
+---
+
+### Fossilization Policy
 
 **Automatic creation:** Action and ActionResult facts are created automatically by Semantic API handlers using the internal API with `bypass_semantic_api=True` to prevent recursion.
 
 **Fossilization:** Action/ActionResult facts subject to normal fossilization based on time horizons:
 - High-frequency operations (searches): aggressive fossilization (+7d)
-- Mutations (edits, adds): longer retention (+30d)
-- Security events (permission denials): extended retention (+1y)
-
-**Transaction atomicity:** For fast operations, Action and ActionResult can be created in the same transaction. For long-running operations, Action is committed immediately and ActionResult committed on completion.
-
 **System relation:** The "result_of" relation type is registered as a system relation kind (immutable, not subject to time horizons).
 
 ## Capability Discovery
@@ -1020,7 +1102,7 @@ char* mg_get_capabilities(mg_handle* mg);
 | 2.0 | 2026-02-02 | Complete Python API specification with cross-language portability |
 | 3.0 | 2026-02-02 | Internal vs External API distinction, /mg endpoint, single server architecture |
 | 3.1 | 2026-02-02 | Transaction API clarification: cross-DB atomicity note, reference to RFC-008 |
-| 4.0 | 2026-02-04 | Capability bundles, app profiles, capability discovery, Semantic API as primary for apps, ItemÃ¢â€ â€™Fact terminology, reference to RFC-009 |
+| 4.0 | 2026-02-04 | Capability bundles, app profiles, capability discovery, Semantic API as primary for apps, ItemÃ¢â€ â€™Fact terminology, reference to RFC-009 |
 | 5.0 | 2026-02-04 | Semantic verb definitions: 12 core verbs with explicit meanings. Added Context bundle. Removed validate from semantic API. Deferred parameter design. |
 | 6.0 | 2026-02-06 | **Complete verb options schemas**: All 17 verbs with request/response formats. Added `focus` (context), `explore` (relations). Response envelope with `actor`. Edit uses `set`/`unset` semantics. Query filter DSL with operators. Search split into `search` (content-based) and `explore` (graph-based). Track returns tree format. Null semantics clarified as "Unknown". Context verbs moved to Core bundle. Resolved open questions 1-4. |
 | 7.0 | 2026-02-07 | **Audit facts specification**: Added Action and ActionResult fact schemas for complete API operation audit trail. System relation "result_of" links Actionâ†’ActionResult. Enables crash recovery, hung operation detection, agent behavior tracing, and performance analysis. |

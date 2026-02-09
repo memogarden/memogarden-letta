@@ -1,60 +1,297 @@
 # RFC-008: Transaction Semantics & Consistency Model
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Status:** Draft  
 **Author:** JS  
-**Date:** 2026-02-02
+**Date:** 2026-02-08
 
-## Abstract
+---
 
-This RFC specifies MemoGarden's transaction semantics for operations spanning the two-database architecture (Soil for immutable facts, Core for mutable state). The design prioritizes survivability and operator-assisted recovery over absolute consistency guarantees, accepting rare failure modes that require manual intervention.
+## 1. The Constraint
 
-## Motivation
+**SQLite has no distributed transaction protocol.** MemoGarden uses two SQLite databases:
+- **Soil:** Immutable facts (Items, SystemRelations)
+- **Core:** Mutable state (Entities, UserRelations, ContextFrames)
 
-MemoGarden's two-database model creates coordination challenges:
+When an operation must update both databases atomically—like `update_entity()` creating both an EntityDelta in Soil and updating Entity state in Core—there is no two-phase commit (2PC) coordinator to guarantee atomicity.
 
-- Facts in Soil are immutable, append-only facts
-- Entities in Core are mutable with delta-tracked changes
-- EntityDeltas (tracking Entity changes) must be stored in Soil atomically with Core updates
-- No distributed transaction protocol (2PC) exists for SQLite
+**The vulnerability window:** Between Soil commit and Core commit, power loss creates inconsistency. For a personal system with 100 writes/day:
+- Window duration: ~100ms per transaction
+- Daily exposure: 10 seconds
+- Annual exposure: ~36 seconds
+- **Failure rate: ~0.01% per year (~1 failure per 100 years)**
 
-The system must balance:
-- **Consistency:** Cross-database operations should be atomic
-- **Availability:** System must survive any failure and always start
-- **Survivability:** Decade-long operation on resource-limited hardware
-- **Simplicity:** No complex transaction coordinator or write-ahead logs
+This is the fundamental constraint that drives all transaction design decisions.
 
-This RFC defines pragmatic transaction semantics that accept rare inconsistencies (~0.01%/year) in exchange for simplicity and robustness.
+---
 
-## Design Principles
+## 2. The Design Choice
 
-1. **Always-available startup:** System starts regardless of database state
-2. **Detect, don't prevent:** Report inconsistencies rather than guaranteeing prevention
-3. **Operator-in-the-loop:** Manual resolution for rare failures
-4. **Best-effort atomicity:** Cross-DB operations are atomic except during catastrophic failures
-5. **Conservative SQLite usage:** Prefer safety over performance optimizations
+**Accept the failure window. Design for detection and repair rather than prevention.**
 
-## Core Architecture
+**Rationale:**
+- **Survivability:** System always starts, never deadlocks, never requires distributed transaction logs
+- **Simplicity:** No write-ahead log, no 2PC coordinator, no complex recovery protocols  
+- **Pragmatism:** 0.01%/year failure rate acceptable for personal system with operator-assisted recovery
+- **Hardware reality:** Raspberry Pi can survive power loss, but cannot run complex distributed coordinators
 
-### Two-Database Model
+**Alternative rejected:** Two-phase commit would require:
+- External transaction coordinator process
+- Crash-recovery write-ahead log
+- Complex startup protocols with log replay
+- Resource overhead incompatible with decade-long operation on constrained hardware
+
+**Philosophy:** MemoGarden prioritizes *survivability* (always starts, always recoverable) over *perfect consistency* (no data loss ever).
+
+---
+
+## 3. Operation Categories
+
+MemoGarden operations fall into three transaction scope categories:
+
+### 3.1 Simple Operations (Single Database)
+
+Operations that affect only one database get standard SQLite ACID guarantees.
+
+| Operation | Database | Example | Atomicity |
+|-----------|----------|---------|-----------|
+| `add_item()` | Soil only | Create Note, Message, Email | SQLite ACID |
+| `add_system_relation()` | Soil only | Create structural fact | SQLite ACID |
+| `add_entity()` | Core only | Create Artifact | SQLite ACID |
+| `add_user_relation()` | Core only | Create engagement signal | SQLite ACID |
+
+**Transaction semantics:** Standard SQLite BEGIN/COMMIT within single database.
+
+### 3.2 Coordinated Operations (Both Databases)
+
+Operations that must modify both databases atomically use application-level coordination.
+
+| Operation | Databases | Soil Effect | Core Effect | Risk |
+|-----------|-----------|-------------|-------------|------|
+| `update_entity()` | Both | Write EntityDelta | Update Entity state + hash | 0.01%/year |
+| `fossilize_relation()` | Both | Write fossilized relation | Delete active relation | 0.01%/year |
+
+**Transaction semantics:** Best-effort atomicity with explicit operator-assisted recovery.
+
+**Critical property:** These operations require explicit transaction:
+```python
+# Correct - explicit transaction
+with mg.transaction():
+    entity = mg.get_entity('core_abc')
+    mg.update_entity('core_abc', {'content': '...'}, based_on_hash=entity.hash)
+
+# Incorrect - will raise NotInTransactionError
+entity = mg.get_entity('core_abc')
+mg.update_entity('core_abc', {'content': '...'}, based_on_hash=entity.hash)
+```
+
+### 3.3 Split Operations (Sequential with Retry)
+
+Operations where databases have dependency ordering, allowing graceful degradation.
+
+| Operation | Pattern | Success Case | Failure Case |
+|-----------|---------|--------------|--------------|
+| `add_item() + add_user_relation()` | Item first, relation second | Both succeed | Item persists, relation retry |
+
+**Transaction semantics:** Item creation commits independently. Relation creation retries on failure. Application can detect partial completion and resume.
+
+**Rationale:** Facts are primary; relations are secondary. An Item without relations is valid (orphan). A relation without target Item is invalid (constraint violation).
+
+---
+
+## 4. Commit Protocol
+
+### 4.1 Commit Ordering
+
+**Soil commits first (source of truth), then Core.**
+
+```python
+def commit_transaction(self):
+    """Best-effort atomicity across two databases."""
+    soil_ok = False
+    core_ok = False
+    
+    try:
+        self._soil_conn.commit()
+        soil_ok = True
+        
+        self._core_conn.commit()
+        core_ok = True
+        
+    except Exception as e:
+        self._log_commit_failure(soil_ok, core_ok, e)
+        self._rollback_both()
+        
+        if soil_ok and not core_ok:
+            self.status = SystemStatus.INCONSISTENT
+        
+        raise TransactionCommitError(soil_ok=soil_ok, core_ok=core_ok)
+```
+
+**Why Soil first:** Soil is the source of truth. Core state can be rebuilt from Soil deltas. If Core commits but Soil fails, we've lost the audit trail.
+
+### 4.2 Failure Modes
+
+| Scenario | Soil | Core | System State | Recovery |
+|----------|------|------|--------------|----------|
+| Both succeed | ✓ | ✓ | NORMAL | None needed |
+| Both fail | ✗ | ✗ | NORMAL | Both rolled back cleanly |
+| Soil commits, Core fails | ✓ | ✗ | **INCONSISTENT** | `memogarden repair` |
+| Process killed between commits | ✓ | ✗ | **INCONSISTENT** | Detected on next startup |
+
+**The critical failure mode:** Soil commits successfully, then system crashes before Core commits. This leaves:
+- **Soil:** EntityDelta fact exists, pointing to Entity UUID
+- **Core:** Entity state does not reflect the delta, hash chain broken
+
+**Detection on startup:**
+```python
+def detect_orphaned_deltas():
+    """Find EntityDeltas without corresponding Core updates."""
+    deltas = soil.list_items(_type="EntityDelta")
+    orphans = []
+    
+    for delta in deltas:
+        entity = core.get_entity(delta.data['entity_uuid'])
+        if entity.hash != delta.data['new_hash']:
+            orphans.append(delta)
+    
+    return orphans
+```
+
+**Recovery:**
+```bash
+# Manual operator intervention
+$ memogarden diagnose
+INCONSISTENT: Found 1 orphaned EntityDelta
+  - soil_abc123: update to core_xyz456 not applied
+
+$ memogarden repair
+Applying orphaned delta soil_abc123...
+Entity core_xyz456 updated, hash verified
+System status: NORMAL
+```
+
+### 4.3 Frequency Estimate
+
+For personal system:
+- **100 cross-database writes/day** (aggressive estimate)
+- **100ms vulnerability window** per transaction (conservative)
+- **Daily exposure:** 10 seconds
+- **Annual exposure:** 3,650 seconds (~1 hour)
+- **Failure probability:** Power loss ~once per 10,000 hours
+- **Expected failures:** ~0.01% per year (~1 failure per 100 years)
+
+**Acceptable risk:** Decade-long operation means ~0.1% cumulative probability. Operator-assisted recovery handles the rare case.
+
+---
+
+## 5. Transaction Lifecycle
+
+### 5.1 Begin Transaction
+
+```python
+def begin_transaction(self):
+    """Enter transaction mode. Locks both databases exclusively."""
+    if self._in_transaction:
+        raise AlreadyInTransactionError()
+    
+    # Lock Soil first
+    self._soil_conn.execute("BEGIN EXCLUSIVE")
+    try:
+        # Then lock Core
+        self._core_conn.execute("BEGIN EXCLUSIVE")
+    except Exception as e:
+        # If Core lock fails, rollback Soil
+        self._soil_conn.rollback()
+        raise
+    
+    self._in_transaction = True
+```
+
+**Properties:**
+- One transaction per handle (no nesting)
+- EXCLUSIVE locks prevent concurrent writes
+- Other handles block on `busy_timeout` (5 seconds default)
+
+### 5.2 Rollback Protocol
+
+```python
+def rollback_transaction(self):
+    """Rollback both databases. Best-effort."""
+    if not self._in_transaction:
+        raise NotInTransactionError("rollback")
+    
+    try:
+        self._soil_conn.rollback()
+    except Exception as e:
+        logger.error(f"Soil rollback failed: {e}")
+    
+    try:
+        self._core_conn.rollback()
+    except Exception as e:
+        logger.error(f"Core rollback failed: {e}")
+    
+    self._in_transaction = False
+```
+
+**Best-effort rollback:** If commit succeeded on one database before failure, rollback is no-op on that database. System marked INCONSISTENT for operator intervention.
+
+### 5.3 Context Manager
+
+```python
+@contextmanager
+def transaction(self):
+    """
+    Context manager for transactions.
+    Auto-commits on success, auto-rolls-back on exception.
+    
+    Note: Cross-database atomicity is best-effort. Rare failures
+    (~0.01%/year) require operator intervention via `memogarden repair`.
+    """
+    self.begin_transaction()
+    try:
+        yield self
+        self.commit_transaction()
+    except Exception:
+        self.rollback_transaction()
+        raise
+```
+
+**Usage:**
+```python
+with mg.transaction():
+    entity = mg.get_entity('core_abc')
+    mg.update_entity('core_abc', {'content': '...'}, based_on_hash=entity.hash)
+    # Auto-commits both DBs on exit
+```
+
+---
+
+## 6. Two-Database Model Architecture
 
 ```
-ÃƒÂ¢Ã¢â‚¬ÂÃ…â€™ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  MemoGarden Handle  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡                     ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ…â€™ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ Transaction   ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ Coordinator   ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬ÂÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‹Å“  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡          ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡          ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡    ÃƒÂ¢Ã¢â‚¬ÂÃ…â€™ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â´ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â    ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡    ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡           ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡    ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ…â€œÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â  ÃƒÂ¢Ã¢â‚¬ÂÃ…â€™ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‚Â¤
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ Soil DB ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡Core DB ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡         ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡        ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ Facts   ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡EntitiesÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡ SysRels ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡UsrRels ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬Å¡
-ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬ÂÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‹Å“  ÃƒÂ¢Ã¢â‚¬ÂÃ¢â‚¬ÂÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ‹Å“
+┌─────────────────────────────────────────────────┐
+│  MemoGarden Handle  │
+│                     │
+│  ┌─────────────────┐  │
+│  │ Transaction   │  │
+│  │ Coordinator   │  │
+│  └───────┬─────────┘  │
+│          │          │
+│    ┌─────┴────┐    │
+│    │           │    │
+└────┴───────────┴────┘
+         │ Python imports
+         ▼
+┌─────────────────────────────────────────────────┐
+│   Internal Python API                       │
+│   (MemoGarden class)                        │
+└───────────┬─────────────────────────────────┘
+            │ SQLite
+            ▼
+┌─────────────────────────────────────────────────┐
+│   Soil + Core databases                     │
+└─────────────────────────────────────────────────┘
 ```
 
 **Soil (immutable timeline):**
@@ -67,43 +304,7 @@ This RFC defines pragmatic transaction semantics that accept rare inconsistencie
 - Active User Relations: Current engagement signals
 - ContextFrames: Attention tracking
 
-### Transaction Scope Categories
-
-MemoGarden operations fall into three transaction scope categories:
-
-**1. Single-Database Operations (Simple)**
-
-Operations that affect only one database:
-
-| Operation | Database | Example |
-|-----------|----------|---------|
-| `add_item()` | Soil only | Create Note, Message, Email |
-| `add_system_relation()` | Soil only | Create structural fact |
-| `add_entity()` | Core only | Create Artifact |
-| `add_user_relation()` | Core only | Create engagement signal |
-
-**Transaction semantics:** Standard SQLite ACID within single database.
-
-**2. Cross-Database Operations (Coordinated)**
-
-Operations that must modify both databases atomically:
-
-| Operation | Databases | Soil Effect | Core Effect |
-|-----------|-----------|-------------|-------------|
-| `update_entity()` | Both | Write EntityDelta | Update Entity state + hash |
-| `fossilize_relation()` | Both | Write fossilized relation | Delete active relation |
-
-**Transaction semantics:** Best-effort atomicity with application-level coordination.
-
-**3. Split Operations (Retry Pattern)**
-
-Operations where databases have dependency ordering:
-
-| Operation | Pattern | Rationale |
-|-----------|---------|-----------|
-| `add_item() + add_user_relation()` | Item first, retry relation | Facts are primary facts; relations are secondary |
-
-**Transaction semantics:** Item creation commits independently; relation creation retries on failure.
+---
 
 ## Transaction Implementation
 
@@ -369,7 +570,7 @@ def fossilize_relation(self, relation_uuid: str) -> None:
     """, (relation_uuid,)).fetchone()
     
     # 2. Insert into Soil (change UUID prefix)
-    soil_uuid = f"soil_{relation_uuid[5:]}"  # core_ ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ soil_
+    soil_uuid = f"soil_{relation_uuid[5:]}"  # core_ ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ soil_
     self._soil_conn.execute("""
         INSERT INTO system_relation 
         (uuid, kind, source, target, created_at, metadata)
@@ -450,7 +651,7 @@ mg.update_entity('core_abc', {...}, based_on_hash=H1)
 entity = mg.get_entity('core_abc')  # hash = H1
 mg.update_entity('core_abc', {...}, based_on_hash=H1)
 
-# One succeeds (hash ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H2)
+# One succeeds (hash ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H2)
 # Other fails: OptimisticLockError (expected H1, got H2)
 ```
 
@@ -601,15 +802,15 @@ class SystemStatus(Enum):
 **Mode transitions:**
 ```
 Startup:
-- No issues ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ NORMAL
-- Orphaned deltas detected ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ INCONSISTENT
-- Database corruption ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ SAFE_MODE
-- Operator flag ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ READ_ONLY
+- No issues ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ NORMAL
+- Orphaned deltas detected ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ INCONSISTENT
+- Database corruption ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ SAFE_MODE
+- Operator flag ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ READ_ONLY
 
 Runtime:
-- NORMAL ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ INCONSISTENT: Commit failure (Soil ok, Core fail)
-- Any ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ READ_ONLY: Operator sets mode
-- INCONSISTENT ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ NORMAL: After successful repair
+- NORMAL ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ INCONSISTENT: Commit failure (Soil ok, Core fail)
+- Any ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ READ_ONLY: Operator sets mode
+- INCONSISTENT ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ NORMAL: After successful repair
 ```
 
 ### Recovery Tools
@@ -648,9 +849,9 @@ $ memogarden repair rebuild-core
 Rebuilding Core from Soil...
 ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Scanned 15,234 EntityDeltas in Soil
 ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Identified 3 out-of-sync entities
-ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_abc123 (H1 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H2)
-ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_def456 (H4 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H5)
-ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_ghi789 (H7 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H8)
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_abc123 (H1 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H2)
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_def456 (H4 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H5)
+ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Replayed deltas for core_ghi789 (H7 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ H8)
 ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Verified hash chains
 
 Repair complete. System status: NORMAL

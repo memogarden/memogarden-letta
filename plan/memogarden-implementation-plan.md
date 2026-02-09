@@ -15,7 +15,13 @@ This document consolidates all implementation planning for MemoGarden across mul
 
 **Approach:** This plan identifies gaps between current PRD/RFC specifications and existing implementations, organized by priority and dependency.
 
-**Current Compliance:** ~35% of PRD v0.11.1 requirements implemented
+**Current Compliance:** ~40% of PRD v0.11.1 requirements implemented (Session 6.5 complete)
+
+**Document Structure:**
+- **Completed Work (Sessions 1-6.5):** Summary format with key deliverables, test counts, and file references. Technical implementation details are in module docstrings and git commit history.
+- **Implementation Gaps:** Detailed task lists for remaining work (Priority 1-4)
+- **Future Sessions (7-13):** Full implementation details for upcoming work
+- **Testing Gaps & Invariants:** Reference materials for development
 
 ---
 
@@ -53,179 +59,35 @@ This document consolidates all implementation planning for MemoGarden across mul
 |-----|-------|--------|-------|
 | **RFC-001 v4** | Security Operations | ⚠️ 60% | Encryption defined but not implemented. Auth complete. |
 | **RFC-002 v5** | Relations & Fossilization | ⚠️ 20% | Schema exists. No time horizon logic, no fossilization engine. |
-| **RFC-003 v4** | Context Mechanism | ❌ 0% | Schema exists (context_frame table). No operations, no view stream. |
+| **RFC-003 v4** | Context Mechanism | ⚠️ 70% | Session 4-5 complete. Missing: rejoin, capture decorator, fork/merge. |
 | **RFC-004 v2** | Package Deployment | ⚠️ 50% | Structure correct. Missing: get_db_path(), schema bundling. |
-| **RFC-005 v7** | API Design | ⚠️ 30% | REST endpoints for Transaction only. Semantic API missing entirely. |
+| **RFC-005 v7.1** | API Design | ⚠️ 60% | Sessions 1-2 complete. Missing: track, explore, enhanced query filters, rejoin. |
 | **RFC-006 v1** | Error Handling | ✅ 80% | Exception hierarchy complete. Diagnostics tools missing. |
 | **RFC-007 v2** | Runtime Operations | ❌ 0% | No system agent, no background tasks. |
-| **RFC-008 v1** | Transaction Semantics | ⚠️ 40% | Cross-DB coordination defined but not enforced. |
+| **RFC-008 v1.2** | Transaction Semantics | ✅ 90% | Session 6.5 aligned. Missing: recovery tools, startup checks. |
 | **RFC-009 v1** | App Model | ❌ 0% | No IPC, no SDKs, no app registry. |
 
 ---
 
-## Completed Work
+## Completed Work Summary
 
-### ✅ Core Schema (v20260130)
+| Component | Session | Tests | Status | Key Features |
+|-----------|---------|-------|--------|--------------|
+| **Core Schema** | - | - | ✅ Complete | Soil/Core SQL schemas, hash chain fields, indexes |
+| **Type Schemas** | - | - | ✅ Complete | 7 Item types (email, note, etc.), 6 Entity types |
+| **memogarden-system** | - | - | ✅ Complete | Soil/Core operations, utilities, host interface, exceptions |
+| **REST API** | - | 41 | ✅ Complete | Transaction/Recurrence CRUD endpoints, authentication |
+| **Semantic API - Core** | 1 | 22 | ✅ Complete | create, get, edit, forget, query verbs |
+| **Semantic API - Soil** | 2 | 15 | ✅ Complete | add, amend, get, query verbs for facts |
+| **User Relations** | 3 | 25 | ✅ Complete | Time horizon decay, link verb, relation queries |
+| **Context Framework** | 4 | 26 | ✅ Complete | ContextFrame, View stream, LRU-N eviction |
+| **Context Verbs** | 5 | 48 | ✅ Complete | enter/leave/focus scope, context capture |
+| **Audit Facts** | 6 | 8 | ✅ Complete | Action/ActionResult trails, audit decorator |
+| **Connection Refactor** | 6.5 | 159 | ✅ Complete | Context manager enforcement, atomic transactions |
 
-**Location:** `/schemas/sql/soil.sql`, `/schemas/sql/core.sql`
+**Total:** 159 tests passing (as of Session 6.5)
 
-- [x] Polymorphic `item` table with JSON `data` field
-- [x] Polymorphic `entity` table with JSON `data` field
-- [x] Hash chain fields (hash, previous_hash, version)
-- [x] `system_relation` table for immutable structural facts
-- [x] `user_relation` table for engagement signals (time_horizon)
-- [x] `context_frame` table for attention tracking
-- [x] Schema metadata table for version tracking
-- [x] All indexes for timeline queries
-
-### ✅ Type Schemas
-
-**Location:** `/schemas/types/items/`, `/schemas/types/entities/`
-
-Item types (Fact schemas):
-- [x] `item.schema.json` - Base Fact type
-- [x] `email.schema.json` - RFC 5322 email with threading
-- [x] `note.schema.json` - Text note
-- [x] `message.schema.json` - Communication between participants
-- [x] `entitydelta.schema.json` - Entity mutation audit
-- [x] `systemevent.schema.json` - System notifications
-- [x] `toolcall.schema.json` - Tool invocation records
-
-Entity types:
-- [x] `entity.schema.json` - Base Entity type
-- [x] `transaction.schema.json` - Financial transaction
-- [x] `artifact.schema.json` - Structured document
-- [x] `label.schema.json` - Named reference
-- [x] `operator.schema.json` - Human user
-- [x] `agent.schema.json` - AI agent
-
-### ✅ memogarden-system
-
-**Location:** `/memogarden-system/system/`
-
-**Soil Layer:**
-- [x] `soil/database.py` - Soil database class
-  - [x] `create_item()` - Create items
-  - [x] `get_item()` - Retrieve by UUID
-  - [x] `find_item_by_rfc_message_id()` - Email deduplication
-  - [x] `list_items()` - List with filtering
-  - [x] `create_relation()` - SystemRelation CRUD
-  - [x] `create_replies_to_relation()` - Email threading
-  - [x] `get_relations()` - Query relations
-- [x] `soil/item.py` - Item dataclass with hash computation
-- [x] `soil/relation.py` - SystemRelation dataclass
-- [x] `soil/__init__.py` - Package exports
-
-**Core Layer:**
-- [x] `core/entity.py` - EntityOperations class
-  - [x] `create()` - Create entity with auto-UUID and hash
-  - [x] `get_by_id()` - Retrieve with error handling
-  - [x] `supersede()` - Mark as superseded
-  - [x] `update_hash()` - Maintain hash chain
-  - [x] `check_conflict()` - Optimistic locking
-- [x] `core/transaction.py` - Transaction CRUD with JSON data
-  - [x] `create()` - Create transaction
-  - [x] `get_by_id()` - Retrieve transaction
-  - [x] `list()` - Filter by date/account/category
-  - [x] `update()` - Partial updates with hash chain
-  - [x] `get_accounts()` - Distinct account labels
-  - [x] `get_categories()` - Distinct category labels
-- [x] `core/recurrence.py` - Recurrence CRUD
-- [x] `core/seed.py` - Seed data helpers
-- [x] `core/query.py` - Query builders
-- [x] `core/types.py` - Type definitions
-- [x] `core/__init__.py` - Core facade with get_core()
-
-**Utilities:**
-- [x] `utils/uid.py` - UUID generation, prefix handling
-- [x] `utils/hash_chain.py` - SHA256 hash computation
-- [x] `utils/isodatetime.py` - ISO 8601 timestamps
-- [x] `utils/recurrence.py` - Recurrence rules
-- [x] `utils/secret.py` - Secret management
-
-**Host Interface:**
-- [x] `host/filesystem.py` - Path resolution, directory operations
-- [x] `host/environment.py` - Environment variable access
-- [x] `host/time.py` - UTC time utilities
-
-**Exceptions:**
-- [x] `exceptions.py` - MemoGardenError hierarchy
-  - [x] ResourceNotFound
-  - [x] ValidationError
-  - [x] AuthenticationError
-  - [x] ConflictError
-
-### ✅ memogarden-api
-
-**Location:** `/memogarden-api/api/`
-
-**HTTP Server:**
-- [x] Flask app with CORS
-- [x] Error handlers for all exception types
-- [x] Health check endpoint
-- [x] Database initialization on startup
-
-**Semantic API (Session 1 - Core Bundle Complete):**
-- [x] `semantic.py` - `/mg` endpoint dispatcher
-- [x] `handlers/core.py` - Core bundle verb handlers (create, get, edit, forget, query)
-- [x] `schemas/semantic.py` - Pydantic request/response schemas
-- [x] Response envelope with ok, actor, timestamp, result/error
-- [x] UUID prefix handling (accept both prefixed and non-prefixed)
-- [x] Authentication middleware for all Semantic API requests
-- [x] Baseline entity type validation (Transaction, Recurrence, Artifact, Label, Operator, Agent, Entity)
-
-**Authentication (RFC-001 v4):**
-- [x] `middleware/service.py` - User and API key CRUD
-- [x] `middleware/token.py` - JWT token generation/validation
-- [x] `middleware/api_keys.py` - API key management
-- [x] `middleware/decorators.py` - @authenticate, @localhost_only
-- [x] `middleware/schemas/auth.py` - Pydantic schemas
-- [x] Routes:
-  - [x] `POST /auth/register` - Admin registration (localhost only)
-  - [x] `POST /auth/login` - User login (JWT)
-  - [x] `GET /auth/me` - Current user info
-  - [x] `POST /auth/api_keys` - Create API key
-  - [x] `GET /auth/api_keys` - List API keys
-  - [x] `DELETE /auth/api_keys/{id}` - Revoke API key
-
-**REST API (RFC-005 v7):**
-- [x] `v1/core/transactions.py` - Transaction endpoints
-  - [x] `POST /api/v1/transactions` - Create
-  - [x] `GET /api/v1/transactions` - List with filters
-  - [x] `GET /api/v1/transactions/{id}` - Get single
-  - [x] `PUT /api/v1/transactions/{id}` - Update with conflict detection
-  - [x] `DELETE /api/v1/transactions/{id}` - Soft delete
-  - [x] `GET /api/v1/transactions/accounts` - List accounts
-  - [x] `GET /api/v1/transactions/categories` - List categories
-- [x] `v1/core/recurrences.py` - Recurrence endpoints (similar pattern)
-
-**Validation:**
-- [x] `validation.py` - @validate_request decorator
-- [x] `schemas/transaction.py` - Pydantic request/response schemas
-- [x] `schemas/recurrence.py` - Recurrence schemas
-
-### ✅ Test Infrastructure
-
-**Location:** `/memogarden-api/tests/`
-
-- [x] `conftest.py` - Pytest fixtures
-  - [x] Test database with schema initialization
-  - [x] Authentication fixtures (JWT + API key)
-  - [x] SHA256 function registration
-- [x] `test_transactions.py` - 20 tests for transaction CRUD
-- [x] `test_recurrences.py` - 12 tests for recurrence CRUD
-- [x] `test_auth.py` - 9 tests for authentication
-- [x] `test_semantic_api.py` - 22 tests for Semantic API Core bundle (Session 1)
-- [x] **All 66 tests passing (100%)**
-
-### ✅ Documentation
-
-- [x] `/plan/memogarden_prd_v0_11_0.md` - Complete PRD with latest terminology
-- [x] `/plan/rfc-005_memogarden_api_design_v7.md` - API design with audit facts
-- [x] `/plan/rfc-002_relation_time_horizon_v5.md` - Fossilization specification
-- [x] `/plan/rfc-003_context_mechanism_v4.md` - Context mechanism
-- [x] `/plan/rfc-009_memogarden_apps_v1.md` - Application model
-- [x] AGENTS.md - AI agent guide
+**Implementation Details:** See individual session summaries below and git commit history
 
 ---
 
@@ -844,543 +706,227 @@ Entity types:
 | 4 | Context Framework - Basic | ✅ Completed | 2026-02-08 | 26/26 passing |
 | 5 | Context Verbs and Capture | ✅ Completed | 2026-02-08 | 48/48 passing |
 | 6 | Audit Facts | ✅ Completed | 2026-02-08 | 8/8 passing |
-| 6.5 | Connection Lifecycle Refactor | 🔄 In Progress | 2026-02-08 | 123/159 passing |
+| 6.5 | Connection Lifecycle Refactor | ✅ Completed | 2026-02-08 | 159/159 passing |
+| 6.6 | ActionResult Schema Enhancement | ⏳ Not Started | - | 0/0 |
 | 7 | Relations Bundle Verbs | ⏳ Not Started | - | 0/0 |
-| 8 | Search Verb | ⏳ Not Started | - | 0/0 |
-| 9 | Config-Based Path Resolution | ⏳ Not Started | - | 0/0 |
-| 10 | Schema Access Utilities | ⏳ Not Started | - | 0/0 |
-| 11 | REST API - Generic Entities | ⏳ Not Started | - | 0/0 |
-| 12 | Cross-Database Transactions | ⏳ Not Started | - | 0/0 |
-| 13 | Fossilization - Basic Sweep | ⏳ Not Started | - | 0/0 |
+| 8 | Track Verb | ⏳ Not Started | - | 0/0 |
+| 9 | Search Verb | ⏳ Not Started | - | 0/0 |
+| 10 | Config-Based Path Resolution | ⏳ Not Started | - | 0/0 |
+| 11 | Schema Access Utilities | ⏳ Not Started | - | 0/0 |
+| 12 | REST API - Generic Entities | ⏳ Not Started | - | 0/0 |
+| 13 | Cross-Database Transactions | ⏳ Not Started | - | 0/0 |
+| 14 | Fossilization - Basic Sweep | ⏳ Not Started | - | 0/0 |
 
 ---
 
-### Session 1: Semantic API - Core Bundle Verbs ✅ COMPLETED
+### ✅ Session 1: Semantic API - Core Bundle (Completed 2026-02-07)
 
-**Goal:** Basic Entity CRUD via Semantic API
+**Tests:** 22/22 passing
 
-**Status:** ✅ Completed 2026-02-07
+**Deliverables:**
+- `/mg` endpoint dispatcher with request/response envelope (ok, actor, timestamp, result/error)
+- Core verbs: `create`, `get`, `edit`, `forget`, `query` for entities
+- Authentication middleware for all Semantic API requests
+- UUID prefix handling (accepts both prefixed and non-prefixed)
+- Baseline entity type validation (Transaction, Recurrence, Artifact, Label, Operator, Agent, Entity)
 
-**Completed Tasks:**
-1. ✅ Implement `/mg` endpoint dispatcher (request envelope → handler → response envelope)
-2. ✅ Implement `create` verb - Create entity (baseline types)
-3. ✅ Implement `get` verb - Get entity by UUID
-4. ✅ Implement `edit` verb - Edit entity (set/unset semantics)
-5. ✅ Implement `forget` verb - Soft delete entity
-6. ✅ Implement `query` verb - Query entities with basic filters
-7. ✅ Add tests for Core bundle verbs (22 tests passing)
+**Key Files:**
+- `api/semantic.py`, `api/handlers/core.py`, `api/schemas/semantic.py`
+- `tests/test_semantic_api.py`
 
-**Deferred Tasks:**
-- ❌ `register` verb - Custom schema registration (deferred to future session)
-- ❌ Full query DSL with operators (any, not, etc.) - basic equality only
-- ❌ Domain-specific table updates in `edit` - only entity.data updated
+**Deferred:** `register` verb, full query DSL operators, domain-specific table updates
 
-**Implemented Files:**
-- `/memogarden-api/api/semantic.py` - `/mg` endpoint dispatcher
-- `/memogarden-api/api/handlers/core.py` - Core verb handlers (create, get, edit, forget, query)
-- `/memogarden-api/api/schemas/semantic.py` - Pydantic request/response schemas
-- `/memogarden-api/tests/test_semantic_api.py` - 22 tests, all passing
+### ✅ Session 2: Semantic API - Soil Bundle (Completed 2026-02-07)
 
-**Invariants Enforced:**
-- ✅ Response envelope includes `ok`, `actor`, `timestamp`, `result`/`error`
-- ✅ UUID prefix handling (accept both prefixed and non-prefixed)
-- ✅ Null semantics (null = "Unknown", not "intentionally empty")
-- ✅ Authentication required for all `/mg` endpoints
-- ✅ Baseline entity types supported (Transaction, Recurrence, Artifact, Label, Operator, Agent, Entity)
+**Tests:** 15/15 passing (37 total: 22 Core + 15 Soil)
 
-**Dependencies:** None
+**Deliverables:**
+- Soil verbs: `add` (bring external data in), `amend` (create superseding fact)
+- Extended `query` to support fact queries (type, start, end, filters)
+- `integrity_hash` computed on all fact creation
+- `_type` validated against registered schemas
 
-### ✅ Session 2: Semantic API - Soil Bundle Verbs (COMPLETED)
+**Key Files:**
+- `api/handlers/soil.py`, `api/schemas/semantic.py` (AddRequest, AmendRequest)
 
-**Completed:** 2026-02-07
+**RFC-002 Invariants:** Facts immutable, amend creates new fact with `supersedes` link
 
-**Goal:** Fact operations via Semantic API
+### ✅ Session 3: User Relations (Completed 2026-02-08)
 
-**Tasks:**
-1. ✅ Implement `add` verb - Add fact (bring external data into MemoGarden)
-2. ✅ Implement `amend` verb - Amend fact (create superseding fact)
-3. ✅ Extend `query` verb - Support fact queries (type, start, end, filters)
-4. ✅ Add tests for Soil bundle verbs
+**Tests:** 25/25 passing
 
-**Implementation:**
-- Created `api/handlers/soil.py` with Soil verb handlers (add, amend, get, query)
-- Added `AddRequest` and `AmendRequest` schemas to `api/schemas/semantic.py`
-- Updated `api/semantic.py` dispatcher to route get/query based on UUID prefix and target_type
-- Added 15 new tests for Soil bundle verbs (all passing)
-- Added Soil database initialization to test fixtures
+**Deliverables:**
+- `link` verb for creating user relations with time_horizon
+- Relation operations: create, list_inbound/list_outbound, update_time_horizon, expire, fact_time_horizon, is_alive
+- `time` utility module with current_day() and day_to_date()
+- Fact significance computation from inbound relations
 
-**Invariants Enforced:**
-- ✅ Facts are immutable (amend creates new fact with `supersedes` link)
-- ✅ `integrity_hash` computed on all fact creation
-- ✅ `_type` validated against registered schemas
+**Key Files:**
+- `system/core/relation.py`, `system/utils/time.py`
+- `tests/test_user_relations.py`
 
-**Deliverables:** Complete Soil bundle with 37 tests passing (22 Core + 15 Soil)
+**RFC-002 Invariants:**
+- `time_horizon += delta * SAFETY_COEFFICIENT` (1.2)
+- `relation_is_alive()` ⇔ `time_horizon >= current_day()`
+- Orphaned facts have None significance
 
-**Commit:** 6dcdd57 "feat: implement Semantic API Soil bundle verbs (Session 2)"
+### ✅ Session 4: Context Framework - Basic (Completed 2026-02-08)
 
-**Dependencies:** Session 1 ✅
+**Tests:** 26/26 passing (132 total across all suites)
 
-### Session 3: User Relations ✅ COMPLETED
+**Deliverables:**
+- ContextFrame operations: get_context_frame, update_containers, create_view, append_view
+- LRU-N eviction (N=7 initially)
+- Substantive vs primitive type classification
+- JSON schemas for View, ViewMerge, ContextFrame entity types
 
-**Completed:** 2026-02-08
+**Key Files:**
+- `system/core/context.py`, `schemas/types/entities/view.schema.json`
 
-**Goal:** Engagement signals with time horizon (RFC-002)
+**RFC-003 Invariants Enforced:**
+- INV-1: Unique View UUID (core_ prefix)
+- INV-12: LRU-N limit
+- INV-17/18/19: Type-based classification
+- INV-20: One ContextFrame per owner
+- INV-26: No shared ContextFrame
 
-**Tasks:**
-1. ✅ Create `system/core/relation.py` - UserRelation operations
-2. ✅ Implement `create()` - Create user relation with initial time_horizon
-3. ✅ Implement `update_time_horizon()` - Apply SAFETY_COEFFICIENT on access
-4. ✅ Implement `expire()` - Mark relation for fossilization
-5. ✅ Implement `list_inbound()`/`list_outbound()` - Query relations
-6. ✅ Add `link` verb to Semantic API
-7. ✅ Add tests for time horizon computation
+**Known Limitations (fixed in Session 5):** view_timeline in-memory only
 
-**Implementation:**
-- Created `system/core/relation.py` with RelationOperations class
-- Implemented all operations: create, get_by_id, update_time_horizon, list_inbound, list_outbound, expire, fact_time_horizon, is_alive
-- Added `time` utility module with current_day() and day_to_date() functions
-- Added `link` verb to Semantic API (handler in api/handlers/core.py)
-- Added LinkRequest schema to api/schemas/semantic.py
-- Created comprehensive tests (19 tests passing)
+### ✅ Session 5: Context Verbs and Capture (Completed 2026-02-08)
 
-**Invariants Enforced (RFC-002):**
-- ✅ `time_horizon += delta * SAFETY_COEFFICIENT` (default: 1.2)
-- ✅ `relation_is_alive()` ⇔ `time_horizon >= current_day()`
-- ✅ Fact significance = max(inbound_relation.time_horizons)
-- ✅ Orphaned facts (no relations) have None significance
+**Tests:** 48/48 passing (151 total)
 
-**Deliverables:** Complete user relations with time horizon, all tests passing
+**Deliverables:**
+- Context verbs: `enter_scope`, `leave_scope`, `focus_scope`
+- `active_scopes` and `primary_scope` columns in context_frame table
+- Migration 002: Added context scope columns
+- Fixed database locking (in-memory database for tests)
 
-**Test Results:**
-- test_user_relations.py: 19 tests passing
-- test_semantic_api.py (link verb): 6 tests passing
+**Key Files:**
+- `api/handlers/core.py` (context verb handlers), `api/schemas/semantic.py`
+- `tests/conftest.py` (in-memory database fix)
 
-**Dependencies:** Session 1 (Semantic API foundation) ✅
+**RFC-003 Invariants Enforced:**
+- INV-11/11a/11b: Explicit scope control, focus separation, implied focus
+- INV-8: Stream suspension on leave
+- INV-20: One ContextFrame per owner
 
-### Session 4: Context Framework - Basic Operations ✅ COMPLETED
+**Deferred:** `rejoin` verb, context capture decorator, `visit_entity`, fork/merge logic
 
-**Completed:** 2026-02-08
+### ✅ Session 6: Audit Facts (Completed 2026-02-08)
 
-**Goal:** ContextFrame and View stream foundation (RFC-003)
+**Tests:** 8/8 passing (159 total)
 
-**Tasks:**
-1. ✅ Create `system/core/context.py` - Context operations
-2. ✅ Implement `get_context_frame()` - Get by owner (user or scope)
-3. ✅ Implement `update_containers()` - LRU-N eviction (N=7 initially)
-4. ✅ Implement `create_view()` - Create View with actions
-5. ✅ Implement `append_view()` - Append to ContextFrame's view timeline
-6. ✅ Define substantive vs primitive types (hardcoded initially)
-7. ✅ Add comprehensive tests (26 tests passing)
+**Deliverables:**
+- Action/ActionResult fact schemas in `schemas/types/items/`
+- `@with_audit()` decorator for Semantic API operations
+- `result_of` system relation (ActionResult → Action)
+- `bypass_semantic_api` flag to prevent recursion
+- Request ID correlation, duration tracking, error capture
+- Migration 003: Added audit fact types
 
-**Implementation:**
-- Created `system/core/context.py` with ContextOperations class
-- Implemented all operations: get_context_frame, _create_context_frame, get_context_frame_by_uuid, update_containers, create_view, append_view
-- Added substantive vs primitive type classification (SUBSTANTIVE_TYPES, PRIMITIVE_TYPES)
-- Created JSON schemas for View, ViewMerge, and ContextFrame entity types
-- Registered context operations with Core class (core.context property)
-- Added 26 comprehensive tests covering all RFC-003 invariants
+**Key Files:**
+- `schemas/types/items/action.schema.json`, `schemas/types/items/actionresult.schema.json`
+- `api/handlers/decorators.py`, `tests/test_audit_facts.py`
 
-**Invariants Enforced (RFC-003):**
-- ✅ INV-1: Unique View UUID (core_ prefix added to all View UUIDs)
-- ✅ INV-12: LRU-N limit (containers ≤ N, N=7 initially)
-- ✅ INV-17: Substantive vs primitive classification (type-based)
-- ✅ INV-18: Type-Based Classification
-- ✅ INV-19: Hardcoded Initial Classification
-- ✅ INV-20: One ContextFrame per owner
-- ✅ INV-26: No shared ContextFrame (even for same scope)
-
-**Deliverables:** Complete context tracking foundation, all tests passing
-
-**Test Results:**
-- test_context.py: 26 tests passing
-- All 132 tests passing across entire test suite
-
-**Dependencies:** Session 3 (user relations for linking) ✅
-
-**Code Review Fixes Applied:**
-- ✅ C1: Removed unused `datetime`, `timezone` imports
-- ✅ C2: Fixed database query logic for proper INV-20 compliance (operators use NULL, agents/scopes use owner_type)
-- ✅ L2: Added runtime validation for `owner_type` parameter
-- ✅ H2: Added `ViewAction.to_dict()` method to handle `visited: None` properly (converts to empty array)
-- ✅ H3: Added `context_frame_uuid` validation in `create_view()` to prevent orphaned Views
-- ✅ H1: Consistent UUID prefix handling using `uid.add_core_prefix()` helper
-- ✅ M3: Added `append_view_to_contexts()` helper for atomic multi-context append
-- ✅ M1: Documented `view_timeline` limitation (in-memory only, deferred to Session 5)
-
-**Known Limitations (Deferred to Session 5):**
-- `view_timeline` is tracked in-memory only, not persisted to database
-- ContextFrame.view_timeline is always empty when loaded from database
-- This violates INV-14 (Cross-Session Persistence) - will be fixed in Session 5
-- Implementation will require: add view_timeline column to context_frame table, query Views from entity table
-
-### Session 5: Context Verbs and Capture ✅ COMPLETED
-
-**Completed:** 2026-02-08
-
-**Goal:** Context verbs and automatic capture (RFC-003)
-
-**Completed Tasks:**
-1. ✅ Added `active_scopes` and `primary_scope` columns to `context_frame` table
-2. ✅ Updated `ContextFrame` dataclass with new fields
-3. ✅ Implemented `enter_scope()` - Add scope to active set
-4. ✅ Implemented `leave_scope()` - Remove from active set
-5. ✅ Implemented `focus_scope()` - Switch primary scope
-6. ✅ Added request schemas (EnterRequest, LeaveRequest, FocusRequest)
-7. ✅ Added handlers for context verbs in `api/handlers/core.py`
-8. ✅ Updated `api/semantic.py` dispatcher to route context verbs
-9. ✅ Added tests for RFC-003 context invariants (37 tests passing)
-
-**Implementation:**
-- Updated `system/schemas/sql/core.sql` with `active_scopes` and `primary_scope` columns
-- Created migration `migrations/002_add_context_scope_columns.sql`
-- Implemented context verb operations in `system/core/context.py`
-- Added Semantic API request schemas in `api/schemas/semantic.py`
-- Added verb handlers in `api/handlers/core.py` (handle_enter, handle_leave, handle_focus)
-- Updated dispatcher in `api/semantic.py` to route context verbs
-- Created comprehensive tests (37 tests in test_context.py)
-
-**Invariants Enforced (RFC-003):**
-- ✅ INV-11: Explicit scope control (enter ≠ focus, requires confirmation)
-- ✅ INV-11a: Focus separation (enter does NOT auto-focus)
-- ✅ INV-11b: Implied focus (first scope becomes primary automatically)
-- ✅ INV-8: Stream suspension on leave (scope view-stream suspends)
-- ✅ INV-20: One ContextFrame per owner
-
-**Deliverables:** Complete context verb mechanism (enter/leave/focus), all tests passing
-
-**Test Results:**
-- test_context.py: 37 tests passing (26 original + 11 new for context verbs)
-- test_semantic_api.py: Context verb tests pass individually
-
-**Known Limitations (Deferred to future sessions):**
-- `rejoin()` verb not implemented (requires ViewMerge and fork/merge logic)
-- Context capture decorator for entity mutations not implemented
-- `visit_entity()` not implemented (automatic container updates)
-- INV-2: Synchronized Append not fully implemented (requires multi-context view updates)
-- INV-3: Primary context capture not implemented
-- INV-4: Automatic capture not implemented
-- INV-5: Fork inheritance not fully implemented (subordinate contexts)
-
-**Session 5 Fixes (2026-02-08):**
-- ✅ Fixed database locking in concurrent test execution by switching from shared temp file to in-memory database (`:memory:`)
-  - Updated `tests/conftest.py` to use shared cache in-memory database
-  - All 151 tests now pass reliably without locking issues
-  - Updated test documentation in `tests/README.md`
-
-**Dependencies:** Session 4 (context framework) ✅
-
-### Session 6: Audit Facts ✅ COMPLETED
-
-**Completed:** 2026-02-08
-
-**Goal:** Complete audit trail for all operations (RFC-005 v7 Section 7)
-
-**Completed Tasks:**
-1. ✅ Create Action fact schema in `/schemas/types/items/action.schema.json`
-2. ✅ Create ActionResult fact schema in `/schemas/types/items/actionresult.schema.json`
-3. ✅ Add `result_of` to SYSTEM_RELATION_KINDS
-4. ✅ Implement audit decorator for Semantic API operations
-5. ✅ Create Action fact on operation start
-6. ✅ Create ActionResult fact on operation completion
-7. ✅ Link via `result_of` relation
-8. ✅ Add tests (8 tests passing)
-
-**Implementation:**
-- Created `action.schema.json` with fields: uuid, _type, actor, operation, params, context, request_id, parent_action
-- Created `actionresult.schema.json` with fields: uuid, _type, result, error, result_summary, duration_ms, status
-- Updated `system/soil/relation.py` to document `result_of` relation kind
-- Implemented `with_audit()` decorator in `api/handlers/decorators.py`
-  - Creates Action fact immediately when operation starts
-  - Creates ActionResult fact when operation completes (success/error)
-  - Links ActionResult → Action via `result_of` relation
-  - Uses `bypass_semantic_api` flag to prevent recursion
-  - Includes request ID for correlation
-  - Captures duration and result/error information
-- Added `bypass_semantic_api` field to `SemanticRequest` schema
-- Applied `@with_audit` decorator to all Semantic API handlers (Core and Soil bundles)
-- Created migration `003_add_audit_fact_types.sql` to document changes
-- Created comprehensive tests (8 tests covering success/error/bypass scenarios)
-
-**Invariants Enforced (RFC-005 v7):**
-- ✅ Action fact created immediately when operation begins
-- ✅ ActionResult fact created when operation completes (success/failure)
-- ✅ System relation links ActionResult → Action (kind: `result_of`)
-- ✅ Use `bypass_semantic_api=True` to prevent recursion
-- ✅ Unique request_id for each operation (correlation support)
-- ✅ Duration tracking (milliseconds)
-- ✅ Error capture in ActionResult on failure
-
-**Deliverables:** Complete audit trail with 8/8 tests passing
-
-**Test Results:**
-- test_audit_facts.py: 8 tests passing
-- Total: 159 tests passing (151 previous + 8 new)
-
-**Dependencies:** Session 1, 2, 5 (Semantic API + Context) ✅
+**RFC-005 v7 Invariants Enforced:**
+- Action fact created on operation start
+- ActionResult fact created on completion (success/failure)
+- System relation links ActionResult → Action
+- Unique request_id, duration tracking, error capture
 
 ---
 
-### Session 6.5: Connection Lifecycle Refactor ✅ COMPLETE
+### ✅ Session 6.5: Connection Lifecycle Refactor (Completed 2026-02-08)
 
-**Status:** Implementation complete, all tests passing
-**Designed:** 2026-02-08
-**Completed:** 2026-02-08
-**Priority:** Medium (architectural improvement, no functional requirements)
+**Tests:** 159/159 passing (all tests)
 
-**Goal:** Enforce context manager usage for Core/Soil, eliminate "autocommit lie"
+**Architectural Improvement:** Eliminated "autocommit lie", enforced context manager usage
 
-**Problem Statement:**
-Current implementation has architectural debt:
-- `get_core()` claims "autocommit semantics" but doesn't actually commit automatically
-- `get_soil()` has no autocommit or context manager support
-- Requires `@with_core_cleanup` decorator to explicitly manage connection lifecycle
-- Audit decorator uses private `_get_connection()` to commit immediately
-- Inconsistent patterns between Core and Soil
+**Deliverables:**
+- Core/Soil MUST be used with `with` statement (runtime enforcement)
+- Removed `atomic` parameter from `get_core()`
+- Removed `@with_core_cleanup` and `@with_soil_cleanup` decorators
+- All operations use context manager pattern: `with get_core() as core:`
+- Enhanced ActionResult with error_type, error_traceback, error_context
 
-**Proposed Solution:**
+**Key Files:**
+- `system/core/__init__.py` - Core class with `_in_context` flag, `_get_conn()` enforcement
+- `system/soil/database.py` - Soil class with same context manager pattern
+- `api/handlers/*.py` - All handlers use explicit context managers
+- `tests/*.py` - All tests migrated to context manager pattern
 
-1. **Enforce context manager usage** - Core/Soil MUST be used with `with` statement
-2. **Remove `atomic` parameter** - All Core instances are atomic by default
-3. **Consistent pattern** - Soil follows same pattern as Core
-4. **Runtime enforcement** - Operations raise exception if not in context manager
+**Benefits:**
+- Prevents connection leaks (context manager ensures cleanup)
+- Consistent patterns between Core and Soil
+- Enforced correctness (runtime exceptions prevent misuse)
+- Better error diagnostics with stack traces
 
-**Implementation Design:**
+**Technical Details:** See module docstrings in `system/core/__init__.py` and `system/soil/database.py`
 
-```python
-# Core pattern (all operations require context manager)
-with get_core() as core:
-    entity_id = core.entity.create("transactions")
-    transaction_id = core.transaction.create(entity_id, amount=100)
-    # All operations commit together on __exit__
-    # Exception triggers rollback in __exit__
+---
 
-# Soil pattern (consistent with Core)
-with get_soil() as soil:
-    soil.create_item(item1)
-    soil.create_item(item2)
-    # All operations commit together on __exit__
-```
+### Session 6.6: ActionResult Schema Enhancement (30 minutes)
 
-**Core Class Changes:**
+**Status:** ⏳ Not Started
+**Priority:** Medium (RFC-005 v7.1 alignment, better diagnostics)
 
-```python
-class Core:
-    def __init__(self, connection: sqlite3.Connection):
-        self._conn = connection
-        self._in_context = False  # Track state
+**Goal:** Align ActionResult schema with RFC-005 v7.1 specification for structured error capture
 
-    def __enter__(self) -> "Core":
-        self._in_context = True
-        return self
+**RFC-005 v7.1 Alignment Issue:**
+- **Current:** `error` field is simple string
+- **Required:** Structured error object with `code`, `message`, `details`
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._in_context = False
-        try:
-            if exc_type is None:
-                self._conn.commit()  # Success: commit
-            else:
-                self._conn.rollback()  # Exception: rollback
-        finally:
-            self._conn.close()  # Always: close
+**Tasks:**
+1. ✅ ~~Review RFC-005 v7.1 Section 7 (lines 649-654)~~ - Complete
+2. Update `schemas/types/items/actionresult.schema.json`:
+   - Change `error` from string to object
+   - Add `error.code` (enum: validation_error, not_found, lock_conflict, permission_denied, internal_error)
+   - Add `error.message` (string)
+   - Add `error.details` (object, optional)
+3. Update audit decorator (`api/handlers/decorators.py`):
+   - Capture exception type for `error.code`
+   - Capture full exception message for `error.message`
+   - Extract structured data for `error.details` (when available)
+   - Add `error_type` and `error_traceback` to ActionResult.data
+4. Add tests for structured error capture:
+   - Validation error (code: validation_error)
+   - Entity not found (code: not_found)
+   - Permission denied (code: permission_denied)
+   - Internal error (code: internal_error)
 
-    def _get_conn(self) -> sqlite3.Connection:
-        """Get connection, enforcing context manager usage."""
-        if not self._in_context:
-            raise RuntimeError(
-                "Core must be used as context manager. "
-                "Use: with get_core() as core: ..."
-            )
-        return self._conn
-
-    # All operations use self._get_conn() instead of self._conn
-```
-
-**Handler Pattern Changes:**
-
-**Before** (current):
-```python
-@with_audit
-@with_core_cleanup  # Redundant decorator
-def handle_create(request, actor, core):
-    return core.entity.create(...)
-```
-
-**After** (refactored):
-```python
-@with_audit
-def handle_create(request, actor):
-    with get_core() as core:
-        return core.entity.create(...)
-```
-
-**Files Requiring Updates:**
-
-1. **Core class** (`memogarden-system/system/core/__init__.py`):
-   - Add `_in_context` flag to `__init__()`
-   - Add `_get_conn()` method with enforcement
-   - Remove `atomic` parameter from `get_core()`
-   - Update docstrings to remove "autocommit" documentation
-
-2. **Core operations** (`memogarden-system/system/core/*.py`):
-   - `entity.py` - Use `self._get_conn()` instead of `self._conn`
-   - `transaction.py` - Use `self._get_conn()` instead of `self._conn`
-   - `recurrence.py` - Use `self._get_conn()` instead of `self._conn`
-   - `relation.py` - Use `self._get_conn()` instead of `self._conn`
-   - `context.py` - Use `self._get_conn()` instead of `self._conn`
-
-3. **Handlers** (`memogarden-api/api/handlers/*.py`):
-   - `core.py` - Remove `@with_core_cleanup`, use `with get_core() as core:`
-   - `soil.py` - Remove `@with_soil_cleanup`, use `with get_soil() as soil:`
-   - `decorators.py` - Remove `@with_core_cleanup` and `@with_soil_cleanup`
-
-4. **Tests** (`memogarden-api/tests/*.py`):
-   - `test_audit_facts.py` - Update 8 uses of `get_soil()` to use context manager
-
-5. **Soil class** (`memogarden-system/system/soil/database.py`):
-   - Add `__enter__()` and `__exit__()` methods (match Core pattern)
-   - Add `_in_context` flag and `_get_connection()` enforcement
-   - Update all operations to use `self._get_connection()` instead of `self._conn`
-
-**Enhanced Error Capture:**
-
-Update `ActionResult` schema to include detailed error tracking:
-
-```python
-ActionResult.data = {
-    "result": object | None,
-    "error": str | None,  # Exception message
-    "error_type": str | None,  # Exception class name (new)
-    "error_traceback": str | None,  # Stack trace (new)
-    "error_context": dict | None,  # Additional context (new)
-    "result_summary": str,
-    "duration_ms": int,
-    "status": "success" | "error" | "timeout" | "cancelled"
+**Schema Update:**
+```json
+"error": {
+  "type": ["object", "null"],
+  "description": "Error details (if operation failed)",
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": ["validation_error", "not_found", "lock_conflict",
+               "permission_denied", "internal_error"]
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable error description"
+    },
+    "details": {
+      "type": "object",
+      "description": "Additional error context (optional)"
+    }
+  }
 }
 ```
 
-Update audit decorator ([decorators.py:304-362](memogarden-api/api/handlers/decorators.py)) to capture:
-- Exception type (`e.__class__.__name__`)
-- Full stack trace (`traceback.format_exception()`)
-- Error context (operation, actor, request_id)
-
 **Benefits:**
+- Better error diagnostics for debugging
+- Structured error codes for programmatic handling
+- Aligns with RFC-005 v7.1 specification
+- Enables error aggregation and analysis
 
-1. **Eliminates architectural debt** - No more "autocommit" lie in documentation
-2. **Prevents connection leaks** - Context manager ensures cleanup
-3. **Consistent patterns** - Core and Soil follow same conventions
-4. **Better error diagnostics** - Enhanced ActionResult with stack traces
-5. **Simplifies decorators** - No need for `@with_core_cleanup` or `@with_soil_cleanup`
-6. **Enforced correctness** - Runtime exceptions prevent misuse
+**Dependencies:** None (standalone schema fix)
 
-**Migration Strategy:**
-
-**Phase 1**: Add enforcement to Core (1 hour)
-- Add `_in_context` flag and `_get_conn()` method
-- Update all Core operations to use `_get_conn()`
-- Add deprecation warning for `atomic` parameter
-
-**Phase 2**: Migrate handlers (1 hour)
-- Remove `@with_core_cleanup` from all handlers
-- Wrap handler bodies with `with get_core() as core:`
-- Update handler signatures (remove `core` parameter)
-
-**Phase 3**: Migrate tests (30 minutes)
-- Update `test_audit_facts.py` to use `with get_soil() as soil:`
-- Verify `_get_conn()` catches violations
-
-**Phase 4**: Apply to Soil (1 hour)
-- Add context manager to Soil class
-- Update audit decorator to use `with get_soil() as soil:`
-- Remove private `_get_connection()` access
-
-**Phase 5**: Cleanup (15 minutes)
-- Remove `atomic` parameter from `get_core()`
-- Remove `@with_core_cleanup` and `@with_soil_cleanup` decorators
-- Update all docstrings
-
-**Total Time Estimate:** 4 hours
-**Actual Time:** 4 hours
-
-**STATUS (2026-02-08):** ✅ **COMPLETE** - All 159 tests passing
-
-**Completed (All Phases 1-6):**
-- ✅ Phase 1: Added `_in_context` flag and `_get_conn()` enforcement to Core class
-- ✅ Phase 2: Updated all Core operations (Entity, Transaction, Recurrence, Relation, Context) to accept `core: Core` reference and use `_conn` property
-- ✅ Phase 3: Added `_in_context` flag and enforcement to Soil class
-- ✅ Phase 4: Updated all handlers to use context manager pattern
-  - Semantic API handlers (core.py, soil.py) - all updated
-  - Audit decorator (decorators.py) - uses separate contexts for Action/ActionResult
-  - REST API endpoints (transactions.py, recurrences.py) - updated `get_core(atomic=True)` to `get_core()`
-  - Removed all `@with_core_cleanup` and `@with_soil_cleanup` decorator usage
-  - Removed `atomic` parameter from `get_core()` function
-- ✅ Phase 5: Migrated all tests to use context manager pattern
-  - ✅ test_audit_facts.py (8/8 passing)
-  - ✅ test_auth.py (9/9 passing)
-  - ✅ test_context.py (21/21 passing)
-  - ✅ test_user_relations.py (23/23 passing)
-  - ✅ test_transactions.py (18/18 passing) - updated to use `with get_core() as core:`
-  - ✅ test_recurrences.py (18/18 passing) - updated to use `with get_core() as core:`
-  - ✅ test_semantic_api.py (51/51 passing) - updated to use `with get_soil() as soil:`
-- ✅ Phase 6: Removed cleanup decorators
-  - ✅ Removed `@with_core_cleanup` function from decorators.py
-  - ✅ Removed `@with_soil_cleanup` function from decorators.py
-  - ✅ Updated module docstring to reflect Session 6.5 changes
-  - ✅ Removed unused imports from handlers (core.py, soil.py)
-
-**Code Review Fixes Applied:**
-- ✅ Fixed duplicate `with_audit` function definition in decorators.py
-- ✅ Added TODO comments for private connection access (temporary workarounds)
-- ✅ Updated outdated module docstrings to reflect current architecture
-
-**Test Results:**
-```
-====================== 159 passed, 179 warnings in 25.72s ======================
-```
-
-**Files Modified:**
-1. `memogarden-api/api/v1/core/transactions.py` - Updated 6 REST API endpoints
-2. `memogarden-api/api/v1/core/recurrences.py` - Updated 4 REST API endpoints
-3. `memogarden-api/api/handlers/soil.py` - Updated 2 Semantic API handlers
-4. `memogarden-api/api/handlers/decorators.py` - Removed cleanup decorators, fixed duplicate function
-5. `memogarden-api/api/handlers/core.py` - Removed unused import, added TODO comment
-6. `memogarden-api/api/handlers/soil.py` - Removed unused import, added TODO comment
-
-**Benefits Achieved:**
-1. ✅ Eliminated architectural debt - No more "autocommit" lie in documentation
-2. ✅ Prevents connection leaks - Context manager ensures cleanup
-3. ✅ Consistent patterns - Core and Soil follow same conventions
-4. ✅ Enforced correctness - Runtime exceptions prevent misuse
-5. ✅ All 159 tests passing - Production ready
-
-**Files Modified:**
-- `system/core/__init__.py` - Core class refactor, removed `atomic` param
-- `system/core/entity.py` - Accepts `core: Core`, added `_conn` property
-- `system/core/transaction.py` - Accepts `core: Core`, added `_conn` property
-- `system/core/recurrence.py` - Accepts `core: Core`, added `_conn` property
-- `system/core/relation.py` - Accepts `core: Core`, added `_conn` property
-- `system/core/context.py` - Accepts `core: Core`, added `_conn` property
-- `system/soil/database.py` - Added `_in_context` flag and enforcement
-- `api/handlers/core.py` - All handlers use `with get_core() as core:`
-- `api/handlers/soil.py` - All handlers use `with get_soil() as soil:`
-- `api/handlers/decorators.py` - Audit decorator uses separate contexts
-- `api/v1/core/transactions.py` - Changed `get_core(atomic=True)` to `get_core()`
-- `api/v1/core/recurrences.py` - Changed `get_core(atomic=True)` to `get_core()`
-- `tests/test_audit_facts.py` - All tests updated to use `with get_soil() as soil:`
-- `tests/test_context.py` - Updated `ContextOperations(None)` calls
-- `tests/conftest.py` - Updated `core` fixture to set `_in_context = True`
-
-**Next Session - Starting Point:**
-1. Run tests to see current failures: `poetry run pytest tests/test_transactions.py tests/test_recurrences.py tests/test_semantic_api.py -v`
-2. Update REST API tests to use context manager pattern
-3. Remove `@with_core_cleanup` and `@with_soil_cleanup` decorators
-4. Verify all 159 tests pass
-
-**Known Issues:**
-- ✅ Audit decorator uses separate contexts for Action/ActionResult (resolved - no Core writes needed)
-- ✅ External API return pattern unchanged (no performance impact)
-- ⏳ REST API tests need bulk updates (mechanical, straightforward)
-
-**Decision:** Continue in next session - ~1 hour remaining to complete Phase 5-6
+**RFC Reference:** RFC-005 v7.1, Section 7 (lines 649-654)
 
 ---
 
@@ -1405,7 +951,83 @@ Update audit decorator ([decorators.py:304-362](memogarden-api/api/handlers/deco
 
 **Dependencies:** Session 3 (user relations), Session 5 (context)
 
-### Session 8: Search Verb (2-3 hours)
+### Session 8: Track Verb (2-3 hours)
+
+**Status:** ⏳ Not Started
+**Priority:** Medium (RFC-005 v7.1 new feature)
+
+**Goal:** Trace causal chain from entity back to originating facts
+
+**RFC-005 v7.1 Reference:** Lines 98, 427-468
+
+**Use Case:**
+"Show me all evidence supporting this belief" - Enables audit/reconstruction workflows by tracing entity lineage through EntityDeltas to source facts.
+
+**Tasks:**
+1. Implement `handle_track()` - Track verb handler
+2. Implement recursive tree traversal:
+   - Start from target entity UUID
+   - Follow EntityDelta.previous_hash links backward
+   - For each delta, query EntityDelta.fact_uuid for source facts
+   - Build tree structure with `kind` markers (entity, fact, relation)
+3. Add request schema (TrackRequest)
+   - `target` (entity UUID)
+   - `depth` (hop limit, default: unlimited)
+4. Add response format (tree structure):
+   ```json
+   {
+     "target": "ent_xxx",
+     "chain": [
+       {
+         "kind": "entity",
+         "id": "ent_xxx",
+         "sources": [
+           {
+             "kind": "fact",
+             "id": "fct_aaa",
+             "sources": []
+           },
+           {
+             "kind": "entity",
+             "id": "ent_yyy",
+             "sources": [
+               {"kind": "fact", "id": "fct_bbb", "sources": []}
+             ]
+           }
+         ]
+       }
+     ]
+   }
+   ```
+5. Handle diamond ancestry naturally (tree format supports multiple paths)
+6. Add tests:
+   - Simple entity with one source fact
+   - Entity with multiple source facts
+   - Diamond ancestry (shared fact)
+   - Depth limit enforcement
+
+**Invariants to Enforce (RFC-005 v7.1):**
+- Tree structure with `kind` markers (entity, fact, relation)
+- Handles "diamond ancestry" (same fact referenced multiple times)
+- Depth limit parameter prevents runaway traversal
+- Empty `sources` array for leaf nodes (facts without sources)
+
+**Key Files:**
+- `api/handlers/core.py` (handle_track)
+- `api/schemas/semantic.py` (TrackRequest, TrackResponse)
+- `system/core/entity.py` (get_entity_delta_chain)
+- `tests/test_track.py` (new file)
+
+**Dependencies:**
+- Session 1 (Core bundle verbs)
+- Session 2 (Soil bundle verbs)
+- EntityDelta queries must be working
+
+**RFC Reference:** RFC-005 v7.1, Section 6 (lines 427-468)
+
+---
+
+### Session 9: Search Verb (2-3 hours)
 
 **Goal:** Semantic search and discovery
 
@@ -1429,7 +1051,7 @@ Update audit decorator ([decorators.py:304-362](memogarden-api/api/handlers/deco
 
 **Dependencies:** Session 1 (Semantic API), Session 2 (Soil bundle)
 
-### Session 9: Config-Based Path Resolution (1-2 hours)
+### Session 10: Config-Based Path Resolution (1-2 hours)
 
 **Goal:** RFC-004 environment variable support
 
@@ -1451,7 +1073,7 @@ Update audit decorator ([decorators.py:304-362](memogarden-api/api/handlers/deco
 
 **Dependencies:** None (standalone utility)
 
-### Session 10: Schema Access Utilities (1-2 hours)
+### Session 11: Schema Access Utilities (1-2 hours)
 
 **Goal:** RFC-004 schema bundling and runtime access
 
@@ -1473,7 +1095,7 @@ Update audit decorator ([decorators.py:304-362](memogarden-api/api/handlers/deco
 
 **Dependencies:** None (standalone utility)
 
-### Session 11: REST API - Generic Entities (2-3 hours)
+### Session 12: REST API - Generic Entities (2-3 hours)
 
 **Goal:** Entity CRUD for external apps
 
@@ -1492,7 +1114,7 @@ Update audit decorator ([decorators.py:304-362](memogarden-api/api/handlers/deco
 
 **Dependencies:** Session 1 (Semantic API patterns)
 
-### Session 12: Cross-Database Transactions (2-3 hours)
+### Session 13: Cross-Database Transactions (2-3 hours)
 
 **Goal:** RFC-008 transaction semantics
 
@@ -1523,7 +1145,7 @@ Update audit decorator ([decorators.py:304-362](memogarden-api/api/handlers/deco
 
 **Dependencies:** Session 6 (audit facts), Session 4 (context)
 
-### Session 13: Fossilization - Basic Sweep (2-3 hours)
+### Session 14: Fossilization - Basic Sweep (2-3 hours)
 
 **Goal:** RFC-002 automatic storage management
 
@@ -1760,19 +1382,26 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 1. **Database Paths:**
    - Current: Hardcoded relative paths
    - Needed: Config-based path resolution per RFC-004
+   - **Session:** 10
 
 2. **Schema Access:**
    - Current: Direct file reading
    - Needed: Bundled schemas with importlib.resources
+   - **Session:** 11
 
 3. **Error Messages:**
    - Current: Generic error messages
    - Needed: Detailed, actionable error messages per RFC-006
+   - **Progress:** Session 6.6 will add structured error capture (error.code, error.message, error.details)
 
 4. **Test Coverage:**
-   - Current: 159 tests passing (Session 6 complete)
+   - Current: 159 tests passing (Session 6.5 complete)
    - Breakdown: 20 transactions, 12 recurrences, 9 auth, 37 context, 25 user relations, 48 semantic api, 8 audit facts
    - Needed: Comprehensive tests for all features
+
+**Resolved (Session 6.5):**
+- ✅ Connection lifecycle: Context manager pattern enforced
+- ✅ Core/Soil consistency: Unified patterns, no autocommit lie
 
 ---
 
@@ -1785,11 +1414,12 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 - **RFC-002 v5:** Relation Time Horizon & Fossilization
 - **RFC-003 v4:** Context Mechanism (26 invariants)
 - **RFC-004 v2:** Package Structure & Deployment
-- **RFC-005 v7:** API Design (Semantic verbs)
+- **RFC-005 v7.1:** API Design (Semantic verbs, audit facts)
 - **RFC-006 v1:** Error Handling & Diagnostics
 - **RFC-007 v2:** Runtime Operations
-- **RFC-008 v1:** Transaction Semantics
+- **RFC-008 v1.2:** Transaction Semantics (cross-DB coordination)
 - **RFC-009 v1:** Application Model
+- **RFC Alignment Analysis:** See `plan/rfc_alignment_analysis.md` for detailed RFC comparison
 
 ### Codebases
 
@@ -1804,6 +1434,8 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.8 | 2026-02-08 | Add Session 6.6 (ActionResult schema) and Session 8 (Track verb), update RFC versions to v7.1/v1.2 |
+| 1.7 | 2026-02-08 | Compact completed sessions (1-6.5) to summary format, reduce context bloat |
 | 1.6 | 2026-02-08 | Add Session 6 completion (Audit Facts with Action/ActionResult schemas and decorator) |
 | 1.5 | 2026-02-08 | Add Session 5 database locking fix, document type checking fix in core.py |
 | 1.4 | 2026-02-08 | Update Session 5 status to completed |
@@ -1814,20 +1446,24 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 ---
 
-**Status:** Active Development - Session 6 Complete
+**Status:** Active Development - Session 6.5 Complete, 159 tests passing
+
+**Document Structure:**
+- Completed sessions (1-6.5): Summary format with key deliverables and test counts
+- Future sessions (6.6-14): Full detail for implementation planning
+- Technical implementation details: See module docstrings and git commit history
+
+**RFC Alignment:**
+- RFC-005 v7.1: 60% complete (Sessions 1-2, audit facts, track verb planned)
+- RFC-008 v1.2: 90% complete (Session 6.5 aligned, recovery tools pending)
+- See `plan/rfc_alignment_analysis.md` for detailed comparison
 
 **Next Steps:**
-1. ✅ ~~Review and prioritize Phase 1 tasks~~ (Completed - Session 1)
-2. ✅ ~~Set up Semantic API development environment~~ (Completed)
-3. ✅ ~~Implement Core bundle verbs first (highest value)~~ (Completed)
-4. ✅ ~~Implement Soil bundle verbs (Session 2)~~ (Completed)
-5. ✅ ~~Implement User Relations (Session 3)~~ (Completed)
-6. ✅ ~~Implement Context Framework - Basic Operations (Session 4)~~ (Completed)
-7. ✅ ~~Implement Context Verbs (Session 5)~~ (Completed)
-8. ✅ ~~Implement Audit Facts (Session 6)~~ (Completed)
-9. ⏳ **Start Session 7: Relations Bundle Verbs** (unlink, edit_relation, query_relation, explore)
-10. Continue implementing remaining Semantic API bundles (Search)
-11. Write tests alongside implementation
+1. ⏳ **Session 6.6: ActionResult Schema Enhancement** (structured error capture)
+2. ⏳ **Session 7: Relations Bundle Verbs** (unlink, edit_relation, query_relation, explore)
+3. ⏳ **Session 8: Track Verb** (causal chain tracing)
+4. Continue implementing remaining Semantic API bundles
+5. Write tests alongside implementation
 
 ---
 
