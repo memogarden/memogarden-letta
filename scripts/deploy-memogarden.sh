@@ -20,6 +20,8 @@ set -eo pipefail
 
 INSTALL_DIR="/opt/memogarden"
 REPO_URL="https://github.com/memogarden/memogarden.git"
+API_REPO_URL="https://github.com/memogarden/memogarden-api.git"
+SYSTEM_REPO_URL="https://github.com/memogarden/memogarden-system.git"
 
 #=============================================================================
 # Colors
@@ -54,6 +56,36 @@ else
     sudo git clone "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
 fi
+
+#=============================================================================
+# Clone sub-repositories
+#=============================================================================
+
+log_info "Ensuring sub-repositories are present..."
+
+# Clone/update memogarden-system
+if [ -d "$INSTALL_DIR/memogarden-system" ]; then
+    log_info "Updating memogarden-system..."
+    cd "$INSTALL_DIR/memogarden-system"
+    sudo git fetch origin
+    sudo git reset --hard origin/main
+else
+    log_info "Cloning memogarden-system..."
+    sudo git clone "$SYSTEM_REPO_URL" "$INSTALL_DIR/memogarden-system"
+fi
+
+# Clone/update memogarden-api
+if [ -d "$INSTALL_DIR/memogarden-api" ]; then
+    log_info "Updating memogarden-api..."
+    cd "$INSTALL_DIR/memogarden-api"
+    sudo git fetch origin
+    sudo git reset --hard origin/main
+else
+    log_info "Cloning memogarden-api..."
+    sudo git clone "$API_REPO_URL" "$INSTALL_DIR/memogarden-api"
+fi
+
+cd "$INSTALL_DIR"
 
 #=============================================================================
 # Install
