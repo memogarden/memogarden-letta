@@ -45,6 +45,8 @@ log_warn() {
 
 # Add safe.directory for Git (fixes ownership security error)
 sudo git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
+sudo git config --global --add safe.directory "$INSTALL_DIR/memogarden-system" 2>/dev/null || true
+sudo git config --global --add safe.directory "$INSTALL_DIR/memogarden-api" 2>/dev/null || true
 
 if [ -d "$INSTALL_DIR" ]; then
     log_info "Updating existing installation at ${INSTALL_DIR}..."
