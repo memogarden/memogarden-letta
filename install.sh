@@ -118,7 +118,7 @@ step_check_dependencies() {
     if ! check_python_version; then
         log_error "Please install Python 3.13 or higher"
         case "$DISTRO" in
-            arch|manjaro)
+            arch|manjaro|manjaro-arm)
                 log_info "On Arch Linux ARM: sudo pacman -S python"
                 ;;
             debian|ubuntu|raspbian)
@@ -130,7 +130,7 @@ step_check_dependencies() {
 
     # Check for pip and git based on distribution
     case "$DISTRO" in
-        arch|manjaro)
+        arch|manjaro|manjaro-arm)
             # Arch Linux uses pacman
             if ! check_command pip3; then
                 log_warn "pip3 not found, installing..."
@@ -169,7 +169,7 @@ step_create_user() {
     log_step "Creating memogarden user and group..."
 
     case "$DISTRO" in
-        arch|manjaro)
+        arch|manjaro|manjaro-arm)
             # Arch Linux user/group creation
             if ! getent group "$MEMOGARDEN_GROUP" &> /dev/null; then
                 sudo groupadd -r "$MEMOGARDEN_GROUP"
