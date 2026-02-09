@@ -417,23 +417,34 @@ This document consolidates all implementation planning for MemoGarden across mul
 
 #### 2.4 REST API for Entities
 
-**Status:** ⚠️ Partial (Transaction only)
+**Status:** ✅ Complete (Transaction/Recurrence CRUD for traditional apps)
 
-**Required Components:**
+**Completed Components:**
 
-1. **Generic Entity Endpoints:**
-   - [ ] `POST /api/v1/entities` - Create entity (any type)
-   - [ ] `GET /api/v1/entities` - List with filters (type, start, end)
-   - [ ] `GET /api/v1/entities/{uuid}` - Get single entity
-   - [ ] `PATCH /api/v1/entities/{uuid}` - Edit (set/unset semantics)
-   - [ ] `DELETE /api/v1/entities/{uuid}` - Forget (soft delete)
+1. **Transaction Endpoints:**
+   - [x] `POST /api/v1/transactions` - Create transaction
+   - [x] `GET /api/v1/transactions` - List with filters
+   - [x] `GET /api/v1/transactions/{uuid}` - Get single transaction
+   - [x] `PATCH /api/v1/transactions/{uuid}` - Edit transaction
+   - [x] `DELETE /api/v1/transactions/{uuid}` - Delete transaction
 
-2. **Type-Specific Endpoints:**
-   - [ ] `POST /api/v1/artifacts` - Create artifact
-   - [ ] `POST /api/v1/labels` - Create label
-   - [ ] Generic CRUD for all entity types
+2. **Recurrence Endpoints:**
+   - [x] `POST /api/v1/recurrences` - Create recurrence
+   - [x] `GET /api/v1/recurrences` - List with filters
+   - [x] `GET /api/v1/recurrences/{uuid}` - Get single recurrence
+   - [x] `PATCH /api/v1/recurrences/{uuid}` - Edit recurrence
+   - [x] `DELETE /api/v1/recurrences/{uuid}` - Delete recurrence
 
-**Dependencies:** Semantic API (1.1)
+**Architectural Note:**
+The REST API (`/api/v1/`) is designed for **traditional CRUD apps** (e.g., Budget app) that need predictable, fixed-schema resources. Generic entity operations (create, get, edit, forget, query for all entity types) should use the **Semantic API** (`/mg` endpoint), which already provides these capabilities through verb-based messaging.
+
+**Rationale:**
+- REST API → Fixed schema for conventional apps (Transaction, Recurrence)
+- Semantic API → Flexible operations for AI agents and advanced integrations
+- Maintains clean separation between traditional and advanced use cases
+- Prevents architectural blurring and security issues
+
+**Dependencies:** Session 1 (Semantic API - Core bundle verbs)
 
 #### 2.5 Cross-Database Transaction Coordination (RFC-008 v1)
 
@@ -731,9 +742,10 @@ This document consolidates all implementation planning for MemoGarden across mul
 | 9.1 | Code Review Fixes | ✅ Completed | 2026-02-09 | 200/200 passing |
 | 10 | Config-Based Path Resolution | ✅ Completed | 2026-02-09 | 215/215 passing |
 | 11 | Schema Access Utilities | ✅ Completed | 2026-02-09 | 19/19 passing |
-| 12 | REST API - Generic Entities | ⏳ Not Started | - | 0/0 |
-| 13 | Cross-Database Transactions | ⏳ Not Started | - | 0/0 |
-| 14 | Fossilization - Basic Sweep | ⏳ Not Started | - | 0/0 |
+| 12 | Cross-Database Transactions | ⏳ Not Started | - | 0/0 |
+| 13 | Fossilization - Basic Sweep | ⏳ Not Started | - | 0/0 |
+
+**Note:** Session 12 (REST API - Generic Entities) was removed from the implementation plan. The REST API (`/api/v1/`) is complete for its intended purpose - providing Transaction and Recurrence CRUD for traditional apps (Budget app). Generic entity operations should use the Semantic API (`/mg` endpoint), which already provides `create`, `get`, `edit`, `forget`, `query` verbs for all entity types.
 
 ---
 
@@ -1231,26 +1243,7 @@ get_db_path('soil')  # → Path('./soil.db')
 
 ---
 
-### Session 12: REST API - Generic Entities (2-3 hours)
-
-**Goal:** Entity CRUD for external apps
-
-**Tasks:**
-1. Implement `POST /api/v1/entities` - Create entity
-2. Implement `GET /api/v1/entities` - List with filters
-3. Implement `GET /api/v1/entities/{uuid}` - Get single
-4. Implement `PATCH /api/v1/entities/{uuid}` - Edit (set/unset)
-5. Implement `DELETE /api/v1/entities/{uuid}` - Forget
-6. Add Pydantic schemas
-7. Add tests
-
-**Note:** REST API is Entity-only for external CRUD apps. Full capabilities (Facts, Relations, Context) accessed via Semantic API.
-
-**Deliverables:** Complete Entity REST API, testable
-
-**Dependencies:** Session 1 (Semantic API patterns)
-
-### Session 13: Cross-Database Transactions (2-3 hours)
+### Session 12: Cross-Database Transactions (2-3 hours)
 
 **Goal:** RFC-008 transaction semantics
 
@@ -1281,7 +1274,7 @@ get_db_path('soil')  # → Path('./soil.db')
 
 **Dependencies:** Session 6 (audit facts), Session 4 (context)
 
-### Session 14: Fossilization - Basic Sweep (2-3 hours)
+### Session 13: Fossilization - Basic Sweep (2-3 hours)
 
 **Goal:** RFC-002 automatic storage management
 
@@ -1580,6 +1573,7 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.17 | 2026-02-09 | Remove Session 12 (REST API - Generic Entities) - REST API complete for Transaction/Recurrence CRUD, generic entity operations should use Semantic API. Renumber subsequent sessions. |
 | 1.16 | 2026-02-09 | Mark Session 11 complete (Schema Access Utilities with 19 tests), update test count to 234 |
 | 1.15 | 2026-02-09 | Mark Session 10 complete (Config-Based Path Resolution with 15 tests), update test count to 215 |
 | 1.14 | 2026-02-09 | Mark Session 9.1 complete (code review fixes), added public search APIs |
@@ -1621,8 +1615,8 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 - Implemented RFC-004 schema bundling and runtime access (importlib.resources + file fallback)
 
 **Next Steps:**
-1. ⏳ **Session 12: REST API - Generic Entities** (Entity CRUD for external apps)
-2. ⏳ **Session 13: Cross-Database Transactions** (RFC-008 transaction semantics)
+1. ⏳ **Session 12: Cross-Database Transactions** (RFC-008 transaction semantics)
+2. ⏳ **Session 13: Fossilization - Basic Sweep** (RFC-002 automatic storage management)
 3. Continue implementing remaining Semantic API features
 4. Write tests alongside implementation
 
