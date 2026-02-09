@@ -375,6 +375,21 @@ step_finalize() {
 # Main Installation Flow
 #=============================================================================
 
+get_accessible_url() {
+    # Try to get the hostname (for mDNS/.local access)
+    local hostname=$(hostname 2>/dev/null || echo "")
+    # Try to get the primary IP address
+    local ip=$(ip route get 1 2>/dev/null | awk '{print $7}' | head -1 || echo "")
+
+    if [ -n "$hostname" ]; then
+        echo "http://$hostname.local:5000"
+    elif [ -n "$ip" ]; then
+        echo "http://$ip:5000"
+    else
+        echo "http://<hostname-or-ip>:5000"
+    fi
+}
+
 main() {
     echo ""
     echo "=================================="
@@ -394,12 +409,13 @@ main() {
     echo ""
     log_info "MemoGarden has been installed successfully!"
     echo ""
+    local accessible_url=$(get_accessible_url)
     echo "Next steps:"
     echo "  1. Review and edit .env: sudo nano $MEMOGARDEN_INSTALL_DIR/memogarden-api/.env"
     echo "  2. Start the service: sudo systemctl start memogarden"
     echo "  3. Check service status: sudo systemctl status memogarden"
     echo "  4. View logs: sudo journalctl -u memogarden -f"
-    echo "  5. Register admin user: Visit http://localhost:5000/admin/register"
+    echo "  5. Register admin user: Visit $accessible_url/admin/register"
     echo ""
 }
 
