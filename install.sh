@@ -179,7 +179,7 @@ step_create_user() {
             fi
 
             if ! id "$MEMOGARDEN_USER" &> /dev/null; then
-                sudo useradd -r -U -G "$MEMOGARDEN_GROUP" \
+                sudo useradd -r -g "$MEMOGARDEN_GROUP" \
                     -d "$MEMOGARDEN_INSTALL_DIR" \
                     -s /usr/bin/nologin \
                     "$MEMOGARDEN_USER"
