@@ -31,7 +31,26 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
+
+#=============================================================================
+# Distribution Detection
+#=============================================================================
+
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/arch-release ]; then
+        echo "arch"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    else
+        echo "unknown"
+    fi
+}
+
+DISTRO=$(detect_distro) # No Color
 
 #=============================================================================
 # Logging Functions
@@ -93,27 +112,55 @@ check_python_version() {
 
 step_check_dependencies() {
     log_step "Checking system dependencies..."
+    log_info "Detected distribution: $DISTRO"
 
     # Check Python version
     if ! check_python_version; then
         log_error "Please install Python 3.13 or higher"
-        log_info "On Raspberry Pi OS: sudo apt update && sudo apt install python3.13"
+        case "$DISTRO" in
+            arch|manjaro)
+                log_info "On Arch Linux ARM: sudo pacman -S python"
+                ;;
+            debian|ubuntu|raspbian)
+                log_info "On Raspberry Pi OS: sudo apt update && sudo apt install python3"
+                ;;
+        esac
         exit 1
     fi
 
-    # Check for pip
-    if ! check_command pip3; then
-        log_warn "pip3 not found, installing..."
-        sudo apt update
-        sudo apt install -y python3-pip
-    fi
+    # Check for pip and git based on distribution
+    case "$DISTRO" in
+        arch|manjaro)
+            # Arch Linux uses pacman
+            if ! check_command pip3; then
+                log_warn "pip3 not found, installing..."
+                sudo pacman -S --needed --noconfirm python-pip
+            fi
 
-    # Check for git
-    if ! check_command git; then
-        log_warn "git not found, installing..."
-        sudo apt update
-        sudo apt install -y git
-    fi
+            if ! check_command git; then
+                log_warn "git not found, installing..."
+                sudo pacman -S --needed --noconfirm git
+            fi
+            ;;
+        debian|ubuntu|raspbian)
+            # Debian-based systems use apt
+            if ! check_command pip3; then
+                log_warn "pip3 not found, installing..."
+                sudo apt update
+                sudo apt install -y python3-pip
+            fi
+
+            if ! check_command git; then
+                log_warn "git not found, installing..."
+                sudo apt update
+                sudo apt install -y git
+            fi
+            ;;
+        *)
+            log_warn "Unknown distribution $DISTRO, skipping package installation"
+            log_warn "Please ensure Python 3.13+, pip3, and git are installed"
+            ;;
+    esac
 
     log_info "All dependencies satisfied"
 }
@@ -121,26 +168,52 @@ step_check_dependencies() {
 step_create_user() {
     log_step "Creating memogarden user and group..."
 
-    # Create group if it doesn't exist
-    if ! getent group "$MEMOGARDEN_GROUP" &> /dev/null; then
-        sudo groupadd --system "$MEMOGARDEN_GROUP"
-        log_info "Created group: $MEMOGARDEN_GROUP"
-    else
-        log_info "Group already exists: $MEMOGARDEN_GROUP"
-    fi
+    case "$DISTRO" in
+        arch|manjaro)
+            # Arch Linux user/group creation
+            if ! getent group "$MEMOGARDEN_GROUP" &> /dev/null; then
+                sudo groupadd -r "$MEMOGARDEN_GROUP"
+                log_info "Created group: $MEMOGARDEN_GROUP"
+            else
+                log_info "Group already exists: $MEMOGARDEN_GROUP"
+            fi
 
-    # Create user if it doesn't exist
-    if ! id "$MEMOGARDEN_USER" &> /dev/null; then
-        sudo useradd --system \
-            --home-dir "$MEMOGARDEN_INSTALL_DIR" \
-            --no-create-home \
-            --shell /usr/sbin/nologin \
-            --gid "$MEMOGARDEN_GROUP" \
-            "$MEMOGARDEN_USER"
-        log_info "Created user: $MEMOGARDEN_USER"
-    else
-        log_info "User already exists: $MEMOGARDEN_USER"
-    fi
+            if ! id "$MEMOGARDEN_USER" &> /dev/null; then
+                sudo useradd -r -U -G "$MEMOGARDEN_GROUP" \
+                    -d "$MEMOGARDEN_INSTALL_DIR" \
+                    -s /usr/bin/nologin \
+                    "$MEMOGARDEN_USER"
+                log_info "Created user: $MEMOGARDEN_USER"
+            else
+                log_info "User already exists: $MEMOGARDEN_USER"
+            fi
+            ;;
+        debian|ubuntu|raspbian)
+            # Debian user/group creation
+            if ! getent group "$MEMOGARDEN_GROUP" &> /dev/null; then
+                sudo groupadd --system "$MEMOGARDEN_GROUP"
+                log_info "Created group: $MEMOGARDEN_GROUP"
+            else
+                log_info "Group already exists: $MEMOGARDEN_GROUP"
+            fi
+
+            if ! id "$MEMOGARDEN_USER" &> /dev/null; then
+                sudo useradd --system \
+                    --home-dir "$MEMOGARDEN_INSTALL_DIR" \
+                    --no-create-home \
+                    --shell /usr/sbin/nologin \
+                    --gid "$MEMOGARDEN_GROUP" \
+                    "$MEMOGARDEN_USER"
+                log_info "Created user: $MEMOGARDEN_USER"
+            else
+                log_info "User already exists: $MEMOGARDEN_USER"
+            fi
+            ;;
+        *)
+            log_warn "Unknown distribution $DISTRO, skipping user creation"
+            log_warn "Please ensure user '$MEMOGARDEN_USER' and group '$MEMOGARDEN_GROUP' exist"
+            ;;
+    esac
 }
 
 step_create_directories() {
