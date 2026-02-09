@@ -41,6 +41,9 @@ log_warn() {
 # Deploy
 #=============================================================================
 
+# Add safe.directory for Git (fixes ownership security error)
+sudo git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
+
 if [ -d "$INSTALL_DIR" ]; then
     log_info "Updating existing installation at ${INSTALL_DIR}..."
     cd "$INSTALL_DIR"
