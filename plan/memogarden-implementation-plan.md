@@ -15,7 +15,7 @@ This document consolidates all implementation planning for MemoGarden across mul
 
 **Approach:** This plan identifies gaps between current PRD/RFC specifications and existing implementations, organized by priority and dependency.
 
-**Current Compliance:** ~42% of PRD v0.11.1 requirements implemented (Session 7 complete)
+**Current Compliance:** ~45% of PRD v0.11.1 requirements implemented (Session 10 complete)
 
 **Document Structure:**
 - **Completed Work (Sessions 1-6.5):** Summary format with key deliverables, test counts, and file references. Technical implementation details are in module docstrings and git commit history.
@@ -88,8 +88,12 @@ This document consolidates all implementation planning for MemoGarden across mul
 | **Relations Bundle** | 7 | 185 | ✅ Complete | unlink, edit_relation, get_relation, query_relation, explore verbs |
 | **Code Review Fixes** | 7.5 | 185 | ✅ Complete | Fixed architectural violations, added public APIs |
 | **Track Verb** | 8 | 192 | ✅ Complete | Causal chain tracing, derived_from links, depth limits |
+| **Search Verb** | 9 | 200 | ✅ Complete | Fuzzy text search, coverage levels, effort modes |
+| **Code Review Fixes** | 9.1 | 200 | ✅ Complete | Fixed architectural violations, added public APIs |
+| **Config-Based Path Resolution** | 10 | 215 | ✅ Complete | RFC-004 environment variable support |
+| **Schema Access Utilities** | 11 | 19 | ✅ Complete | RFC-004 schema bundling and runtime access |
 
-**Total:** 192 tests passing (as of Session 8)
+**Total:** 234 tests passing (215 API + 19 system)
 
 **Implementation Details:** See individual session summaries below and git commit history
 
@@ -335,49 +339,57 @@ This document consolidates all implementation planning for MemoGarden across mul
 
 #### 2.1 Schema Access Utilities (RFC-004 v2)
 
-**Status:** ❌ Not Implemented
+**Status:** ✅ Completed (Session 11)
 
-**Required Components:**
+**Completed Components:**
 
 1. **`system.schemas` Module:**
-   - [ ] Create `/memogarden-system/system/schemas.py`
-   - [ ] `get_sql_schema(layer)` - Return soil.sql or core.sql content
-   - [ ] `get_type_schema(category, type_name)` - Return JSON schema
-   - [ ] `list_type_schemas(category)` - List available schemas
+   - [x] Create `/memogarden-system/system/schemas.py`
+   - [x] `get_sql_schema(layer)` - Return soil.sql or core.sql content
+   - [x] `get_type_schema(category, type_name)` - Return JSON schema
+   - [x] `list_type_schemas(category)` - List available schemas
 
 2. **Resource Bundling:**
-   - [ ] Bundle schemas in package (pyproject.toml configuration)
-   - [ ] Use importlib.resources for package access
-   - [ ] Fallback to file reading in development mode
+   - [x] Bundle schemas in package (pyproject.toml configuration)
+   - [x] Use importlib.resources for package access
+   - [x] Fallback to file reading in development mode
 
 3. **Update Init Logic:**
-   - [ ] Soil/Core use `get_sql_schema()` instead of hardcoded paths
-   - [ ] Remove hardcoded `../schemas/sql/` paths
+   - [x] Soil/Core use `get_sql_schema()` instead of hardcoded paths
+   - [x] Remove hardcoded `../schemas/sql/` paths
 
-**Dependencies:** None (can start immediately)
+**RFC-004 Invariants Enforced:**
+- INV-PKG-004: Try importlib.resources first (bundled package)
+- INV-PKG-005: Fall back to file reading (development mode)
+- INV-PKG-006: Raise FileNotFoundError if schema not found in either location
+
+**Dependencies:** None (standalone utility)
 
 #### 2.2 Config-Based Path Resolution (RFC-004 v2)
 
-**Status:** ❌ Not Implemented
+**Status:** ✅ Completed (Session 10)
 
-**Required Components:**
+**Completed Components:**
 
 1. **Environment Variable Support:**
-   - [ ] `MEMOGARDEN_SOIL_DB` - Explicit Soil database path
-   - [ ] `MEMOGARDEN_CORE_DB` - Explicit Core database path
-   - [ ] `MEMOGARDEN_DATA_DIR` - Shared data directory
+   - [x] `MEMOGARDEN_SOIL_DB` - Explicit Soil database path
+   - [x] `MEMOGARDEN_CORE_DB` - Explicit Core database path
+   - [x] `MEMOGARDEN_DATA_DIR` - Shared data directory
 
 2. **`get_db_path()` Function:**
-   - [ ] Add to `/memogarden-system/system/host/environment.py`
-   - [ ] Resolution order: env var → data dir → current directory
-   - [ ] Layer parameter: 'soil' or 'core'
+   - [x] Add to `/memogarden-system/system/host/environment.py`
+   - [x] Resolution order: env var → data dir → current directory
+   - [x] Layer parameter: 'soil' or 'core'
 
 3. **Update Soil/Core Initialization:**
-   - [ ] Default db_path to `None` in __init__
-   - [ ] Call `get_db_path()` when db_path is None
-   - [ ] Maintain backward compatibility (explicit paths still work)
+   - [x] Default db_path to `None` in __init__
+   - [x] Call `get_db_path()` when db_path is None
+   - [x] Maintain backward compatibility (explicit paths still work)
 
-**Dependencies:** None (can start immediately)
+**RFC-004 Invariants Enforced:**
+- INV-PKG-001: Resolution order: layer-specific override → shared data dir → current dir
+- INV-PKG-002: Backward compatible - explicit paths still work
+- INV-PKG-003: Default paths: `./{layer}.db`
 
 #### 2.3 REST API for Soil Items
 
@@ -715,9 +727,10 @@ This document consolidates all implementation planning for MemoGarden across mul
 | 7 | Relations Bundle Verbs | ✅ Completed | 2026-02-09 | 185/185 passing |
 | 7.5 | Code Review Fixes | ✅ Completed | 2026-02-09 | 185/185 passing |
 | 8 | Track Verb | ✅ Completed | 2026-02-09 | 192/192 passing |
-| 9 | Search Verb | ⏳ Not Started | - | 0/0 |
-| 10 | Config-Based Path Resolution | ⏳ Not Started | - | 0/0 |
-| 11 | Schema Access Utilities | ⏳ Not Started | - | 0/0 |
+| 9 | Search Verb | ✅ Completed | 2026-02-09 | 200/200 passing |
+| 9.1 | Code Review Fixes | ✅ Completed | 2026-02-09 | 200/200 passing |
+| 10 | Config-Based Path Resolution | ✅ Completed | 2026-02-09 | 215/215 passing |
+| 11 | Schema Access Utilities | ✅ Completed | 2026-02-09 | 19/19 passing |
 | 12 | REST API - Generic Entities | ⏳ Not Started | - | 0/0 |
 | 13 | Cross-Database Transactions | ⏳ Not Started | - | 0/0 |
 | 14 | Fossilization - Basic Sweep | ⏳ Not Started | - | 0/0 |
@@ -1023,80 +1036,134 @@ This document consolidates all implementation planning for MemoGarden across mul
 
 ---
 
-### Session 9: Search Verb (2-3 hours)
+### ✅ Session 9: Search Verb (Completed 2026-02-09)
 
-**Status:** ⏳ Not Started
-**Priority:** Medium (RFC-005 v7.1 new feature)
+**Tests:** 200/200 passing (8 new tests for search verb)
 
-**Goal:** Semantic search and discovery
+**Deliverables:**
+- `search` verb for semantic search and discovery
+- Fuzzy text search strategy (SQLite LIKE with wildcards)
+- Coverage levels: names (type only), content (type + data), full (all searchable fields)
+- Effort modes: quick, standard, deep (framework in place, implementation simplified for Session 9)
+- Target types: entity, fact, all
+- Limit parameter for pagination
 
-**Tasks:**
-1. Implement `search` verb dispatcher
-2. Implement fuzzy search strategy (text matching with typo tolerance)
-3. Implement auto strategy (system chooses based on query)
-4. Implement coverage levels (names, content, full)
-5. Implement effort modes (quick, standard, deep)
-6. Add continuation token pagination
-7. Add tests
+**Key Files:**
+- `api/handlers/core.py` (handle_search with fuzzy matching across entities and facts)
+- `api/schemas/semantic.py` (SearchRequest schema)
+- `api/semantic.py` (added "search" to HANDLERS and request_schemas)
+- `tests/test_search.py` (8 new tests covering search scenarios)
 
-**Invariants to Enforce (RFC-005 v7):**
+**RFC-005 v7.1 Alignment:**
+- search: Semantic search and discovery
 - Coverage: names (fast), content (names+body), full (all fields)
-- Strategy: semantic (embeddings), fuzzy (text matching), auto (system choice)
-- Effort: quick (cached), standard (full), deep (exhaustive)
-- Continuation tokens for pagination
-- Threshold filtering (minimum similarity score)
+- Strategy: fuzzy (text matching with LIKE), auto (system choice)
+- Target types: entity, fact, all
+- Continuation token framework (deferred to future session)
 
-**Deliverables:** Working search, testable
+**Implementation Notes:**
+- Fuzzy matching uses SQLite LIKE with wildcards (%query%)
+- Searches across entity.type, entity.data fields
+- Searches across item._type, item.data, item.metadata fields
+- Results include "kind" marker ("entity" or "fact") for disambiguation
+- Effort modes and continuation tokens are framework-ready but simplified in this session
+
+**Future Enhancements:**
+- Semantic search with embeddings (vector DB or external service)
+- Continuation token implementation for deep pagination
+- Cached results for "quick" effort mode
+- Threshold filtering for similarity scores
 
 **Dependencies:** Session 1 (Semantic API), Session 2 (Soil bundle)
 
 ---
 
-### Session 9: Search Verb (2-3 hours)
+### ✅ Session 9.1: Code Review Fixes (Completed 2026-02-09)
 
-**Goal:** Semantic search and discovery
+**Tests:** 200/200 passing (all existing tests continue to pass)
 
-**Tasks:**
-1. Implement `search` verb dispatcher
-2. Implement fuzzy search strategy (text matching with typo tolerance)
-3. Implement auto strategy (system chooses based on query)
-4. Implement coverage levels (names, content, full)
-5. Implement effort modes (quick, standard, deep)
-6. Add continuation token pagination
-7. Add tests
+**Deliverables:**
+- Fixed architectural violation: Removed direct `_conn` access from handler
+- Added public `EntityOperations.search()` method for entity search
+- Added public `Soil.search_items()` method for fact/item search
+- Updated `handle_search` to use public APIs instead of private connections
+- Removed unnecessary PRAGMA calls
+- Added clear TODO comments for all deferred features
 
-**Invariants to Enforce (RFC-005 v7):**
-- Coverage: names (fast), content (names+body), full (all fields)
-- Strategy: semantic (embeddings), fuzzy (text matching), auto (system choice)
-- Effort: quick (cached), standard (full), deep (exhaustive)
-- Continuation tokens for pagination
-- Threshold filtering (minimum similarity score)
+**Key Files:**
+- `system/core/entity.py` - Added `search()` method with coverage level support
+- `system/soil/database.py` - Added `search_items()` method with coverage level support
+- `api/handlers/core.py` - Refactored `handle_search` to use public APIs, added TODO comments
 
-**Deliverables:** Working search, testable
+**Fixed Violations:**
+1. ✅ **VIOLATION #1: Direct _conn access** - Added public search methods to Core/Soil, updated handler to call them
+2. ✅ **VIOLATION #2: Missing continuation token** - Added clear TODO with implementation specification
 
-**Dependencies:** Session 1 (Semantic API), Session 2 (Soil bundle)
+**Documented Deferred Features:**
+- **Continuation tokens**: Added TODO with base64 encoding spec for offset/limit/timestamp
+- **Strategy parameter**: Added TODO for "auto" strategy selection and "semantic" implementation
+- **Effort modes**: Added TODO for "quick" caching and "deep" exhaustive search
+- **Threshold filtering**: Added TODO for similarity score filtering (requires semantic search)
 
-### Session 10: Config-Based Path Resolution (1-2 hours)
+**Architectural Improvements:**
+- All handlers now use public Core/Soil APIs (no private connection access)
+- Search logic encapsulated in Core/Soil layers (proper separation of concerns)
+- Clear documentation of deferred features with implementation specifications
 
-**Goal:** RFC-004 environment variable support
+**RFC Alignment:**
+- Maintains RFC-005 v7.1 compliance
+- Deferred features properly documented for future implementation
 
-**Tasks:**
-1. Implement `get_db_path(layer)` in `system/host/environment.py`
-2. Add `MEMOGARDEN_SOIL_DB` env var support
-3. Add `MEMOGARDEN_CORE_DB` env var support
-4. Add `MEMOGARDEN_DATA_DIR` env var support
-5. Update Soil to use config-based paths
-6. Update Core to use config-based paths
-7. Add tests
+**Code Quality Improvements:**
+- Removed unnecessary PRAGMA synchronous calls (connection setup responsibility)
+- Improved code maintainability (public API interfaces)
 
-**Invariants to Enforce (RFC-004):**
-- Resolution order: layer-specific override → shared data dir → current directory
-- Backward compatible (explicit paths still work)
-- Default paths: `./{layer}.db`
+**Dependencies:** Session 9 (Search Verb)
 
-**Deliverables:** Config-based path resolution, testable
+---
+
+### ✅ Session 10: Config-Based Path Resolution (Completed 2026-02-09)
+
+**Tests:** 215/215 passing (15 new tests for path resolution)
+
+**Deliverables:**
+- `get_db_path(layer)` function in `system/host/environment.py`
+- `MEMOGARDEN_SOIL_DB` environment variable support
+- `MEMOGARDEN_CORE_DB` environment variable support
+- `MEMOGARDEN_DATA_DIR` environment variable support
+- Core updated to use config-based paths (when database_path=None)
+- Soil updated to use config-based paths (when db_path=None)
+- Backward compatible with explicit path parameters
+
+**Key Files:**
+- `memogarden-system/system/host/environment.py` (get_db_path function)
+- `memogarden-system/system/config.py` (Settings with database_path=None support)
+- `memogarden-system/system/core/__init__.py` (_create_connection, init_db updated)
+- `memogarden-system/system/soil/database.py` (get_soil updated)
+- `memogarden-api/tests/test_path_resolution.py` (15 new tests)
+
+**RFC-004 Invariants Enforced:**
+- INV-PKG-001: Resolution order: layer-specific override → shared data dir → current directory
+- INV-PKG-002: Backward compatible - explicit paths still work
+- INV-PKG-003: Default paths: `./{layer}.db`
+
+**Path Resolution Examples:**
+```python
+# Layer-specific override (highest priority)
+os.environ['MEMOGARDEN_SOIL_DB'] = '/custom/soil.db'
+get_db_path('soil')  # → Path('/custom/soil.db')
+
+# Shared data directory
+os.environ['MEMOGARDEN_DATA_DIR'] = '/data'
+get_db_path('core')  # → Path('/data/core.db')
+
+# Default (current directory, backward compatible)
+get_db_path('soil')  # → Path('./soil.db')
+```
 
 **Dependencies:** None (standalone utility)
+
+---
 
 ### Session 11: Schema Access Utilities (1-2 hours)
 
@@ -1119,6 +1186,50 @@ This document consolidates all implementation planning for MemoGarden across mul
 **Deliverables:** Schema access utilities, testable
 
 **Dependencies:** None (standalone utility)
+
+---
+
+### ✅ Session 11: Schema Access Utilities (Completed 2026-02-09)
+
+**Tests:** 19/19 passing (system package tests)
+
+**Deliverables:**
+- `system/schemas.py` module with schema access utilities
+- `get_sql_schema(layer)` - Return soil.sql or core.sql content
+- `get_type_schema(category, type_name)` - Return JSON schema as Python dict
+- `list_type_schemas(category)` - List available type schemas by category
+- Updated `Soil.init_schema()` to use `get_sql_schema('soil')`
+- Updated `Core.init_db()` to use `get_sql_schema('core')`
+- Schema bundling in `pyproject.toml` (includes `system/schemas/**/*.sql` and `**/*.json`)
+
+**Key Files:**
+- `system/schemas.py` - Schema access utilities
+- `system/soil/database.py` - Updated init_schema() method
+- `system/core/__init__.py` - Updated init_db() function
+- `pyproject.toml` - Added include directive for schema files
+- `tests/test_schemas.py` - 19 tests for schema access utilities
+
+**RFC-004 v2 Alignment:**
+- INV-PKG-004: Try importlib.resources first (bundled package)
+- INV-PKG-005: Fall back to file reading (development mode)
+- INV-PKG-006: Raise FileNotFoundError if schema not found in either location
+
+**Implementation Details:**
+- Schema access uses importlib.resources (Python 3.13) for bundled packages
+- Falls back to Path-based file reading for development mode
+- Searches multiple locations: `system/schemas/` and root `schemas/` directories
+- Type name extraction reads JSON schema 'title' field for accurate names
+- Handles multi-word type names correctly (e.g., "ActionResult" not "Actionresult")
+
+**Benefits:**
+- Decouples schema location from code (no hardcoded paths)
+- Enables schema bundling in production packages
+- Supports both installed packages and development mode
+- Single source of truth for schema access
+
+**Dependencies:** None (standalone utility)
+
+---
 
 ### Session 12: REST API - Generic Entities (2-3 hours)
 
@@ -1407,12 +1518,12 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 1. **Database Paths:**
    - Current: Hardcoded relative paths
    - Needed: Config-based path resolution per RFC-004
-   - **Session:** 10
+   - **Session:** 10 ✅ Completed
 
 2. **Schema Access:**
    - Current: Direct file reading
    - Needed: Bundled schemas with importlib.resources
-   - **Session:** 11
+   - **Session:** 11 ✅ Completed
 
 3. **Error Messages:**
    - Current: Generic error messages
@@ -1420,8 +1531,8 @@ This section consolidates all invariants from RFCs that must be enforced via imp
    - **Progress:** Session 6.6 added structured error capture (error.code, error.message, error.details) ✅
 
 4. **Test Coverage:**
-   - Current: 192 tests passing (Session 8 complete)
-   - Breakdown: 20 transactions, 12 recurrences, 9 auth, 37 context, 25 user relations, 48 semantic api, 8 audit facts, 18 relations bundle, 7 track
+   - Current: 234 tests passing (Session 11 complete)
+   - Breakdown: 215 API tests (20 transactions, 12 recurrences, 9 auth, 37 context, 25 user relations, 48 semantic api, 8 audit facts, 18 relations bundle, 7 track, 8 search, 15 path resolution) + 19 system tests (schema access utilities)
    - Needed: Comprehensive tests for all features
 
 5. **Code Quality Improvements (Session 8 Code Review):**
@@ -1435,6 +1546,8 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 - ✅ **Session 6.5:** Core/Soil consistency: Unified patterns, no autocommit lie
 - ✅ **Session 7.5:** Architectural violations: Fixed datetime import, private connection access, bare except clauses
 - ✅ **Session 8:** Track verb: Zero violations, excellent architectural compliance
+- ✅ **Session 10:** Database paths: RFC-004 config-based path resolution
+- ✅ **Session 11:** Schema access: RFC-004 schema bundling and runtime access
 
 ---
 
@@ -1467,6 +1580,10 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.16 | 2026-02-09 | Mark Session 11 complete (Schema Access Utilities with 19 tests), update test count to 234 |
+| 1.15 | 2026-02-09 | Mark Session 10 complete (Config-Based Path Resolution with 15 tests), update test count to 215 |
+| 1.14 | 2026-02-09 | Mark Session 9.1 complete (code review fixes), added public search APIs |
+| 1.13 | 2026-02-09 | Mark Session 9 complete (Search verb with 8 tests), update test count to 200 |
 | 1.12 | 2026-02-09 | Mark Session 8 complete (Track verb with 7 tests), update test count to 192 |
 | 1.11 | 2026-02-09 | Mark Session 7.5 complete (code review fixes), add should-fix improvements to implementation plan |
 | 1.10 | 2026-02-09 | Mark Session 7 complete (Relations bundle verbs), update test count to 185 |
@@ -1483,27 +1600,30 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 ---
 
-**Status:** Active Development - Session 8 Complete, 192 tests passing
+**Status:** Active Development - Session 11 Complete, 234 tests passing
 
 **Document Structure:**
-- Completed sessions (1-8): Summary format with key deliverables and test counts
-- Future sessions (9-14): Full detail for implementation planning
+- Completed sessions (1-11): Summary format with key deliverables and test counts
+- Future sessions (12-14): Full detail for implementation planning
 - Technical implementation details: See module docstrings and git commit history
 
 **RFC Alignment:**
-- RFC-005 v7.1: 78% complete (Sessions 1-2, audit facts, structured error capture, Relations bundle, code review fixes, track verb complete)
+- RFC-004 v2: 90% complete (Session 11: Schema bundling and runtime access complete. Missing: full package distribution testing)
+- RFC-005 v7.1: 85% complete (Sessions 1-2, audit facts, structured error capture, Relations bundle, code review fixes, track verb, search verb complete)
 - RFC-002 v5: 65% complete (User relations, Relations bundle verbs complete. Missing: fossilization engine, authorization for unlink)
 - RFC-008 v1.2: 90% complete (Session 6.5 aligned, recovery tools pending)
 - See `plan/rfc_alignment_analysis.md` for detailed comparison
 
-**Code Quality Improvements (Session 7.5):**
+**Code Quality Improvements (Session 7.5, 9.1, 10, 11):**
 - Fixed all must-fix violations from code review (datetime import, private connection access, bare except clauses)
-- Added should-fix improvements to implementation plan for future work (N+1 queries, authorization, test fixtures)
+- Added public APIs (search methods) to avoid private connection access
+- Implemented RFC-004 environment variable support with backward compatibility
+- Implemented RFC-004 schema bundling and runtime access (importlib.resources + file fallback)
 
 **Next Steps:**
-1. ⏳ **Session 9: Search Verb** (semantic search and discovery)
-2. ⏳ **Session 10: Config-Based Path Resolution** (RFC-004 environment variable support)
-3. Continue implementing remaining Semantic API bundles
+1. ⏳ **Session 12: REST API - Generic Entities** (Entity CRUD for external apps)
+2. ⏳ **Session 13: Cross-Database Transactions** (RFC-008 transaction semantics)
+3. Continue implementing remaining Semantic API features
 4. Write tests alongside implementation
 
 ---
