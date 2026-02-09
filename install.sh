@@ -322,9 +322,9 @@ Type=notify
 User=$MEMOGARDEN_USER
 Group=$MEMOGARDEN_GROUP
 WorkingDirectory=$MEMOGARDEN_INSTALL_DIR/memogarden-api
-Environment="PATH=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PATH=$MEMOGARDEN_INSTALL_DIR/.venv/bin:/usr/local/bin:/usr/bin:/bin"
 EnvironmentFile=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.env
-ExecStart=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin/gunicorn --config gunicorn.conf.py api.main:app
+ExecStart=$MEMOGARDEN_INSTALL_DIR/.venv/bin/gunicorn --config gunicorn.conf.py api.main:app
 ExecReload=/bin/kill -s HUP \$MAINPID
 Restart=on-failure
 RestartSec=10
