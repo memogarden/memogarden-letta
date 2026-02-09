@@ -48,6 +48,12 @@ sudo git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
 sudo git config --global --add safe.directory "$INSTALL_DIR/memogarden-system" 2>/dev/null || true
 sudo git config --global --add safe.directory "$INSTALL_DIR/memogarden-api" 2>/dev/null || true
 
+# Stop service if running (to avoid conflicts during update)
+if systemctl is-active --quiet memogarden; then
+    log_info "Stopping memogarden service..."
+    sudo systemctl stop memogarden
+fi
+
 if [ -d "$INSTALL_DIR" ]; then
     log_info "Updating existing installation at ${INSTALL_DIR}..."
     cd "$INSTALL_DIR"
@@ -96,5 +102,14 @@ cd "$INSTALL_DIR"
 log_info "Running install script..."
 cd "$INSTALL_DIR"
 sudo ./install.sh
+
+#=============================================================================
+# Start Service
+#=============================================================================
+
+log_info "Starting memogarden service..."
+sudo systemctl daemon-reload
+sudo systemctl start memogarden
+sudo systemctl status memogarden --no-pager
 
 log_info "Deployment complete!"
