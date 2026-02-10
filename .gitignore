@@ -82,3 +82,12 @@ data/
 fixtures/
 *.mbox
 *.mbox.*
+
+# User cache and local data
+.cache/
+.config/
+.local/
+bin/
+
+# Development subdirectory (old structure)
+memogarden/
