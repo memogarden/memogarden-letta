@@ -51,32 +51,43 @@ applications          (budget app, etc.)
 
 ### 2.1 Repository Layout
 
+MemoGarden uses a multi-repo structure with three separate Git repositories:
+
+**memogarden (Root Repository)** - Planning, scripts, meta-configuration
 ```
-/memogarden/                          # Git repository root
+/memogarden/                          # Git root: https://github.com/memogarden/memogarden
 â”‚
-â”œâ”€â”€ memogarden-system/                # Python package: core system
-â”‚   â”œâ”€â”€ pyproject.toml
-â”‚   â”œâ”€â”€ system/                       # Import as "system"
+â”œâ”€â”€ plan/                              # RFC documents, PRDs, implementation plans
+â”œâ”€â”€ scripts/                           # Development automation
+â”œâ”€â”€ docs/                              # Technical documentation
+â””â”€â”€ .claude/                           # AI agent configuration
+```
+
+**memogarden-system (Core Package)** - System functionality
+```
+/memogarden-system/                   # Git root: https://github.com/memogarden/memogarden-system
+â”œâ”€â”€ pyproject.toml                    # Package configuration
+â”œâ”€â”€ system/                            # Import as "system"
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”œâ”€â”€ soil/                          # Immutable record layer
 â”‚   â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”‚   â”œâ”€â”€ soil/                     # Immutable record layer
-â”‚   â”‚   â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”‚   â”‚   â”œâ”€â”€ items.py              # Item CRUD operations
-â”‚   â”‚   â”‚   â”œâ”€â”€ relations.py          # SystemRelation operations
-â”‚   â”‚   â”‚   â””â”€â”€ database.py           # Soil DB connection
-â”‚   â”‚   â”œâ”€â”€ core/                     # Mutable belief layer
-â”‚   â”‚   â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”‚   â”‚   â”œâ”€â”€ entities.py           # Entity CRUD operations
-â”‚   â”‚   â”‚   â”œâ”€â”€ relations.py          # UserRelation operations
-â”‚   â”‚   â”‚   â”œâ”€â”€ context.py            # ContextFrame operations
-â”‚   â”‚   â”‚   â””â”€â”€ database.py           # Core DB connection
-â”‚   â”‚   â”œâ”€â”€ host/                     # OS interface abstraction
-â”‚   â”‚   â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”‚   â”‚   â”œâ”€â”€ environment.py        # Path resolution
-â”‚   â”‚   â”‚   â”œâ”€â”€ filesystem.py         # File operations
-â”‚   â”‚   â”‚   â”œâ”€â”€ supervision.py        # Readiness signaling
-â”‚   â”‚   â”‚   â””â”€â”€ time.py               # Time utilities
-â”‚   â”‚   â”œâ”€â”€ schemas/                  # Bundled schemas (copied during build)
-â”‚   â”‚   â”‚   â”œâ”€â”€ sql/
+â”‚   â”‚   â”œâ”€â”€ items.py                   # Item CRUD operations
+â”‚   â”‚   â”œâ”€â”€ relations.py               # SystemRelation operations
+â”‚   â”‚   â””â”€â”€ database.py                # Soil DB connection
+â”‚   â”œâ”€â”€ core/                          # Mutable belief layer
+â”‚   â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”‚   â”œâ”€â”€ entities.py                # Entity CRUD operations
+â”‚   â”‚   â”œâ”€â”€ relations.py               # UserRelation operations
+â”‚   â”‚   â”œâ”€â”€ context.py                 # ContextFrame operations
+â”‚   â”‚   â””â”€â”€ database.py                # Core DB connection
+â”‚   â”œâ”€â”€ host/                          # OS interface abstraction
+â”‚   â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”‚   â”œâ”€â”€ environment.py             # Path resolution
+â”‚   â”‚   â”œâ”€â”€ filesystem.py              # File operations
+â”‚   â”‚   â”œâ”€â”€ supervision.py             # Readiness signaling
+â”‚   â”‚   â””â”€â”€ time.py                    # Time utilities
+â”‚   â”œâ”€â”€ schemas/                       # Bundled schemas (copied during build)
+â”‚   â”‚   â”œâ”€â”€ sql/
 â”‚   â”‚   â”‚   â”‚   â”œâ”€â”€ soil.sql
 â”‚   â”‚   â”‚   â”‚   â””â”€â”€ core.sql
 â”‚   â”‚   â”‚   â””â”€â”€ types/
@@ -88,44 +99,31 @@ applications          (budget app, etc.)
 â”‚   â”‚       â”œâ”€â”€ uid.py                # UUID generation
 â”‚   â”‚       â”œâ”€â”€ hashing.py            # Hash chain utilities
 â”‚   â”‚       â””â”€â”€ validation.py         # JSON Schema validation
-â”‚   â””â”€â”€ tests/
-â”‚
-â”œâ”€â”€ api/                              # Python package: HTTP API
-â”‚   â”œâ”€â”€ pyproject.toml
-â”‚   â”œâ”€â”€ api/                          # Import as "api"
-â”‚   â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”‚   â”œâ”€â”€ main.py                   # FastAPI app factory
-â”‚   â”‚   â”œâ”€â”€ v1/                       # API version 1
-â”‚   â”‚   â”‚   â”œâ”€â”€ soil/                 # Soil endpoints
-â”‚   â”‚   â”‚   â””â”€â”€ core/                 # Core endpoints
-â”‚   â”‚   â”œâ”€â”€ middleware/               # Auth, validation
-â”‚   â”‚   â””â”€â”€ schemas/                  # Request/response schemas
-â”‚   â””â”€â”€ tests/
-â”‚
-â”œâ”€â”€ schemas/                          # Schema source (copied during build)
-â”‚   â”œâ”€â”€ sql/
-â”‚   â”‚   â”œâ”€â”€ soil.sql
-â”‚   â”‚   â””â”€â”€ core.sql
-â”‚   â””â”€â”€ types/
-â”‚       â”œâ”€â”€ items/
-â”‚       â”‚   â”œâ”€â”€ email.schema.json
-â”‚       â”‚   â””â”€â”€ note.schema.json
-â”‚       â””â”€â”€ entities/
-â”‚           â”œâ”€â”€ artifact.schema.json
-â”‚           â””â”€â”€ transaction.schema.json
-â”‚
-â”œâ”€â”€ providers/                        # Optional provider implementations
-â”‚   â””â”€â”€ <provider-name>/
-â”‚       â”œâ”€â”€ pyproject.toml
-â”‚       â””â”€â”€ <provider>/
-â”‚
-â”œâ”€â”€ apps/                             # Optional example applications
-â”‚   â””â”€â”€ <app-name>/
-â”‚
-â”œâ”€â”€ scripts/                          # Development utilities
-â”œâ”€â”€ docs/                             # Documentation, RFCs
-â””â”€â”€ README.md
+â"‚   â"”â"€â"€ tests/
+â"”â"€â"€ scripts/                           # Build automation (e.g., copy-schemas.sh)
 ```
+
+**memogarden-api (API Package)** - HTTP interface
+```
+/memogarden-api/                      # Git root: https://github.com/memogarden/memogarden-api
+â"œâ"€â"€ pyproject.toml                    # Package configuration
+â"œâ"€â"€ api/                               # Import as "api"
+â"‚   â"œâ"€â"€ __init__.py
+â"‚   â"œâ"€â"€ main.py                      # Flask app factory
+â"‚   â"œâ"€â"€ v1/                          # API version 1
+â"‚   â"‚   â"œâ"€â"€ soil/                    # Soil endpoints
+â"‚   â"‚   â"‚   â"œâ"€â"€ items.py
+â"‚   â"‚   â"‚   â"”â"€â"€ relations.py
+â"‚   â"‚   â"”â"€â"€ core/                    # Core endpoints
+â"‚   â"‚       â"œâ"€â"€ entities.py
+â"‚   â"‚       â"œâ"€â"€ relations.py
+â"‚   â"‚       â"”â"€â"€ context.py
+â"‚   â"œâ"€â"€ middleware/                  # Auth, validation
+â"‚   â"”â"€â"€ schemas/                     # Request/response schemas
+â"”â"€â"€ tests/
+```
+
+**Note:** Schemas are bundled into `memogarden-system` during build via `scripts/copy-schemas.sh`. They are not a separate directory in the root repository.
 
 ### 2.2 Import Patterns
 
@@ -481,13 +479,13 @@ WantedBy=default.target
 
 ```bash
 # Build memogarden-system
-cd memogarden-system
+cd /path/to/memogarden-system
 ./scripts/copy-schemas.sh  # Copy schemas into package
 python -m build
 ls dist/  # memogarden_system-0.1.0-py3-none-any.whl
 
 # Build memogarden-api
-cd ../api
+cd /path/to/memogarden-api
 python -m build
 ls dist/  # memogarden_api-0.1.0-py3-none-any.whl
 ```
@@ -499,7 +497,7 @@ ls dist/  # memogarden_api-0.1.0-py3-none-any.whl
 | **PyPI** | Public release | `pip install memogarden-system` |
 | **Private PyPI** | Organization-internal | `pip install --index-url=<url> memogarden-system` |
 | **Wheel file** | Air-gapped systems | `pip install memogarden_system-0.1.0-py3-none-any.whl` |
-| **Git** | Development | `pip install git+https://github.com/org/memogarden.git#subdirectory=memogarden-system` |
+| **Git** | Development | `pip install git+https://github.com/memogarden/memogarden-system.git` |
 
 ### 7.3 Version Management
 

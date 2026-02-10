@@ -92,8 +92,9 @@ This document consolidates all implementation planning for MemoGarden across mul
 | **Code Review Fixes** | 9.1 | 200 | ✅ Complete | Fixed architectural violations, added public APIs |
 | **Config-Based Path Resolution** | 10 | 215 | ✅ Complete | RFC-004 environment variable support |
 | **Schema Access Utilities** | 11 | 19 | ✅ Complete | RFC-004 schema bundling and runtime access |
+| **Cross-Database Transactions** | 12 | 36 | ✅ Complete | RFC-008 transaction coordination, consistency checks |
 
-**Total:** 234 tests passing (215 API + 19 system)
+**Total:** 252 tests passing (215 API + 36 system + 1 experiment)
 
 **Implementation Details:** See individual session summaries below and git commit history
 
@@ -742,14 +743,223 @@ The REST API (`/api/v1/`) is designed for **traditional CRUD apps** (e.g., Budge
 | 9.1 | Code Review Fixes | ✅ Completed | 2026-02-09 | 200/200 passing |
 | 10 | Config-Based Path Resolution | ✅ Completed | 2026-02-09 | 215/215 passing |
 | 11 | Schema Access Utilities | ✅ Completed | 2026-02-09 | 19/19 passing |
-| 12 | Cross-Database Transactions | ⏳ Not Started | - | 0/0 |
-| 13 | Fossilization - Basic Sweep | ⏳ Not Started | - | 0/0 |
+| 12 | Cross-Database Transactions | ✅ Completed | 2026-02-09 | 36/36 passing |
+| 13 | Fossilization - Basic Sweep | 🔴 Deferred | - | - |
+| 14 | Deployment & Operations | ⏳ Not Started | - | - |
+| 15 | Documentation | ⏳ Not Started | - | - |
 
-**Note:** Session 12 (REST API - Generic Entities) was removed from the implementation plan. The REST API (`/api/v1/`) is complete for its intended purpose - providing Transaction and Recurrence CRUD for traditional apps (Budget app). Generic entity operations should use the Semantic API (`/mg` endpoint), which already provides `create`, `get`, `edit`, `forget`, `query` verbs for all entity types.
+**Note:**
+- **Session 12 (REST API - Generic Entities)** was removed - REST API is complete for Transaction/Recurrence CRUD. Generic entity operations use the Semantic API (`/mg` endpoint).
+- **Session 13 (Fossilization)** is deferred - time value of objects is not yet known, making it premature to implement automatic storage management.
 
 ---
 
-### ✅ Session 1: Semantic API - Core Bundle (Completed 2026-02-07)
+## Completed Sessions (1-12): Compact Summary
+
+**Technical Implementation Details:** See module docstrings and git commit history for detailed implementation.
+
+### Sessions 1-2: Semantic API Foundation (22 + 15 tests)
+- `/mg` endpoint with request/response envelope
+- Core verbs: create, get, edit, forget, query (entities)
+- Soil verbs: add, amend, get, query (facts)
+- Authentication middleware for all requests
+
+### Session 3: User Relations (25 tests)
+- link verb with time_horizon (RFC-002)
+- Time horizon computation with SAFETY_COEFFICIENT (1.2)
+- Relation operations: create, list_inbound/list_outbound, is_alive
+
+### Sessions 4-5: Context Framework (26 + 48 tests)
+- ContextFrame with LRU-N eviction (N=7)
+- View stream with automatic coalescence
+- Context verbs: enter_scope, leave_scope, focus_scope
+- Substantive vs primitive object classification
+
+### Session 6: Audit Facts (8 tests)
+- Action/ActionResult fact schemas
+- @with_audit decorator for Semantic API operations
+- result_of system relation linking ActionResult → Action
+
+### Session 6.5: Connection Lifecycle Refactor (159 tests)
+- Context manager enforcement for Core/Soil
+- Removed autocommit lie
+- Atomic transactions with explicit commit/rollback
+
+### Session 6.6: ActionResult Schema Enhancement (167 tests)
+- Structured error capture (code, message, details)
+- Error types: validation_error, not_found, lock_conflict, permission_denied, internal_error
+
+### Session 7: Relations Bundle Verbs (185 tests)
+- unlink, edit_relation, get_relation, query_relation, explore verbs
+- Graph traversal with BFS (explore verb)
+- Direction filtering (outgoing, incoming, both)
+
+### Session 7.5: Code Review Fixes (185 tests)
+- Fixed architectural violations (datetime import, private connection access)
+- Added public APIs (search methods)
+
+### Session 8: Track Verb (192 tests)
+- Causal chain tracing through derived_from links
+- Depth-limited traversal (prevents runaway)
+- Diamond ancestry handling
+
+### Session 9: Search Verb (200 tests)
+- Fuzzy text search (SQLite LIKE with wildcards)
+- Coverage levels: names, content, full
+- Target types: entity, fact, all
+
+### Session 9.1: Code Review Fixes (200 tests)
+- Fixed architectural violations
+- Added TODO comments for deferred features
+
+### Session 10: Config-Based Path Resolution (215 tests)
+- RFC-004 environment variables (MEMOGARDEN_SOIL_DB, MEMOGARDEN_CORE_DB, MEMOGARDEN_DATA_DIR)
+- get_db_path() function with resolution order
+- Backward compatible with explicit paths
+
+### Session 11: Schema Access Utilities (19 tests)
+- get_sql_schema(layer) for soil/core.sql
+- get_type_schema(category, type_name) for JSON schemas
+- Schema bundling in pyproject.toml
+- importlib.resources with file fallback
+
+### Session 12: Cross-Database Transactions (36 tests)
+- TransactionCoordinator for cross-DB operations
+- SystemStatus enum (NORMAL, INCONSISTENT, READ_ONLY, SAFE_MODE)
+- EXCLUSIVE locking on both databases
+- Soil-first commit ordering (RFC-008)
+- Startup consistency checks (orphaned deltas, broken chains)
+
+---
+
+## Future Sessions
+
+### 🔴 Session 13: Fossilization - Basic Sweep (DEFERRED)
+
+**Status:** Deferred - time value of objects is not yet known
+
+**Reason:** Fossilization relies on time_horizon to determine when items expire. Since we don't yet know the time value of different object types, we cannot set appropriate retention policies.
+
+**Future Work:** When time value is understood, implement:
+- fossilization_sweep() - Background task
+- query_fossilization_candidates() - Find expired items
+- Fidelity state transitions (full → summary → stub → tombstone)
+
+---
+
+### Session 14: Deployment & Operations (2-3 hours)
+
+**Goal:** Production deployment on Raspberry Pi
+
+**Tasks:**
+
+1. **Create Installation Script** (`install.sh`)
+   - Check system dependencies (Python 3.13, poetry)
+   - Create memogarden user and group
+   - Install poetry dependencies
+   - Set up directory structure (/opt/memogarden)
+   - Configure environment variables
+
+2. **Create Production Server Config** (`gunicorn.conf.py`)
+   - Worker processes (2-4 for RPi)
+   - Worker class (sync:gthread)
+   - Worker timeout (30s)
+   - Bind address (127.0.0.1:5000)
+   - Logging configuration
+
+3. **Create systemd Service** (`memogarden.service`)
+   - After=network.target
+   - User=memogarden
+   - ExecStart=/opt/memogarden/venv/bin/gunicorn
+   - Restart=on-failure
+   - EnvironmentFile=/opt/memogarden/.env
+
+4. **Create Environment Template** (`.env.example`)
+   - MEMOGARDEN_SOIL_DB - Path to Soil database
+   - MEMOGARDEN_CORE_DB - Path to Core database
+   - MEMOGARDEN_DATA_DIR - Shared data directory
+   - FLASK_SECRET_KEY - For session signing
+   - API_KEY_* - API keys for external access
+
+5. **Update Scripts**
+   - Fix `scripts/run.sh` path (currently hardcoded to /home/kureshii/memogarden/api)
+   - Create `scripts/init-db.sh` - Database initialization
+   - Create `scripts/migrate.sh` - Migration runner
+
+6. **Add Health Check Endpoint**
+   - `GET /health` - Returns {status: "ok", databases: "healthy"}
+   - `GET /status` - Returns system status, consistency check results
+
+7. **Add Startup Logic**
+   - Automatic database initialization if missing
+   - Consistency check on startup (TransactionCoordinator.check_consistency())
+   - Migration application on startup
+   - Graceful shutdown handling
+
+**Deliverables:** Production-ready deployment for RPi
+
+**Dependencies:** None (standalone infrastructure)
+
+---
+
+### Session 15: Documentation (2-3 hours)
+
+**Goal:** User and developer documentation
+
+**Tasks:**
+
+1. **Create Deployment Guide** (`docs/deployment.md`)
+   - Raspberry Pi setup (OS, Python, dependencies)
+   - install.sh usage
+   - systemd service configuration
+   - Environment variable configuration
+   - First run initialization
+   - Verification steps
+
+2. **Create Quickstart Guide** (`docs/quickstart.md`)
+   - Installation instructions
+   - Create first transaction (curl example)
+   - Create first relation
+   - Query data examples
+   - Common workflows
+
+3. **Create API Documentation** (`docs/api.md`)
+   - Semantic API reference (/mg endpoint)
+   - REST API reference (/api/v1/ endpoint)
+   - Authentication (JWT, API key)
+   - Request/response formats
+   - Error codes and handling
+   - Example requests (curl, Python)
+
+4. **Create Environment Variable Reference** (`docs/configuration.md`)
+   - Complete list of MEMOGARDEN_* variables
+   - Default values
+   - Required vs optional
+   - Examples
+
+5. **Create Troubleshooting Guide** (`docs/troubleshooting.md`)
+   - Database connection issues
+   - Permission errors
+   - Migration failures
+   - Performance issues
+   - Common error messages and solutions
+
+6. **Update Implementation Plan**
+   - Mark Session 14 as complete after deployment
+   - Mark Session 15 as complete after documentation
+   - Update RFC completion status
+
+7. **Create Architecture Overview** (`docs/architecture.md`)
+   - Component diagram (Soil, Core, API)
+   - Data flow diagram
+   - Database schema overview
+   - API request lifecycle
+
+**Deliverables:** Complete documentation for users and developers
+
+**Dependencies:** Session 14 (deployment)
+
+---
 
 **Tests:** 22/22 passing
 
@@ -1243,36 +1453,49 @@ get_db_path('soil')  # → Path('./soil.db')
 
 ---
 
-### Session 12: Cross-Database Transactions (2-3 hours)
+### ✅ Session 12: Cross-Database Transactions (Completed 2026-02-09)
 
-**Goal:** RFC-008 transaction semantics
+**Tests:** 36/36 passing (13 new tests for transaction coordinator, 23 existing tests)
 
-**Tasks:**
-1. Implement `begin_transaction()` - EXCLUSIVE locks on both databases
-2. Implement `commit_transaction()` - Soil first, then Core
-3. Implement `rollback_transaction()` - Best-effort rollback
-4. Implement transaction context manager
-5. Add startup consistency checks (orphaned deltas, broken chains)
-6. Implement `update_entity()` with cross-DB coordination
-7. Add tests for all commit scenarios
+**Deliverables:**
+- `system/transaction_coordinator.py` module with cross-DB transaction coordination
+- `SystemStatus` enum (NORMAL, INCONSISTENT, READ_ONLY, SAFE_MODE)
+- `ConsistencyError` exception for cross-database inconsistency detection
+- `OptimisticLockError` exception for hash-based optimistic locking
+- `TransactionCoordinator` class with consistency checks and cross-DB transactions
+- `CrossDatabaseTransaction` context manager for coordinated commits
+- Startup consistency checks (orphaned EntityDeltas, broken hash chains)
+- RFC-008 transaction semantics (EXCLUSIVE locks, Soil-first commit ordering)
 
-**Invariants to Enforce (RFC-008):**
-- EXCLUSIVE locks on both databases for cross-DB operations
-- Commit ordering: **Soil first** (source of truth), then Core
-- Single-DB operations: Standard SQLite ACID
-- System status modes: NORMAL, INCONSISTENT, READ_ONLY, SAFE_MODE
-- Startup checks for orphaned EntityDeltas and broken hash chains
-- Optimistic locking: Update requires matching based_on_hash
+**Key Files:**
+- `system/transaction_coordinator.py` - Cross-DB transaction coordination
+- `system/exceptions.py` - Added ConsistencyError and OptimisticLockError
+- `tests/test_transaction_coordinator.py` - 13 tests for transaction coordinator
 
-**Failure Modes:**
-- Both succeed → NORMAL
-- Both fail → NORMAL (rolled back)
-- Soil commits, Core fails → INCONSISTENT (requires repair)
-- Process killed between commits → INCONSISTENT (detected on startup)
+**RFC-008 v1.2 Alignment:**
+- INV-TX-001: Single-DB operations use standard SQLite ACID
+- INV-TX-002: Cross-DB operations use best-effort atomicity with app-level coordination
+- INV-TX-004: SERIALIZABLE via BEGIN EXCLUSIVE on both databases
+- INV-TX-007: Commit ordering: Soil first, then Core (Soil is source of truth)
+- INV-TX-008: If Soil commits but Core fails → system marked INCONSISTENT
+- INV-TX-009: Process killed between commits → INCONSISTENT (detected on startup)
+- INV-TX-018 to INV-TX-020: Startup consistency checks for orphaned deltas and broken chains
 
-**Deliverables:** Robust cross-DB transactions, testable
+**Implementation Details:**
+- TransactionCoordinator manages EXCLUSIVE locks on both Soil and Core databases
+- Cross-database transactions commit Soil first, then Core (RFC-008 INV-TX-007)
+- Consistency checks detect orphaned EntityDeltas (Soil committed, Core did not)
+- Hash chain verification detects broken chains (previous_hash doesn't match)
+- System status tracking: NORMAL, INCONSISTENT, READ_ONLY, SAFE_MODE
+- Best-effort rollback if one database commits but the other fails
 
-**Dependencies:** Session 6 (audit facts), Session 4 (context)
+**Benefits:**
+- Ensures cross-database consistency for operations spanning Soil and Core
+- Detects and reports inconsistency for manual repair
+- Provides startup checks to identify issues before they cause problems
+- Enables future implementation of recovery tools and automated repair
+
+**Dependencies:** Session 6 (audit facts), Session 11 (schema access)
 
 ### Session 13: Fossilization - Basic Sweep (2-3 hours)
 
@@ -1573,6 +1796,8 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.19 | 2026-02-09 | Add Session 14 (Deployment & Operations) and Session 15 (Documentation), defer Session 13 (Fossilization), compact completed sessions (1-12) to summary format |
+| 1.18 | 2026-02-09 | Mark Session 12 complete (Cross-Database Transactions with 13 new tests), update test count to 252, update RFC-008 completion to 95% |
 | 1.17 | 2026-02-09 | Remove Session 12 (REST API - Generic Entities) - REST API complete for Transaction/Recurrence CRUD, generic entity operations should use Semantic API. Renumber subsequent sessions. |
 | 1.16 | 2026-02-09 | Mark Session 11 complete (Schema Access Utilities with 19 tests), update test count to 234 |
 | 1.15 | 2026-02-09 | Mark Session 10 complete (Config-Based Path Resolution with 15 tests), update test count to 215 |
@@ -1594,31 +1819,31 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 ---
 
-**Status:** Active Development - Session 11 Complete, 234 tests passing
+**Status:** Active Development - Session 12 Complete, 252 tests passing
 
 **Document Structure:**
-- Completed sessions (1-11): Summary format with key deliverables and test counts
-- Future sessions (12-14): Full detail for implementation planning
-- Technical implementation details: See module docstrings and git commit history
+- Completed sessions (1-12): Compact summary format (see module docstrings and git commit history for details)
+- Future sessions (14-15): Full detail for implementation planning
+- Session 13 (Fossilization): Deferred until time value of objects is understood
 
 **RFC Alignment:**
 - RFC-004 v2: 90% complete (Session 11: Schema bundling and runtime access complete. Missing: full package distribution testing)
 - RFC-005 v7.1: 85% complete (Sessions 1-2, audit facts, structured error capture, Relations bundle, code review fixes, track verb, search verb complete)
 - RFC-002 v5: 65% complete (User relations, Relations bundle verbs complete. Missing: fossilization engine, authorization for unlink)
-- RFC-008 v1.2: 90% complete (Session 6.5 aligned, recovery tools pending)
+- RFC-008 v1.2: 95% complete (Session 12: Cross-database transaction coordination complete. Missing: recovery tools, automated repair)
 - See `plan/rfc_alignment_analysis.md` for detailed comparison
 
-**Code Quality Improvements (Session 7.5, 9.1, 10, 11):**
+**Code Quality Improvements (Session 7.5, 9.1, 10, 11, 12):**
 - Fixed all must-fix violations from code review (datetime import, private connection access, bare except clauses)
 - Added public APIs (search methods) to avoid private connection access
 - Implemented RFC-004 environment variable support with backward compatibility
 - Implemented RFC-004 schema bundling and runtime access (importlib.resources + file fallback)
+- Implemented RFC-008 cross-database transaction coordination with consistency checks
 
 **Next Steps:**
-1. ⏳ **Session 12: Cross-Database Transactions** (RFC-008 transaction semantics)
-2. ⏳ **Session 13: Fossilization - Basic Sweep** (RFC-002 automatic storage management)
-3. Continue implementing remaining Semantic API features
-4. Write tests alongside implementation
+1. ⏳ **Session 14: Deployment & Operations** - Production deployment on Raspberry Pi
+2. ⏳ **Session 15: Documentation** - User and developer documentation
+3. 🔴 **Session 13: Fossilization** - DEFERRED until time value of objects is understood
 
 ---
 

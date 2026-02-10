@@ -3,14 +3,19 @@
 # MemoGarden - Local Deployment Script
 #
 # Run this script on the Raspberry Pi to deploy memogarden.
-# Clones/updates the repo to /opt/memogarden and runs the install script.
+#
+# RFC 004: Package Structure & Deployment (v2.0)
+# - Clones root repo to /opt/memogarden for install.sh and wrapper script
+# - install.sh handles pip install from git repositories
+# - Packages are installed into shared venv at /opt/memogarden/venv/
 #
 # Usage:
 #   ~/scripts/deploy-memogarden.sh
 #
 # This script:
-# 1. Clones memogarden to /opt/memogarden (or updates if exists)
+# 1. Clones memogarden root repo to /opt/memogarden (or updates if exists)
 # 2. Runs the install script (idempotent - safe to run multiple times)
+# 3. Starts the service
 
 set -eo pipefail
 
@@ -20,8 +25,6 @@ set -eo pipefail
 
 INSTALL_DIR="/opt/memogarden"
 REPO_URL="https://github.com/memogarden/memogarden.git"
-API_REPO_URL="https://github.com/memogarden/memogarden-api.git"
-SYSTEM_REPO_URL="https://github.com/memogarden/memogarden-system.git"
 
 #=============================================================================
 # Colors
@@ -45,15 +48,14 @@ log_warn() {
 
 # Add safe.directory for Git (fixes ownership security error)
 sudo git config --global --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
-sudo git config --global --add safe.directory "$INSTALL_DIR/memogarden-system" 2>/dev/null || true
-sudo git config --global --add safe.directory "$INSTALL_DIR/memogarden-api" 2>/dev/null || true
 
 # Stop service if running (to avoid conflicts during update)
-if systemctl is-active --quiet memogarden; then
+if systemctl is-active --quiet memogarden 2>/dev/null; then
     log_info "Stopping memogarden service..."
     sudo systemctl stop memogarden
 fi
 
+# Clone or update root repository
 if [ -d "$INSTALL_DIR" ]; then
     log_info "Updating existing installation at ${INSTALL_DIR}..."
     cd "$INSTALL_DIR"
@@ -65,35 +67,9 @@ else
     cd "$INSTALL_DIR"
 fi
 
-#=============================================================================
-# Clone sub-repositories
-#=============================================================================
-
-log_info "Ensuring sub-repositories are present..."
-
-# Clone/update memogarden-system
-if [ -d "$INSTALL_DIR/memogarden-system" ]; then
-    log_info "Updating memogarden-system..."
-    cd "$INSTALL_DIR/memogarden-system"
-    sudo git fetch origin
-    sudo git reset --hard origin/main
-else
-    log_info "Cloning memogarden-system..."
-    sudo git clone "$SYSTEM_REPO_URL" "$INSTALL_DIR/memogarden-system"
-fi
-
-# Clone/update memogarden-api
-if [ -d "$INSTALL_DIR/memogarden-api" ]; then
-    log_info "Updating memogarden-api..."
-    cd "$INSTALL_DIR/memogarden-api"
-    sudo git fetch origin
-    sudo git reset --hard origin/main
-else
-    log_info "Cloning memogarden-api..."
-    sudo git clone "$API_REPO_URL" "$INSTALL_DIR/memogarden-api"
-fi
-
-cd "$INSTALL_DIR"
+# Make scripts executable
+sudo chmod +x "$INSTALL_DIR/install.sh"
+sudo chmod +x "$INSTALL_DIR/scripts/memogarden-wrapper.sh" 2>/dev/null || true
 
 #=============================================================================
 # Install
