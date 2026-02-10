@@ -60,7 +60,7 @@ This document consolidates all implementation planning for MemoGarden across mul
 | **RFC-001 v4** | Security Operations | ⚠️ 60% | Encryption defined but not implemented. Auth complete. |
 | **RFC-002 v5** | Relations & Fossilization | ⚠️ 20% | Schema exists. No time horizon logic, no fossilization engine. |
 | **RFC-003 v4** | Context Mechanism | ⚠️ 70% | Session 4-5 complete. Missing: rejoin, capture decorator, fork/merge. |
-| **RFC-004 v2** | Package Deployment | ⚠️ 50% | Structure correct. Missing: get_db_path(), schema bundling. |
+| **RFC-004 v2** | Package Deployment | ⚠️ 75% | Path resolution, schema access, TOML config, CLI wrapper, install.sh complete. Missing: resolve_context(), schema build scripts, resource profile application. |
 | **RFC-005 v7.1** | API Design | ⚠️ 60% | Sessions 1-2 complete. Missing: track, explore, enhanced query filters, rejoin. |
 | **RFC-006 v1** | Error Handling | ✅ 80% | Exception hierarchy complete. Diagnostics tools missing. |
 | **RFC-007 v2** | Runtime Operations | ❌ 0% | No system agent, no background tasks. |
@@ -101,6 +101,81 @@ This document consolidates all implementation planning for MemoGarden across mul
 ---
 
 ## Implementation Gaps
+
+### RFC-004 v2 Deployment Alignment (75% Complete)
+
+**Completed (Sessions 10-11):**
+- ✅ Environment variable path resolution (MEMOGARDEN_SOIL_DB, MEMOGARDEN_CORE_DB, MEMOGARDEN_DATA_DIR)
+- ✅ Config-based path resolution with get_db_path()
+- ✅ Schema access utilities (get_sql_schema, get_type_schema, list_type_schemas)
+- ✅ importlib.resources support with file fallback
+- ✅ TOML configuration support (config.py modules in system and api packages)
+- ✅ CLI wrapper binary (scripts/memogarden-wrapper.sh)
+- ✅ install.sh script for multi-repo deployment
+- ✅ systemd service file generation
+- ✅ ResourceProfile class (embedded, standard profiles)
+- ✅ RPi cleanup completed (removed incorrect venv locations: `/opt/memogarden/.venv`, `/opt/memogarden/memogarden-api/.venv`)
+
+**Remaining Gaps:**
+
+1. **Schema Bundling Build Process** (RFC 004 Section 7.1)
+   - [ ] Create `scripts/copy-schemas.sh` to copy schemas from root repo into memogarden-system
+   - [ ] Update `memogarden-system/pyproject.toml` to include schema files in package
+   - [ ] Test `python -m build` produces wheel with bundled schemas
+   - [ ] Verify importlib.resources access works in installed package
+
+2. **resolve_context() Function** (RFC 004 Section 4.1)
+   - [ ] Add `resolve_context(verb, config_override)` to `system/host/environment.py`
+   - [ ] Return RuntimeContext with verb-based paths (data_dir, config_dir, log_dir, signal_method)
+   - [ ] Support verbs: serve, run, deploy
+   - [ ] Add tests for each verb's context resolution
+   - Note: This is distinct from get_db_path() - resolve_context provides the full RuntimeContext
+
+3. **RuntimeContext Dataclass** (RFC 004 Section 4.1)
+   - [ ] Add RuntimeContext class to `system/host/environment.py`
+   - [ ] Fields: verb, data_dir, config_dir, log_dir, signal_method
+   - [ ] Add from_config() classmethod for config override
+   - [ ] Add tests for RuntimeContext creation and usage
+
+4. **Resource Profile Application** (RFC 004 Section 5.2)
+   - [ ] Add runtime logic to apply ResourceProfile settings
+   - [ ] Apply max_view_entries, max_search_results to query operations
+   - [ ] Apply fossilization_threshold to fossilization sweep (when implemented)
+   - [ ] Apply wal_checkpoint_interval to database operations
+   - [ ] Apply log_level to logging configuration
+   - [ ] Add tests verifying profile affects runtime behavior
+
+5. **Environment Variable Configuration** (RFC 004 Section 5.3)
+   - [ ] Add support for MEMOGARDEN_RESOURCE_PROFILE (deploy mode)
+   - [ ] Add support for MEMOGARDEN_BIND_ADDRESS
+   - [ ] Add support for MEMOGARDEN_BIND_PORT
+   - [ ] Add support for MEMOGARDEN_LOG_LEVEL
+   - [ ] Add support for MEMOGARDEN_ENCRYPTION
+   - [ ] Ensure env vars take precedence over config.toml values
+
+6. **Unit Tests for Path Resolution** (RFC 004 Section 9)
+   - [ ] Test resolve_context for each verb (serve, run, deploy)
+   - [ ] Test get_db_path with each context
+   - [ ] Test config path resolution with override
+   - [ ] Test environment variable precedence
+
+7. **Integration Tests** (RFC 004 Section 9.2)
+   - [ ] Test soil_init_creates_database with RuntimeContext
+   - [ ] Test core_init_creates_database with RuntimeContext
+   - [ ] Test config file loading for each verb
+
+8. **Package Distribution** (RFC 004 Section 7)
+   - [ ] Test `pip install` from local wheel files
+   - [ ] Test `pip install git+https://github.com/...` for both packages
+   - [ ] Create distribution documentation
+   - [ ] Add version management tests (compatible version ranges)
+
+**Deferred Work:**
+- Container configuration (Dockerfile, health checks) - Future session
+- User systemd unit configuration (~/.config/systemd/user/) - Future session
+- Multi-platform binary distribution (Linux, macOS, Windows) - Future session
+
+---
 
 ### 🔴 Priority 1: Core Platform Features
 
@@ -1796,6 +1871,7 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.20 | 2026-02-11 | Add RFC-004 v2 gaps section (resolve_context, RuntimeContext, schema bundling build process, resource profile application). Update RFC-004 completion to 75%. Remove /plan/refactor-rfc004-alignment.md (consolidated into implementation plan). |
 | 1.19 | 2026-02-09 | Add Session 14 (Deployment & Operations) and Session 15 (Documentation), defer Session 13 (Fossilization), compact completed sessions (1-12) to summary format |
 | 1.18 | 2026-02-09 | Mark Session 12 complete (Cross-Database Transactions with 13 new tests), update test count to 252, update RFC-008 completion to 95% |
 | 1.17 | 2026-02-09 | Remove Session 12 (REST API - Generic Entities) - REST API complete for Transaction/Recurrence CRUD, generic entity operations should use Semantic API. Renumber subsequent sessions. |
@@ -1825,9 +1901,10 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 - Completed sessions (1-12): Compact summary format (see module docstrings and git commit history for details)
 - Future sessions (14-15): Full detail for implementation planning
 - Session 13 (Fossilization): Deferred until time value of objects is understood
+- RFC-004 v2 Gaps: Detailed section above with remaining deployment work
 
 **RFC Alignment:**
-- RFC-004 v2: 90% complete (Session 11: Schema bundling and runtime access complete. Missing: full package distribution testing)
+- RFC-004 v2: 75% complete (Session 10-11: Path resolution, schema access complete. Remaining gaps listed below)
 - RFC-005 v7.1: 85% complete (Sessions 1-2, audit facts, structured error capture, Relations bundle, code review fixes, track verb, search verb complete)
 - RFC-002 v5: 65% complete (User relations, Relations bundle verbs complete. Missing: fossilization engine, authorization for unlink)
 - RFC-008 v1.2: 95% complete (Session 12: Cross-database transaction coordination complete. Missing: recovery tools, automated repair)
