@@ -104,7 +104,7 @@ This document consolidates all implementation planning for MemoGarden across mul
 
 ### RFC-004 v2 Deployment Alignment (75% Complete)
 
-**Completed (Sessions 10-11):**
+**Completed (Sessions 10-12 + prep for 14):**
 - ✅ Environment variable path resolution (MEMOGARDEN_SOIL_DB, MEMOGARDEN_CORE_DB, MEMOGARDEN_DATA_DIR)
 - ✅ Config-based path resolution with get_db_path()
 - ✅ Schema access utilities (get_sql_schema, get_type_schema, list_type_schemas)
@@ -115,6 +115,7 @@ This document consolidates all implementation planning for MemoGarden across mul
 - ✅ systemd service file generation
 - ✅ ResourceProfile class (embedded, standard profiles)
 - ✅ RPi cleanup completed (removed incorrect venv locations: `/opt/memogarden/.venv`, `/opt/memogarden/memogarden-api/.venv`)
+- ✅ .env.example template with RFC-004 Section 5.3 environment variables (Session 14 prep)
 
 **Remaining Gaps:**
 
@@ -146,6 +147,8 @@ This document consolidates all implementation planning for MemoGarden across mul
    - [ ] Add tests verifying profile affects runtime behavior
 
 5. **Environment Variable Configuration** (RFC 004 Section 5.3)
+   - [x] Add .env.example template with all RFC-004 env vars (Session 14 prep)
+   - [ ] Implement env var precedence logic in Settings class (env var > TOML > default)
    - [ ] Add support for MEMOGARDEN_RESOURCE_PROFILE (deploy mode)
    - [ ] Add support for MEMOGARDEN_BIND_ADDRESS
    - [ ] Add support for MEMOGARDEN_BIND_PORT
@@ -1871,6 +1874,7 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.21 | 2026-02-11 | Prepare for Session 14: Add .env.example with RFC-004 Section 5.3 environment variables. Cleanup poetry.lock (remove unused dependencies). Update RFC-004 gaps to reflect env var template completion. |
 | 1.20 | 2026-02-11 | Add RFC-004 v2 gaps section (resolve_context, RuntimeContext, schema bundling build process, resource profile application). Update RFC-004 completion to 75%. Remove /plan/refactor-rfc004-alignment.md (consolidated into implementation plan). |
 | 1.19 | 2026-02-09 | Add Session 14 (Deployment & Operations) and Session 15 (Documentation), defer Session 13 (Fossilization), compact completed sessions (1-12) to summary format |
 | 1.18 | 2026-02-09 | Mark Session 12 complete (Cross-Database Transactions with 13 new tests), update test count to 252, update RFC-008 completion to 95% |
@@ -1895,7 +1899,11 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 
 ---
 
-**Status:** Active Development - Session 12 Complete, 252 tests passing
+**Status:** Active Development - Session 12 Complete, preparing for Session 14
+
+**Recent Commit (2026-02-11):**
+- Added .env.example with RFC-004 Section 5.3 environment variables
+- Cleaned up poetry.lock (removed unused pydantic-settings and python-dotenv)
 
 **Document Structure:**
 - Completed sessions (1-12): Compact summary format (see module docstrings and git commit history for details)
@@ -1904,7 +1912,7 @@ This section consolidates all invariants from RFCs that must be enforced via imp
 - RFC-004 v2 Gaps: Detailed section above with remaining deployment work
 
 **RFC Alignment:**
-- RFC-004 v2: 75% complete (Session 10-11: Path resolution, schema access complete. Remaining gaps listed below)
+- RFC-004 v2: 80% complete (.env.example template added, precedence logic pending. Remaining gaps listed below)
 - RFC-005 v7.1: 85% complete (Sessions 1-2, audit facts, structured error capture, Relations bundle, code review fixes, track verb, search verb complete)
 - RFC-002 v5: 65% complete (User relations, Relations bundle verbs complete. Missing: fossilization engine, authorization for unlink)
 - RFC-008 v1.2: 95% complete (Session 12: Cross-database transaction coordination complete. Missing: recovery tools, automated repair)
