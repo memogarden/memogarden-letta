@@ -292,29 +292,24 @@ step_install_python_dependencies() {
     # Install dependencies using Poetry
     sudo -u "$MEMOGARDEN_USER" "$poetry_exec" install
 
-    # Verify .venv was created in the correct location
-    local venv_path="$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv"
-    if [ ! -d "$venv_path" ]; then
-        log_error "Virtual environment not found at $venv_path"
-        log_error "Poetry may have created it elsewhere. Checking..."
-
-        # Show where Poetry actually created the venv
-        sudo -u "$MEMOGARDEN_USER" "$poetry_exec" env info
-
-        log_error "Please check Poetry configuration and try again"
-        exit 1
-    fi
-
-    # Verify gunicorn is accessible
-    if [ ! -f "$venv_path/bin/gunicorn" ]; then
-        log_error "gunicorn not found in $venv_path/bin/"
-        log_error "Dependencies may not have installed correctly"
-        exit 1
+    # Find where gunicorn actually is
+    local gunicorn_path=""
+    if [ -f "$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin/gunicorn" ]; then
+        gunicorn_path="$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin/gunicorn"
+    else
+        # Search in Poetry cache
+        gunicorn_path=$(find "$MEMOGARDEN_INSTALL_DIR/.cache/pypoetry/virtualenvs" -name "gunicorn" -type f 2>/dev/null | head -1)
+        if [ -z "$gunicorn_path" ]; then
+            log_error "Cannot find gunicorn after installation"
+            sudo -u "$MEMOGARDEN_USER" "$poetry_exec" env info
+            exit 1
+        fi
+        log_warn "Note: Poetry created venv in cache location (not in-project)"
+        log_warn "This is okay - systemd service will be configured accordingly"
     fi
 
     log_info "Python dependencies installed successfully"
-    log_info "Virtual environment: $venv_path"
-    log_info "Gunicorn: $(sudo -u "$MEMOGARDEN_USER" "$venv_path/bin/gunicorn" --version)"
+    log_info "Gunicorn: $(sudo -u "$MEMOGARDEN_USER" "$gunicorn_path" --version)"
 }
 
 step_configure_environment() {
@@ -356,6 +351,20 @@ step_install_systemd_service() {
 
     local service_file="/etc/systemd/system/memogarden.service"
 
+    # Determine virtualenv path (prefer in-project, fall back to cache)
+    local venv_bin_path=""
+    if [ -f "$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin/gunicorn" ]; then
+        venv_bin_path="$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin"
+    else
+        # Find Poetry cache venv
+        venv_bin_path=$(find "$MEMOGARDEN_INSTALL_DIR/.cache/pypoetry/virtualenvs" -name "memogarden-api-*-py3.13" -type d 2>/dev/null | head -1)/bin
+        if [ ! -f "$venv_bin_path/gunicorn" ]; then
+            log_error "Cannot find gunicorn in any known location"
+            exit 1
+        fi
+        log_warn "Using Poetry cache venv: $venv_bin_path"
+    fi
+
     # Create systemd service file
     sudo tee "$service_file" > /dev/null <<EOF
 [Unit]
@@ -367,9 +376,9 @@ Type=notify
 User=$MEMOGARDEN_USER
 Group=$MEMOGARDEN_GROUP
 WorkingDirectory=$MEMOGARDEN_INSTALL_DIR/memogarden-api
-Environment="PATH=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PATH=$venv_bin_path:/usr/local/bin:/usr/bin:/bin"
 EnvironmentFile=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.env
-ExecStart=$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin/gunicorn --config gunicorn.conf.py --log-file /var/log/memogarden/gunicorn.log --log-level info api.main:app
+ExecStart=$venv_bin_path/gunicorn --config gunicorn.conf.py --log-file /var/log/memogarden/gunicorn.log --log-level info api.main:app
 ExecReload=/bin/kill -s HUP \$MAINPID
 Restart=on-failure
 RestartSec=10
@@ -406,13 +415,16 @@ EOF
 step_verify_installation() {
     log_step "Verifying installation..."
 
-    local venv_path="$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv"
+    # Find gunicorn
+    local gunicorn_path=""
+    if [ -f "$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin/gunicorn" ]; then
+        gunicorn_path="$MEMOGARDEN_INSTALL_DIR/memogarden-api/.venv/bin/gunicorn"
+    else
+        gunicorn_path=$(find "$MEMOGARDEN_INSTALL_DIR/.cache/pypoetry/virtualenvs" -name "gunicorn" -type f 2>/dev/null | head -1)
+    fi
 
-    # Check critical paths and executables
-    log_info "Checking critical files..."
-
-    if [ ! -f "$venv_path/bin/gunicorn" ]; then
-        log_error "CRITICAL: gunicorn not found at $venv_path/bin/gunicorn"
+    if [ ! -f "$gunicorn_path" ]; then
+        log_error "CRITICAL: gunicorn not found"
         log_error "Installation verification failed"
         exit 1
     fi
@@ -430,7 +442,8 @@ step_verify_installation() {
     # Try to validate gunicorn can load the app
     log_info "Testing gunicorn configuration..."
     cd "$MEMOGARDEN_INSTALL_DIR/memogarden-api"
-    if sudo -u "$MEMOGARDEN_USER" "$venv_path/bin/gunicorn" --check-config --config gunicorn.conf.py api.main:app 2>&1 | grep -q "Error"; then
+    local venv_bin=$(dirname "$gunicorn_path")
+    if "$venv_bin/gunicorn" --check-config --config gunicorn.conf.py api.main:app 2>&1 | grep -q "Error"; then
         log_warn "gunicorn configuration check found issues (may be okay if using env vars)"
     else
         log_info "gunicorn configuration looks good"
@@ -440,8 +453,7 @@ step_verify_installation() {
     log_info ""
     log_info "Installation summary:"
     log_info "  - Poetry: $MEMOGARDEN_POETRY_DIR/bin/poetry"
-    log_info "  - Virtual environment: $venv_path"
-    log_info "  - Gunicorn: $venv_path/bin/gunicorn"
+    log_info "  - Gunicorn: $gunicorn_path"
     log_info "  - Data directory: $MEMOGARDEN_DATA_DIR"
 }
 
