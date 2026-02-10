@@ -151,6 +151,7 @@ The `.claude/skills/` directory contains task-specific skills that provide detai
 and guidance. Claude loads these skills automatically when relevant to your task.
 
 **Available Skills:**
+- **continue-implementation** - Implementation plan execution workflow: unpack session, execute, test, review, commit, improve
 - **memogarden-development** - Development environment setup, architectural constraints, anti-patterns, shell command best practices, working with the implementation plan
 - **memogarden-testing** - Testing philosophy, running tests, writing tests, debugging test failures
 - **memogarden-api-endpoint** - Workflow for creating new API endpoints
