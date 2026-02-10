@@ -66,6 +66,17 @@ echo "=== 4. systemd Service Configuration ==="
 echo "ExecStart:"
 grep "ExecStart=" /etc/systemd/system/memogarden.service || echo "  ✗ Service file not found"
 echo ""
+echo "Detected gunicorn for systemd:"
+if [ -f "$INSTALL_DIR/memogarden-api/.venv/bin/gunicorn" ]; then
+    echo "  → Will use: $INSTALL_DIR/memogarden-api/.venv/bin/gunicorn (in-project)"
+elif [ -d "$INSTALL_DIR/.cache/pypoetry/virtualenvs" ]; then
+    local cache_venv=$(find "$INSTALL_DIR/.cache/pypoetry/virtualenvs" -name "gunicorn" -type f 2>/dev/null | head -1)
+    if [ -n "$cache_venv" ]; then
+        echo "  → Will use: $cache_venv (Poetry cache)"
+        echo "  → Bin dir: $(dirname "$cache_venv")"
+    fi
+fi
+echo ""
 
 echo "=== 5. Service Status ==="
 systemctl status memogarden --no-pager -l || echo "  ✗ Service not found"
