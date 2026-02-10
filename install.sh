@@ -33,9 +33,24 @@ MEMOGARDEN_DATA_DIR="${MEMOGARDEN_DATA_DIR:-/var/lib/memogarden}"
 MEMOGARDEN_INSTALL_DIR="${MEMOGARDEN_INSTALL_DIR:-/opt/memogarden}"
 MEMOGARDEN_VENV_DIR="${MEMOGARDEN_INSTALL_DIR}/venv"
 
-# Git repositories (RFC 004: multi-repo structure)
-MEMOGARDEN_SYSTEM_REPO="${MEMOGARDEN_SYSTEM_REPO:-https://github.com/memogarden/memogarden-system.git}"
-MEMOGARDEN_API_REPO="${MEMOGARDEN_API_REPO:-https://github.com/memogarden/memogarden-api.git}"
+#=============================================================================
+# Local Development Detection
+#=============================================================================
+
+# Auto-detect local package directories for development
+# If local directories exist relative to install script, use them instead of git URLs
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check if we're in a development environment (local directories exist)
+if [ -d "$SCRIPT_DIR/memogarden-system" ] && [ -d "$SCRIPT_DIR/memogarden-api" ]; then
+    # Development mode: use local directories
+    MEMOGARDEN_SYSTEM_REPO="$SCRIPT_DIR/memogarden-system"
+    MEMOGARDEN_API_REPO="$SCRIPT_DIR/memogarden-api"
+else
+    # Production mode: use git repositories (or env overrides)
+    MEMOGARDEN_SYSTEM_REPO="${MEMOGARDEN_SYSTEM_REPO:-https://github.com/memogarden/memogarden-system.git}"
+    MEMOGARDEN_API_REPO="${MEMOGARDEN_API_REPO:-https://github.com/memogarden/memogarden-api.git}"
+fi
 
 # Optional: Specify git branches or tags
 # MEMOGARDEN_SYSTEM_VERSION="${MEMOGARDEN_SYSTEM_VERSION:-main}"
@@ -305,17 +320,29 @@ step_create_shared_venv() {
 }
 
 step_install_python_packages() {
-    log_step "Installing Python packages from git repositories..."
+    log_step "Installing Python packages..."
 
     local pip_exec="$MEMOGARDEN_VENV_DIR/bin/pip"
 
-    # Install memogarden-system (RFC 004: separate git repo)
+    # Install memogarden-system (RFC 004: separate git repo or local directory)
     log_info "Installing memogarden-system from $MEMOGARDEN_SYSTEM_REPO..."
-    sudo -u "$MEMOGARDEN_USER" "$pip_exec" install "$MEMOGARDEN_SYSTEM_REPO"
+    if [ -d "$MEMOGARDEN_SYSTEM_REPO" ]; then
+        # Local directory: install as root (dev directories may be owned by other user)
+        bash -c "cd '$MEMOGARDEN_SYSTEM_REPO' && '$pip_exec' install ."
+    else
+        # Git URL: install as memogarden user
+        sudo -u "$MEMOGARDEN_USER" "$pip_exec" install "$MEMOGARDEN_SYSTEM_REPO"
+    fi
 
-    # Install memogarden-api (RFC 004: separate git repo)
+    # Install memogarden-api (RFC 004: separate git repo or local directory)
     log_info "Installing memogarden-api from $MEMOGARDEN_API_REPO..."
-    sudo -u "$MEMOGARDEN_USER" "$pip_exec" install "$MEMOGARDEN_API_REPO"
+    if [ -d "$MEMOGARDEN_API_REPO" ]; then
+        # Local directory: install as root (dev directories may be owned by other user)
+        bash -c "cd '$MEMOGARDEN_API_REPO' && '$pip_exec' install ."
+    else
+        # Git URL: install as memogarden user
+        sudo -u "$MEMOGARDEN_USER" "$pip_exec" install "$MEMOGARDEN_API_REPO"
+    fi
 
     # Verify gunicorn is installed
     local gunicorn_path="$MEMOGARDEN_VENV_DIR/bin/gunicorn"
@@ -488,6 +515,8 @@ WorkingDirectory=$MEMOGARDEN_DATA_DIR
 # Environment
 Environment="PATH=$MEMOGARDEN_VENV_DIR/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="MEMOGARDEN_VERB=serve"
+Environment="MEMOGARDEN_DATA_DIR=$MEMOGARDEN_DATA_DIR"
+Environment="MEMOGARDEN_CONFIG=/etc/memogarden/config.toml"
 
 # Restart policy
 Restart=on-failure
