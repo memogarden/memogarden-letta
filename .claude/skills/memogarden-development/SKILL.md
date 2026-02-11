@@ -11,15 +11,14 @@ When beginning work on any MemoGarden task:
 
 1. **Read the context**
    ```bash
-   cd /home/kureshii/memogarden
-   cat plan/memogarden_prd_v4.md      # Understand platform architecture
-   cat plan/budget_prd.md             # Understand budget app (when needed)
-   cat plan/implementation.md         # Check current step
+   cat plan/memogarden_prd_v0_11_0.md  # Understand platform architecture
+   cat plan/budget_prd.md                # Understand budget app (when needed)
+   cat plan/memogarden-implementation-plan.md  # Check current step
    ```
 
 2. **Navigate to working directory**
    ```bash
-   cd memogarden-core                 # or memogarden-budget
+   cd memogarden-system          # or memogarden-api
    ```
 
 3. **Check current state**
@@ -45,7 +44,7 @@ poetry self add poetry-plugin-shell
 ### Navigate to project and install dependencies
 
 ```bash
-cd /home/kureshii/memogarden/memogarden-core
+cd memogarden-system      # or memogarden-api
 poetry install
 ```
 
@@ -78,7 +77,7 @@ poetry run python -m module.name
 poetry run pytest
 
 # Run the Flask server
-poetry run flask --app memogarden_core.main run --debug
+poetry run flask --app api.main run --debug
 ```
 
 ### Adding New Dependencies
@@ -100,7 +99,7 @@ While migrating to the new package structure (Phases 1-4 of restructure plan), s
 
 ```bash
 # Add memogarden-system to Python path for testing
-PYTHONPATH=/home/kureshii/memogarden/memogarden-system:$PYTHONPATH poetry run pytest
+PYTHONPATH=$PWD/memogarden-system:$PYTHONPATH poetry run pytest
 ```
 
 **This is temporary** - after Phase 6 (Provider Refactoring), all packages will be properly installed via Poetry.
@@ -135,12 +134,13 @@ poetry show --outdated
 ### Working Directory Reminder
 
 **Always verify your current directory before running commands:**
-- **memogarden-core work**: `/home/kureshii/memogarden/memogarden-core` (for `poetry run pytest`, etc.)
-- **Convenience scripts**: `/home/kureshii/memogarden/` (for `./scripts/run.sh`, `./scripts/test.sh`)
+- **memogarden-system work**: `memogarden-system/` (for `poetry run pytest`, etc.)
+- **memogarden-api work**: `memogarden-api/` (for `poetry run pytest`, etc.)
+- **Convenience scripts**: `/` (for `./scripts/run.sh`, `./scripts/test.sh`)
 
-Most Poetry commands should be run from `memogarden-core/`. Scripts are in the parent directory.
+Most Poetry commands should be run from the relevant package directory. Scripts are in the root directory.
 
-## Running the Core API Locally
+## Running the API Server Locally
 
 ### Using the convenience script (recommended)
 
@@ -151,8 +151,8 @@ Most Poetry commands should be run from `memogarden-core/`. Scripts are in the p
 ### Manual startup
 
 ```bash
-cd /home/kureshii/memogarden/memogarden-core
-poetry run flask --app memogarden_core.main run --debug
+cd memogarden-api
+poetry run flask --app api.main run --debug
 ```
 
 The server runs at http://localhost:5000
@@ -243,7 +243,7 @@ For detailed testing philosophy and patterns, use the **memogarden-testing** ski
 
 ### Understanding Progress
 
-The implementation plan (`plan/implementation.md`) has this structure:
+The implementation plan (`plan/memogarden-implementation-plan.md`) has this structure:
 
 ```
 Step 1: Core Backend Foundation ⚡ CURRENT STEP
@@ -291,24 +291,31 @@ Always update:
 ## Project Structure Quick Reference
 
 ```
-/home/kureshii/memogarden/
+/                              # Project root
 ├── plan/
 │   ├── budget_prd.md                   # Budget App Requirements (financial focus)
-│   ├── memogarden_prd_v4.md            # Complete Platform PRD (Soil + Core + apps)
-│   └── implementation.md               # Current step and progress
-├── memogarden-core/                    # Flask backend
-│   ├── memogarden_core/
-│   │   ├── api/                        # API endpoints
-│   │   ├── db/                         # Core API and database layer
-│   │   ├── schema/                     # Database schema and migrations
-│   │   └── utils/                      # Utility functions
-│   ├── tests/                          # Test suite
-│   └── docs/
-│       └── architecture.md             # Technical architecture
+│   ├── memogarden_prd_v0_11_0.md       # Complete Platform PRD (Soil + Core + apps)
+│   └── memogarden-implementation-plan.md # Current step and progress
+├── memogarden-system/                 # System package
+│   ├── system/                        # Core library
+│   │   ├── core/                     # Core database operations
+│   │   ├── soil/                     # Soil database operations
+│   │   └── utils/                    # Utility functions
+│   └── tests/                         # Test suite
+├── memogarden-api/                    # API package
+│   ├── api/                           # Flask application
+│   │   ├── v1/                       # REST API endpoints
+│   │   └── semantic.py               # Semantic API
+│   └── tests/                         # Test suite
 ├── scripts/
 │   ├── run.sh                          # Start development server
 │   ├── test.sh                         # Run tests
 │   └── test-coverage.sh                # Run tests with coverage
+├── docs/                            # User and developer documentation
+│   ├── repositories.md                 # Repository structure
+│   ├── quickstart.md                   # Getting started
+│   ├── deployment.md                   # Deployment guide
+│   └── configuration.md               # Configuration reference
 ├── .claude/
 │   └── skills/                         # Agent Skills
 └── AGENTS.md                           # This guide
@@ -348,11 +355,13 @@ If stuck:
 
 ### Key References
 
-- **[dev-guide.md](memogarden-core/docs/dev-guide.md)** - Code patterns, utilities, conventions (READ THIS)
-- **[architecture.md](memogarden-core/docs/architecture.md)** - Technical architecture and design
-- **[memogarden_prd_v4.md](plan/memogarden_prd_v4.md)** - Complete platform architecture
-- **[budget_prd.md](plan/budget_prd.md)** - Budget app requirements (when needed)
-- **[implementation.md](plan/implementation.md)** - Current step and progress
+- **[docs/repositories.md](../../../docs/repositories.md)** - Repository structure and module breakdowns
+- **[docs/quickstart.md](../../../docs/quickstart.md)** - Getting started guide
+- **[docs/deployment.md](../../../docs/deployment.md)** - Deployment guide
+- **[docs/configuration.md](../../../docs/configuration.md)** - Configuration reference
+- **[memogarden_prd_v0_11_0.md](../../../plan/memogarden_prd_v0_11_0.md)** - Complete platform architecture
+- **[budget_prd.md](../../../plan/budget_prd.md)** - Budget app requirements (when needed)
+- **[memogarden-implementation-plan.md](../../../plan/memogarden-implementation-plan.md)** - Current step and progress
 
 ## Future Design Reference
 
@@ -461,11 +470,11 @@ When implementing related features or making architectural decisions, consult th
 
 ```python
 # ❌ AVOID - Triggers approval due to 2>&1 and &
-Bash(command="poetry run flask --app memogarden_core.main run --debug 2>&1 &")
+Bash(command="poetry run flask --app api.main run --debug 2>&1 &")
 
 # ✅ PREFERRED - Use run_in_background parameter
 Bash(
-    command="poetry run flask --app memogarden_core.main run --debug",
+    command="poetry run flask --app api.main run --debug",
     run_in_background=True
 )
 ```

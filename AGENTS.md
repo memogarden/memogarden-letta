@@ -16,82 +16,39 @@ This document provides context and guidelines for AI assistants (Claude, GPT, et
 
 ## Repository Structure
 
-⚠️ **CRITICAL:** MemoGarden has **THREE separate git repositories**. Always check which repository you're working in before committing changes.
+⚠️ **CRITICAL:** MemoGarden has **three separate git repositories**. Always check which repository you're working in before committing changes.
 
-```
-/home/kureshii/memogarden/                    # Root repository (git #1)
-├── .git/                                      # Root git repository
-├── plan/                                      # Planning documents
-│   ├── budget_prd.md                          # Budget App Requirements
-│   ├── memogarden_prd_v4.md                   # Complete Platform PRD
-│   ├── memogarden-implementation-plan.md      # Implementation plan
-│   └── *.md                                   # RFC documents
-├── scripts/                                   # Development scripts
-│   ├── run.sh                                # Start server (from memogarden-api)
-│   ├── test.sh                               # Run tests (from memogarden-api)
-│   ├── lint.sh                               # Run ruff linter
-│   └── pre-commit                            # Pre-commit hook
-├── AGENTS.md                                  # This file
-├── CLAUDE.md -> AGENTS.md                     # Symlink
-│
-├── memogarden-api/                            # Flask API package (git #2 - SEPARATE)
-│   ├── .git/                                  # Separate git repository!
-│   ├── api/                                   # Flask application
-│   │   ├── v1/                                # REST API endpoints
-│   │   │   ├── core/
-│   │   │   │   ├── transactions.py           # Transaction CRUD
-│   │   │   │   └── recurrences.py             # Recurrence CRUD
-│   │   ├── semantic.py                        # Semantic API (/mg endpoint)
-│   │   ├── handlers/                          # Semantic API handlers
-│   │   ├── middleware/                        # Auth, decorators
-│   │   └── main.py                            # Flask app
-│   ├── tests/                                 # Integration tests
-│   │   ├── test_transactions.py
-│   │   ├── test_recurrences.py
-│   │   ├── test_auth.py
-│   │   ├── test_semantic_api.py
-│   │   └── conftest.py                        # Test fixtures
-│   └── pyproject.toml                         # Poetry dependencies
-│
-├── memogarden-system/                         # System package (git #3 - SEPARATE)
-│   ├── .git/                                  # Separate git repository!
-│   ├── system/                                # Core library
-│   │   ├── core/                              # Database operations
-│   │   │   ├── __init__.py                     # Core.get_core()
-│   │   │   ├── entity.py                       # Entity operations
-│   │   │   ├── transaction.py                  # Transaction operations
-│   │   │   └── recurrence.py                   # Recurrence operations
-│   │   ├── utils/                             # Shared utilities
-│   │   │   ├── uid.py                          # UUID utilities
-│   │   │   ├── isodatetime.py                  # Timestamp utilities
-│   │   │   ├── hash_chain.py                   # Hash computation
-│   │   │   └── secret.py                       # Secret generation
-│   │   ├── exceptions.py                      # MemoGarden exceptions
-│   │   ├── config.py                          # Configuration
-│   │   └── schemas/sql/                       # Database schema
-│   │       ├── core.sql                       # Core schema
-│   │       └── migrations/                    # Schema migrations
-│   └── pyproject.toml                         # Poetry dependencies
-│
-└── memogarden-budget/                         # Flutter app (FUTURE - to be created)
-```
+### Core Repositories
+
+1. **Root** (`/`) - Planning, scripts, agent configuration
+2. **System** (`memogarden-system/`) - Core library (Soil + Core layers)
+3. **API** (`memogarden-api/`) - Flask REST + Semantic API
+
+### Related Repositories
+
+- `app-budget/` - Budget app (Flutter) - Future development
+- `memogarden-devcd/` - CD/automation for deployment
+- `memogarden.github.io/` - Documentation site
+- `hacm/` - Headless Agent Credential Manager
+
+**For detailed repository structure, file listings, and module breakdowns, see [docs/repositories.md](docs/repositories.md).**
 
 ### ⚠️ Git Repository Boundaries
 
 **Each repository has its own git history:**
 
-1. **Root Repository** (`/home/kureshii/memogarden`)
+1. **Root Repository** (`/`)
    - Contains: Planning documents, automation scripts, agent skills
    - Git command: `git status` (from root directory)
    - Commits here affect: docs, plans, scripts, .claude/
 
-2. **API Repository** (`/home/kureshii/memogarden/memogarden-api`)
+2. **API Repository** (`memogarden-api/`)
    - Contains: Flask application, Semantic API, tests
    - Git command: `git status` (from memogarden-api directory)
    - Commits here affect: api/, tests/
    - **Separate from root repository!**
 
-3. **System Repository** (`/home/kureshii/memogarden/memogarden-system`)
+3. **System Repository** (`memogarden-system/`)
    - Contains: Database operations, utilities, exceptions
    - Git command: `git status` (from memogarden-system directory)
    - Commits here affect: system/
@@ -113,11 +70,11 @@ git commit -m "message"
 **Common Mistake:**
 ```bash
 # ❌ WRONG - Committing to root when changes are in sub-repo
-cd /home/kureshii/memogarden
+cd /
 git add api/semantic.py  # Error: api/ is not in this repo!
 
 # ✅ CORRECT - Go to the sub-repo first
-cd /home/kureshii/memogarden/memogarden-api
+cd memogarden-api
 git add api/semantic.py
 git commit -m "feat: add semantic API"
 ```
@@ -126,11 +83,13 @@ git commit -m "feat: add semantic API"
 
 The `/docs` folder contains detailed technical documentation:
 
-- **[memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)** - Core API design patterns,
-  database layer, testing philosophy, utilities, and conventions.
+- **[docs/repositories.md](docs/repositories.md)** - Complete repository structure, module breakdowns, and file listings
+- **[docs/quickstart.md](docs/quickstart.md)** - Getting started guide
+- **[docs/deployment.md](docs/deployment.md)** - Deployment guide (RPi, Docker, etc.)
+- **[docs/configuration.md](docs/configuration.md)** - Configuration reference (environment variables, TOML)
+- **[memogarden-api/tests/README.md](memogarden-api/tests/README.md)** - Testing philosophy and workflows
 
-When working on database operations, API endpoints, or utilities, consult `architecture.md` for
-detailed implementation patterns and code examples.
+When working on database operations, API endpoints, or utilities, use the relevant **skills** for implementation patterns and code examples.
 
 ## Agent Subagents
 
@@ -169,7 +128,7 @@ for how skills work.
 
 Before working on any task, read these documents in order:
 
-1. **[plan/memogarden_prd_v4.md](plan/memogarden_prd_v4.md)** - Platform Requirements Document
+1. **[plan/memogarden_prd_v0_11_0.md](plan/memogarden_prd_v0_11_0.md)** - Platform Requirements Document
    - Complete platform architecture (Soil + Core)
    - All applications (Budget app, Project system)
    - Data model and entity definitions
@@ -179,30 +138,24 @@ Before working on any task, read these documents in order:
    - Financial transaction model
    - Read only when working on Budget app features
 
-3. **[plan/implementation.md](plan/implementation.md)** - Implementation Plan
+3. **[plan/memogarden-implementation-plan.md](plan/memogarden-implementation-plan.md)** - Implementation Plan
    - Current step and progress
    - Detailed substeps for active work
    - Architecture decisions and rationale
 
-3. **[memogarden-core/docs/architecture.md](memogarden-core/docs/architecture.md)** - Technical Architecture
-   - Core API design (composition over inheritance, connection lifecycle)
-   - Database layer patterns (WAL mode, query builders)
-   - Testing philosophy (no mocks, behavior-focused)
-   - Utility conventions (isodatetime, uid, domain types)
-
 ## Technology Stack
 
-### Backend (memogarden-core)
+### Backend (memogarden-system + memogarden-api)
 - **Language**: Python 3.13
 - **Framework**: Flask (synchronous)
 - **Database**: SQLite (no ORM - raw SQL only)
-- **Data Access**: Core API (`db` module) with centralized entity operations
+- **Data Access**: Core API with centralized entity operations
 - **Validation**: Pydantic schemas + `@validate_request` decorator
 - **Testing**: pytest with pytest-flask
 - **Package Manager**: Poetry with poetry-plugin-shell
 - **Production Server**: gunicorn
 
-### Frontend (memogarden-budget)
+### Frontend (app-budget)
 - **Framework**: Flutter
 - **Platforms**: Web + Android
 - **State Management**: TBD (Riverpod or Provider)
@@ -212,6 +165,7 @@ Before working on any task, read these documents in order:
 - **Local**: Development and testing
 - **Production**: Raspberry Pi and/or Railway
 - **Containerization**: Docker (when needed)
+- **CD**: memogarden-devcd (webhook-based auto-deploy)
 
 ## Development Guidelines
 
@@ -316,18 +270,13 @@ When working with the user:
 If stuck or unsure:
 
 1. Re-read the PRD for context
-2. Check implementation.md for current scope
-3. Consult architecture.md for technical patterns
-4. Look at existing code patterns
-5. Ask the user with specific questions
-6. Propose options with trade-offs
-
-## Project Status
-
-For current project status and completed work, see [plan/status.md](plan/status.md).
+2. Check memogarden-implementation-plan.md for current scope
+3. Look at existing code patterns
+4. Ask the user with specific questions
+5. Propose options with trade-offs
 
 ---
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-02-11
 **For**: AI agents working on MemoGarden
 **Maintained by**: Project contributors
