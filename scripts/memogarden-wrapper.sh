@@ -78,7 +78,7 @@ export MEMOGARDEN_VERB="$VERB"
 # For run mode, use flask development server
 if [[ "$VERB" == "serve" ]]; then
     # Production: use gunicorn
-    exec gunicorn --config /etc/memogarden/gunicorn.conf.py api.main:app "$@"
+    exec gunicorn --config /etc/memogarden/gunicorn.conf.py api.main:create_app "$@"
 else
     # Development: use flask dev server
     exec python -m flask run --host=127.0.0.1 --port=5000 "$@"
