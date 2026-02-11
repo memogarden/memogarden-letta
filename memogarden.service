@@ -1,7 +1,7 @@
 [Unit]
-Description=MemoGarden API Server
-Documentation=https://github.com/memogarden/memogarden
-After=network.target
+Description=MemoGarden Personal Information System
+Documentation=https://docs.memogarden.org
+After=network-online.target
 Wants=network-online.target
 
 [Service]
@@ -9,38 +9,34 @@ Type=notify
 User=memogarden
 Group=memogarden
 
-# Working directory (relative to installation root)
-WorkingDirectory=/opt/memogarden/memogarden-api
+# Use CLI wrapper (RFC 004)
+ExecStart=/opt/memogarden/bin/memogarden serve
+
+# Working directory
+WorkingDirectory=/var/lib/memogarden
 
 # Environment
-Environment="PATH=/opt/memogarden/.venv/bin:/usr/local/bin:/usr/bin:/bin"
-EnvironmentFile=/opt/memogarden/memogarden-api/.env
-
-# Main service command
-ExecStart=/opt/memogarden/.venv/bin/gunicorn --config gunicorn.conf.py api.main:app
-
-# Reload command (graceful restart)
-ExecReload=/bin/kill -s HUP $MAINPID
+Environment="PATH=/opt/memogarden/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="MEMOGARDEN_VERB=serve"
+Environment="MEMOGARDEN_DATA_DIR=/var/lib/memogarden"
+Environment="MEMOGARDEN_CONFIG=/etc/memogarden/config.toml"
 
 # Restart policy
 Restart=on-failure
-RestartSec=10
+RestartSec=5s
 TimeoutSec=30
 
 # Logging
-StandardOutput=append:/var/log/memogarden/memogarden.log
-StandardError=append:/var/log/memogarden/memogarden.error
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=memogarden
 
-# Security hardening
+# Security (RFC 004)
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/memogarden /var/log/memogarden /var/run/memogarden
-
-# Resource limits (adjust for Raspberry Pi)
-LimitNOFILE=65536
-MemoryMax=512M
+ReadWritePaths=/var/lib/memogarden /var/log/memogarden /run/memogarden
 
 [Install]
 WantedBy=multi-user.target
