@@ -37,6 +37,12 @@ else
     echo -e "${GREEN}✓ Poetry already installed${NC}"
 fi
 
+# Configure Poetry to use in-project virtualenvs
+echo ""
+echo "⚙️  Configuring Poetry..."
+poetry config virtualenvs.in-project true
+echo -e "${GREEN}✓ Poetry configured to use in-project .venv${NC}"
+
 # Function to install Poetry dependencies
 install_poetry_deps() {
     local project_path=$1
@@ -57,6 +63,7 @@ echo ""
 echo "📦 Installing project dependencies..."
 install_poetry_deps "/workspaces/memogarden/memogarden-system" "memogarden-system"
 install_poetry_deps "/workspaces/memogarden/memogarden-api" "memogarden-api"
+install_poetry_deps "/workspaces/memogarden/memogarden-client" "memogarden-client"
 
 # Setup pre-commit hooks
 echo ""
@@ -90,11 +97,12 @@ cat >> /home/vscode/.bashrc << 'EOF'
 alias mg-api='cd /workspaces/memogarden/memogarden-api && poetry run flask --app api/main run --debug'
 alias mg-test='cd /workspaces/memogarden/memogarden-api && poetry run pytest'
 alias mg-test-system='cd /workspaces/memogarden/memogarden-system && poetry run pytest'
+alias mg-test-client='cd /workspaces/memogarden/memogarden-client && poetry run pytest'
 alias mg-lint='/workspaces/memogarden/scripts/lint.sh'
 alias mg-root='cd /workspaces/memogarden'
 
 # Quick git status for all repos
-alias mg-status='echo "=== Root ===" && git status && echo -e "\n=== System ===" && cd /workspaces/memogarden/memogarden-system && git status && echo -e "\n=== API ===" && cd /workspaces/memogarden/memogarden-api && git status && cd /workspaces/memogarden'
+alias mg-status='echo "=== Root ===" && git status && echo -e "\n=== System ===" && cd /workspaces/memogarden/memogarden-system && git status && echo -e "\n=== API ===" && cd /workspaces/memogarden/memogarden-api && git status && echo -e "\n=== Client ===" && cd /workspaces/memogarden/memogarden-client && git status && cd /workspaces/memogarden'
 EOF
 
 echo -e "${GREEN}✓ Aliases added to ~/.bashrc${NC}"
@@ -109,14 +117,16 @@ echo "📂 Workspace structure:"
 echo "  /workspaces/memogarden                    → Root repository (docs, plans, scripts)"
 echo "  /workspaces/memogarden/memogarden-system  → System package (db operations, utils)"
 echo "  /workspaces/memogarden/memogarden-api     → Flask API (endpoints, tests)"
+echo "  /workspaces/memogarden/memogarden-client  → Python SDK for MemoGarden API"
 echo ""
 echo "🚀 Quick commands:"
-echo "  mg-api        → Start Flask API server"
-echo "  mg-test       → Run API tests"
-echo "  mg-test-system→ Run system tests"
-echo "  mg-lint       → Run ruff linter"
-echo "  mg-status     → Show git status for all repos"
-echo "  mg-root       → Go to workspace root"
+echo "  mg-api         → Start Flask API server"
+echo "  mg-test        → Run API tests"
+echo "  mg-test-system → Run system tests"
+echo "  mg-test-client → Run client tests"
+echo "  mg-lint        → Run ruff linter"
+echo "  mg-status      → Show git status for all repos"
+echo "  mg-root        → Go to workspace root"
 echo ""
 echo "📖 Remember: Each subdirectory has its own git repository!"
 echo "   Use 'git status' in the specific directory you're working on."
