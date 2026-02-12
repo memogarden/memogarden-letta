@@ -33,6 +33,21 @@
           "items": {
             "type": "string"
           }
+        },
+        "deltas": {
+          "type": "array",
+          "description": "List of ArtifactDelta Item UUIDs (from Soil) tracking changes to this artifact",
+          "items": {
+            "type": "string"
+          }
+        },
+        "snapshots": {
+          "type": ["null", "object"],
+          "description": "Snapshot references (deferred for MVP, always null for now)",
+          "default": null,
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "required": ["label", "content", "content_type"]

@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.memogarden.net/facts/artifactdelta.schema.json",
+  "title": "ArtifactDelta",
+  "description": "Delta operation applied to an Artifact. Created as a Soil Item to track all changes to Artifacts with full audit trail via triggers relation from source Message.",
+  "allOf": [
+    {"$ref": "note.schema.json"},
+    {
+      "type": "object",
+      "properties": {
+        "_type": {
+          "const": "ArtifactDelta"
+        },
+        "artifact_uuid": {
+          "type": "string",
+          "description": "UUID of artifact this delta modifies",
+          "pattern": "^core_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "ops": {
+          "type": "string",
+          "description": "Delta operations string (multi-line, one op per line)",
+          "examples": [
+            "+15:^abc\\n-23",
+            "~18:^b2e→^c3d",
+            ">12@30"
+          ]
+        },
+        "based_on_hash": {
+          "type": "string",
+          "description": "Hash of artifact state before this delta (for optimistic locking)",
+          "minLength": 8,
+          "maxLength": 8
+        },
+        "result_hash": {
+          "type": "string",
+          "description": "Hash of artifact state after this delta was applied",
+          "minLength": 8,
+          "maxLength": 8
+        },
+        "applied_at": {
+          "type": "string",
+          "description": "Timestamp when delta was applied (ISO 8601)"
+        }
+      },
+      "required": ["artifact_uuid", "ops", "based_on_hash", "result_hash"]
+    }
+  ],
+  "required": ["artifact_uuid", "ops", "based_on_hash", "result_hash"]
+}

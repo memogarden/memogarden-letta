@@ -104,7 +104,7 @@ class Scope:
 
 ---
 
-**Current Session**: Session 16 (Active)
+**Current Session**: Session 18 (Active)
 
 ## Implementation Phases
 
@@ -253,18 +253,28 @@ def parse_references(content: str) -> list[Reference]:
 }
 ```
 
-#### Session 17: Artifact Delta Operations
+#### Session 17: Artifact Delta Operations ✅ COMPLETE (2026-02-12)
 
 **Deliverables**:
-1. Extend Artifact entity schema:
+1. ✅ Extend Artifact entity schema:
    - Add `snapshots: dict[str, str]` field (deferred for MVP, use null)
    - Add `deltas: list[str]` field (list of ArtifactDelta Item UUIDs)
-2. Implement artifact delta operations in `system/core/artifact.py` (new module):
+2. ✅ Implement artifact delta operations in `system/core/artifact.py` (new module):
    - `commit_delta(artifact_uuid, ops, references, based_on_commit) -> ArtifactDelta`
    - `get_at_commit(artifact_uuid, commit) -> str`
    - `diff_commits(artifact_uuid, commit_a, commit_b) -> Diff`
-3. Add Semantic API verbs for artifacts
-4. Cross-database transaction testing
+   - `list_deltas(artifact_uuid) -> list[dict]`
+3. ✅ Add Semantic API verbs for artifacts (`api/handlers/artifact.py`)
+4. ✅ Cross-database transaction testing (24/24 tests pass)
+
+**Implementation Notes**:
+- Delta operations syntax: `+15:^abc` (add), `-23` (remove), `~18:^abc→^def` (replace), `>12@30` (move)
+- Fragment ID format: Exactly 3 characters after caret (`^`), per spec
+- Optimistic locking via hash-based conflict detection (ConflictError)
+- ArtifactDelta Facts created in Soil with proper metadata
+- Delta list persistence fix: Ensure `deltas` list exists in data dict before appending
+- Historical reconstruction deferred for MVP (get_at_commit returns current state if hash matches)
+- Schema: `schemas/types/facts/artifactdelta.schema.json` created
 
 **Delta Operations Syntax** (from spec):
 ```
@@ -956,8 +966,8 @@ project-studio/
 
 ---
 
-**Status:** Planning Complete - Ready to begin Phase 0
-**Next Action:** Begin Session 15 (Scope Entity and Schema)
+**Status:** Phase 0 in Progress (3/4 sessions complete)
+**Next Action:** Begin Session 18 (Conversation Operations)
 
 ---
 
