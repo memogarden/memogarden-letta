@@ -224,7 +224,7 @@ class EmailImporter:
 
         # Create Email item
         email_item = create_email_item(**email)
-        uuid = self.soil.create_item(email_item)
+        uuid = self.soil.create_fact(email_item)
         self.stats["imported"] += 1
         self.email_index[message_id] = uuid
 

@@ -231,7 +231,7 @@ All Fact types are defined in `fact_schemas.json`. This section provides usage g
 
 ### Note
 
-General-purpose text item with optional title and summary. Used for capturing thoughts, observations, and unstructured information.
+General-purpose text fact with optional title and summary. Used for capturing thoughts, observations, and unstructured information.
 
 **Key fields:** `description`, `summary`, `title`
 
@@ -429,7 +429,7 @@ MemoGarden maintains mechanisms for tracking attention patterns to understand op
 ### SQL Schemas
 
 **Soil Database** (`soil-schema.sql`):
-- `item` table: All Fact types with polymorphic JSON data field
+- `fact` table: All Fact types with polymorphic JSON data field
 - `system_relation` table: Immutable structural connections
 - Indexes optimized for timeline queries
 
@@ -482,17 +482,17 @@ JSON schemas in `fact_schemas.json` and `entity_schemas.json` serve as authorita
 class Provider(Protocol):
     """External data source integration."""
     
-    def sync(self, since: datetime = None) -> Iterator[Item]:
+    def sync(self, since: datetime = None) -> Iterator[Fact]:
         """Fetch facts from source, yield MemoGarden Facts.
         
-        Provider translates source_schema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ standard_schema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Item.
+        Provider translates source_schema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ standard_schema ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Fact.
         MemoGarden validates and inserts.
         """
         
-    def create_relations(self, item: Item) -> list[SystemRelation]:
+    def create_relations(self, fact: Fact) -> list[SystemRelation]:
         """Optional: create system relations from provider metadata.
         
-        Example: Email provider reads in_reply_to from item.data,
+        Example: Email provider reads in_reply_to from fact.data,
         creates replies_to relations between emails.
         """
 ```
@@ -531,7 +531,7 @@ full ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã�
 
 ### Access patterns
 
-- **Fossilized item accessed**: Creates SystemEvent, may reverse compression
+- **Fossilized fact accessed**: Creates SystemEvent, may reverse compression
 - **Protected facts**: Operators can mark facts as permanent full fidelity
 
 ### Relation lifecycle
@@ -665,7 +665,7 @@ MemoGarden uses prefixed UUIDs to distinguish object types:
 **Format:** `{prefix}_{uuid4}`
 
 **Examples:**
-- `soil_a1b2c3d4-e5f6-7890-abcd-ef1234567890` (Item)
+- `soil_a1b2c3d4-e5f6-7890-abcd-ef1234567890` (Fact)
 - `core_f9e8d7c6-b5a4-3210-fedc-ba9876543210` (Entity)
 
 This prefix scheme enables:
