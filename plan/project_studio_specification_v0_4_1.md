@@ -1,8 +1,8 @@
 # Project Studio Specification
 
-**Version:** 0.4.0  
-**Status:** Draft  
-**Last Updated:** 2025-01-21  
+**Version:** 0.4.1
+**Status:** Draft
+**Last Updated:** 2026-02-12
 **Supersedes:** MemoGarden Project System PRD v0.3.0
 
 ---
@@ -11,7 +11,7 @@
 
 ### 1.1 Purpose
 
-This document specifies the **Project Studio**, a JCE studio for artifact-centric collaboration on structured work products. It enables dyads (typically operator + agent) to co-develop documents, code, designs, and other artifacts through conversation-driven iteration.
+This document specifies **Project Studio**, a JCE studio for artifact-centric collaboration on structured work products. It enables dyads (typically operator + agent) to co-develop documents, code, designs, and other artifacts through conversation-driven iteration.
 
 ### 1.2 Position in JCE Stack
 
@@ -41,7 +41,7 @@ Project Studio **composes** utilities; it does not redefine them. This specifica
 | PRD v0.6.0 | Substrate specification. All Items, Relations, Artifacts defined there. |
 | RFC-001 v4 | Security model. Tool execution, API keys, audit trails. |
 | RFC-002 v5 | Time horizon. Relation decay, fossilization. |
-| RFC-003 v2 | Context capture. View-stream, ContextFrame, delta.context. |
+| RFC-003 v4 | Context capture. View-stream, ContextFrame, delta.context. |
 
 ---
 
@@ -49,7 +49,7 @@ Project Studio **composes** utilities; it does not redefine them. This specifica
 
 1. **Artifact-First**: Artifacts are primary work products; conversations are context for artifact evolution
 2. **Git-Inspired Versioning**: Familiar commit semantics (delta, parent, commit hash)
-3. **Stack-Based Exploration**: Branch freely, collapse learnings back to main path
+3. **Stack-Based Exploration**: Branch freely, fold learnings back to main path
 4. **Fragment Granularity**: Messages decompose into semantic units for precise reference
 5. **Inline References**: Links parsed from natural language, rendered as interactive elements
 6. **Participant Symmetry**: Operator and agent use same tools, leave same traces
@@ -70,7 +70,7 @@ Project Studio combines these JCE utilities:
 
 ### 3.1 Artifact Editor (Primary Surface)
 
-Within Project Studio, the Artifact Editor provides:
+Within Project Studio, Artifact Editor provides:
 
 - Line-numbered content display
 - Delta-based versioning with commit hashes
@@ -87,14 +87,14 @@ Within Project Studio, the Artifact Editor provides:
 
 Within Project Studio, Conversation Groups provide:
 
-- ConversationLogs scoped to the project
+- ConversationLogs scoped to project
 - Messages containing Fragments (semantic units)
-- Branch/collapse/summarize lifecycle
+- Fold lifecycle (summarize branches)
 - System relations linking messages to artifacts they reference
 
 **Project Studio additions:**
 - Artifact-anchored threads (discussion about specific lines)
-- Decision capture (collapse summary records what was decided)
+- Decision capture (fold summary records what was decided)
 
 ### 3.3 Timeline Browser (History Navigation)
 
@@ -107,7 +107,7 @@ Within Project Studio, Timeline Browser provides:
 
 **Project Studio additions:**
 - Artifact-centric view (all deltas for one artifact)
-- Decision timeline (collapsed branches as milestones)
+- Decision timeline (folded branches as milestones)
 
 ---
 
@@ -139,7 +139,7 @@ class Project:
 
 ### 4.2 Stack
 
-**Purpose:** Ordered record of all conversation branches in the project
+**Purpose:** Ordered record of all conversation branches in project
 
 **Schema:**
 ```python
@@ -150,11 +150,11 @@ Stack = list[str]  # ConversationLog UUIDs in creation order
 - Insertion order preserved (first branch created is first in list)
 - No duplicates
 - Tree structure derived from `ConversationLog.parent_uuid`, not stack order
-- Includes both active and collapsed branches
+- Includes both active and folded branches
 
 ### 4.3 Frame
 
-**Purpose:** Tracks a participant's current working position in the branch tree
+**Purpose:** Tracks a participant's current working position in a branch tree
 
 **Schema:**
 ```python
@@ -241,12 +241,13 @@ class ConversationLog:
     uuid: str                           # core_ prefix
     parent_uuid: str | None             # Branch parent (null for root)
     items: list[str]                    # Item UUIDs in chronological order
-    summary: Summary | None             # Present if collapsed
+    summary: Summary | None             # Present if folded
+    collapsed: bool                      # True if branch has been folded
 
 @dataclass
 class Summary:
     timestamp: datetime
-    author: str                         # 'operator' | 'agent' | 'system'
+    author: Literal["operator", "agent", "system"]
     content: str
     fragment_ids: list[str]
 ```
@@ -296,16 +297,16 @@ Messages are decomposed into Fragments server-side (or by agent).
 
 ```python
 def generate_fragment_id(content: str) -> str:
-    """Generate 3-4 character base36 hash from content."""
-    hash_bytes = hashlib.sha256(content.encode()).digest()
-    hash_int = int.from_bytes(hash_bytes[:2], 'big')
-    
+    """Generate 3-character base36 hash from content."""
+    hash_bytes = hashlib.sha256(content.encode()).digest()[:2]
+    hash_int = int.from_bytes(hash_bytes, 'big')
+
     chars = "0123456789abcdefghijklmnopqrstuvwxyz"
     result = ""
     while hash_int > 0:
         result = chars[hash_int % 36] + result
         hash_int //= 36
-    
+
     return f"^{result.zfill(3)}"
 ```
 
@@ -314,17 +315,9 @@ def generate_fragment_id(content: str) -> str:
 ### 6.3 Reference Syntax
 
 **Internal representation:**
-```
-"Use PostgreSQL instead - ^k3m shows SQLite won't scale"
-"Update goals_doc:15 to reflect new storage decision"
-```
+Fragment IDs are exactly `^` followed by 3 lowercase alphanumeric characters.
 
 **Rendered display:**
-```
-"Use PostgreSQL instead - [scalability analysis] shows SQLite won't scale"
-"Update [goals_doc line 15] to reflect new storage decision"
-```
-
 References are opaque to users. The system parses, resolves, and renders them as interactive elements.
 
 ### 6.4 Reference Types
@@ -342,11 +335,11 @@ References are opaque to users. The system parses, resolves, and renders them as
 ```python
 def parse_references(content: str) -> list[dict]:
     refs = []
-    
+
     # Fragment refs: ^<hash> (exactly 3 chars after caret)
     for match in re.finditer(r'\^[a-z0-9]{3}', content):
         refs.append({'type': 'fragment', 'id': match.group(), 'span': match.span()})
-    
+
     # Artifact line refs: <label>:<line>[@<commit>]
     for match in re.finditer(r'([\w_]+):(\d+)(?:@([a-f0-9]+))?', content):
         refs.append({
@@ -356,15 +349,15 @@ def parse_references(content: str) -> list[dict]:
             'commit': match.group(3),
             'span': match.span()
         })
-    
+
     # Log refs: [text](uuid)
     for match in re.finditer(r'\[.*?\]\(((?:soil|core)_[\w-]+)\)', content):
         refs.append({'type': 'log', 'uuid': match.group(1), 'span': match.span()})
-    
+
     # Item refs: @<uuid>
     for match in re.finditer(r'@((?:soil|core)_[\w-]+)', content):
         refs.append({'type': 'item', 'uuid': match.group(1), 'span': match.span()})
-    
+
     return refs
 ```
 
@@ -445,35 +438,24 @@ Creates:
 - Appends to ConversationLog.items
 - System relations from any references in content
 
-**Branch:**
+**Fold:**
 ```python
-branch_conversation(
-    parent_uuid: str,
-    branch_point: str | None = None  # Item UUID; None = branch from latest
+fold(
+    log_uuid: str,
+    summary_content: str,
+    author: Literal["operator", "agent", "system"]
 ) -> ConversationLog
 ```
+Folds a conversation branch by adding a summary.
+
+Per RFC-005: `fold` is a single-word verb applicable to any entity/fact.
+
 Creates:
-- New ConversationLog in Core with `parent_uuid` set
-- Appends new UUID to Project.stack
-- Updates participant's Frame to new branch
+- Summary object attached to ConversationLog
+- Marks branch as folded (collapsed=true)
+- Branch remains visible and can continue (append messages after fold point)
 
-**Collapse:**
-```python
-collapse_conversation(
-    log_uuid: str,
-    summary: str,
-    author: str
-) -> Summary
-```
-Requires: No active child branches (all children must be collapsed first)
-
-Sets `ConversationLog.summary`, marking it as collapsed.
-
-**Reopen:**
-```python
-reopen_conversation(log_uuid: str) -> ConversationLog
-```
-Creates NEW ConversationLog that references the old one. Old log unchanged.
+**Note on Branching:** Branch creation happens implicitly via RFC-003 ContextFrame inheritance. When a subagent is created with its own ContextFrame that inherits from a parent, this implicitly creates a conversation branch. No explicit `branch` verb is needed.
 
 ---
 
@@ -510,14 +492,14 @@ Discussion: "Should we use REST or GraphQL?"
           Operator explores GraphQL in branch_graphql
   → Each participant's Frame points to their branch
   → Work proceeds independently
-  → Reconvene: Compare findings
+  → Reconcile: Compare findings
   → Collapse losing branch, merge winner, or keep both
 ```
 
 **Implementation:**
-- Two `branch_conversation()` calls from same parent
-- Frames diverge
-- Reconvene is manual (message in parent branch) or triggered
+- Two participants create branches via ContextFrame inheritance
+- Frames diverge (each has different branch_uuid)
+- Reconcile is manual (message in parent branch) or triggered
 
 ### 8.3 Observe (Follow Mode)
 
@@ -547,7 +529,7 @@ Pull partner's attention to current focus.
 ```
 Operator finds relevant passage in research_notes.md
   → Summon("this contradicts our assumption in goals_doc:15")
-  → Agent's ContextFrame updated with Operator's focus
+  → Agent's Frame updated with Operator's focus
   → Agent acknowledges and responds
 ```
 
@@ -585,9 +567,9 @@ Speculative work without polluting main line.
 
 ```
 1. Identify decision point
-2. Branch conversation (branch_conversation)
+2. Create branch (via ContextFrame inheritance)
 3. Explore in branch (may create/edit artifacts)
-4. Conclude: collapse with summary, or abandon
+4. Conclude: fold with summary, or abandon
 5. Summary captures learnings; main line continues
 ```
 
@@ -604,7 +586,7 @@ Message: "Switch from REST to GraphQL"
 All deltas share:
 - Same triggering message
 - Same context snapshot
-- References to the decision fragment
+- References to decision fragment
 ```
 
 ### 9.4 Parallel Editing with Merge
@@ -614,7 +596,7 @@ Both participants edit same artifact in different branches.
 ```
 1. Fork from common point
 2. Each edits artifact in their branch
-3. Merge: 
+3. Merge:
    - If non-overlapping: auto-merge
    - If conflicting: conversation to resolve
 4. Merged delta has multiple parents
@@ -630,14 +612,14 @@ Both participants edit same artifact in different branches.
 /projects/
   core_project_abc/
     project.json              # Project metadata, stack, frames
-    
+
 /artifacts/
   core_artifact_xyz/
     metadata.json             # uuid, label, label_history
     content.txt               # Current content
     snapshots/
       a1b2c3d.txt             # Historical snapshots by commit
-      
+
 /logs/
   core_log_001.json           # ConversationLog
   core_log_002.json
@@ -689,7 +671,7 @@ User relations in Project Studio follow standard time horizon decay.
 
 ### 11.2 Context Capture (RFC-003)
 
-Every ArtifactDelta captures the ContextFrame at mutation time.
+Every ArtifactDelta captures ContextFrame at mutation time.
 
 ```python
 delta.context = ["core_artifact_xyz", "core_log_001", "core_artifact_abc"]
@@ -707,7 +689,7 @@ All tool operations:
 - Are logged as ToolCall Items in Soil
 - Respect agent budget policies
 
-Project-specific scopes:
+**Project-specific scopes:**
 - `project:read` — view project, artifacts, conversations
 - `project:write` — edit artifacts, send messages
 - `project:admin` — create/delete projects, manage access
@@ -741,7 +723,6 @@ import_file(
     label: str
 ) -> Artifact
 ```
-
 Creates:
 - Artifact with file content
 - ArtifactCreated Item
@@ -767,7 +748,7 @@ Creates:
 
 2. **Parallel branch display:** Side-by-side vs tabs vs other UI patterns
 
-3. **Collapse summary format:** 
+3. **Fold summary format:**
    - Operator-authored only?
    - Agent-generated with operator approval?
    - System-generated from message analysis?
@@ -818,7 +799,7 @@ Mobile-first voice input for:
 | 0.1.0 | 2025-12-26 | Initial draft (as "MemoGarden Project System PRD") |
 | 0.2.0 | 2025-12-27 | Added ToolCall, Frame, stack semantics, JCS shared tool model |
 | 0.3.0 | 2025-12-29 | Storage split (Soil/Core), Item hierarchy, Trigger relations |
-| 0.4.0 | 2025-01-21 | **Renamed to Project Studio Specification.** Aligned with PRD v0.6.0 (UUID prefixes, fidelity states, integrity_hash, SystemRelation). Positioned within JCE framework. Clarified Frame vs ContextFrame. Added coordination primitives from JCE. Updated reference syntax for new UUID format. |
+| 0.4.0 | 2026-02-12 | **Revised conversation operations:** Replace `collapse_conversation`/`reopen_conversation` with `fold`; clarified implicit branching via RFC-003 ContextFrame inheritance. Aligned with RFC-005 single-word verb convention. |
 
 ---
 
@@ -828,7 +809,8 @@ Mobile-first voice input for:
 - MemoGarden PRD v0.6.0 — Substrate specification
 - RFC-001 v4 — Security and operations
 - RFC-002 v5 — Time horizon and fossilization
-- RFC-003 v2 — Context capture mechanism
+- RFC-003 v4 — Context capture mechanism
+- RFC-005 v7 — Semantic API verb conventions
 
 ---
 

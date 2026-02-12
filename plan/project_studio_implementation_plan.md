@@ -310,33 +310,34 @@ def handle_diff_commits(request: DiffCommitsRequest) -> SemanticResponse:
     # 3. Return structured diff
 ```
 
-#### Session 18: Conversation Operations
+#### Session 18: Fold Verb ✅ COMPLETE (2026-02-12)
 
 **Deliverables**:
-1. Add Semantic API verbs:
-   - `branch_conversation(log_uuid, branch_point_item_uuid)`
-   - `collapse_conversation(log_uuid, summary_content, author)`
-   - `reopen_conversation(log_uuid)`
-2. Implement branch/collapse logic in `system/core/conversation.py`
-3. Frame management (per participant, per scope)
-4. Test conversation lifecycle
+1. ✅ Implement `fold` operation in `system/core/conversation.py`
+2. ✅ Add `FoldRequest` schema to `api/schemas/semantic.py`
+3. ✅ Add `handle_fold` to `api/handlers/conversation.py` (new file)
+4. ✅ Add `ConversationLog` to `BASELINE_ENTITY_TYPES` in `api/handlers/core.py`
+5. ✅ Test folding behavior (14 system tests pass)
+6. ✅ Test fold API (6 API tests pass)
 
-**Frame Semantics**:
+**Fold Semantics** (aligned with RFC-005 single-word verb convention):
 ```python
-@dataclass
-class Frame:
-    scope_uuid: str      # Which scope this frame is for
-    participant_uuid: str  # Which participant (operator or agent)
-    branch_uuid: str       # Which ConversationLog this participant is working in
-    head_item_uuid: str | None  # Latest item seen in this branch
-
-# Frame storage (embedded in Scope data or separate table)
-# Frames update when:
-# - User enters scope (create frame if not exists)
-# - Agent branches conversation (update frame.branch_uuid)
-# - User sends message (update frame.head_item_uuid)
-# - Branch collapses (frame returns to parent)
+fold(
+    log_uuid: str,
+    summary_content: str,
+    author: Literal["operator", "agent", "system"]
+) -> ConversationLog
 ```
+Folds a conversation branch by adding a summary.
+
+Per RFC-005: `fold` is a single-word verb applicable to any entity/fact.
+
+Creates:
+- Summary object attached to ConversationLog
+- Marks branch as folded (collapsed=true)
+- Branch remains visible and can continue (messages can be appended after fold point)
+
+**Note on Branching:** Branch creation happens implicitly via RFC-003 ContextFrame inheritance. When a subagent is created with its own ContextFrame that inherits from a parent, this implicitly creates a conversation branch. No explicit `branch` verb is needed.
 
 ### Phase 1: MemoGarden Client Library
 
@@ -966,9 +967,8 @@ project-studio/
 
 ---
 
-**Status:** Phase 0 in Progress (3/4 sessions complete)
-**Next Action:** Begin Session 18 (Conversation Operations)
-
----
+**Status:** Phase 0 in Progress (4/4 sessions complete)
+**Documentation:**
+- Added [`docs/testing-guide.md`](docs/testing-guide.md) for test patterns and fixtures
 
 **END OF DOCUMENT**
