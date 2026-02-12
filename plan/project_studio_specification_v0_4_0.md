@@ -343,8 +343,8 @@ References are opaque to users. The system parses, resolves, and renders them as
 def parse_references(content: str) -> list[dict]:
     refs = []
     
-    # Fragment refs: ^<hash>
-    for match in re.finditer(r'\^[a-z0-9]{3,4}', content):
+    # Fragment refs: ^<hash> (exactly 3 chars after caret)
+    for match in re.finditer(r'\^[a-z0-9]{3}', content):
         refs.append({'type': 'fragment', 'id': match.group(), 'span': match.span()})
     
     # Artifact line refs: <label>:<line>[@<commit>]
