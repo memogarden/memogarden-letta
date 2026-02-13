@@ -199,9 +199,12 @@ Or use the Bash tool with `run_in_background=True` parameter (when available).
 - Provides grep-able output with test run ID and summary
 - Last 7 lines always contain summary (use `tail -n 7`)
 - Consistent behavior across all MemoGarden projects
+- Centralized implementation via `scripts/test_entrypoint.sh` (easy to update globally)
 
 **Legacy method (deprecated):**
 The old `scripts/test.sh` script still exists but is deprecated. Use `run_tests.sh` instead.
+
+**Agent note:** If you need functionality not supported by `run_tests.sh`, alert a human to improve `scripts/test_entrypoint.sh` centrally rather than using ad-hoc bash commands.
 
 ### Specific test commands
 

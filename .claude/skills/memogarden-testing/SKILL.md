@@ -56,7 +56,7 @@ Always use the standardized `run_tests.sh` script for test execution. This ensur
 ./memogarden-api/run_tests.sh tests/api/test_transactions.py::test_create_transaction -v -s
 
 # Get summary only (for agents - avoids full test output in context)
-./memogarden-api/run_tests.sh --tb=no -q 2>&1 | tail -n 7
+./memogarden-api/run_tests.sh --format=md --tb=no -q 2>&1 | grep -A 5 "Test Summary"
 ```
 
 **Why use run_tests.sh:**
@@ -64,6 +64,14 @@ Always use the standardized `run_tests.sh` script for test execution. This ensur
 - Works from any directory
 - Provides grep-able output with test run ID and summary
 - Last 7 lines always contain the full summary footer (use `tail -n 7`)
+- Centralized implementation via `scripts/test_entrypoint.sh` (easy to update globally)
+
+**Agent note:** If you need functionality not supported by `run_tests.sh`, alert a human to improve `scripts/test_entrypoint.sh` centrally rather than using ad-hoc bash commands.
+
+**Format options for agents:**
+- `--format=markdown` (or `--format=md`) - Markdown output, easier for parsing
+- `--format=plaintext` - Plain text without borders
+- `--format=textbox` (default) - Unicode bordered box
 
 ## Test Database
 

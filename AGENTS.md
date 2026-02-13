@@ -193,7 +193,7 @@ Before working on any task, read these documents in order:
 ./memogarden-api/run_tests.sh --cov=api --cov-report=html
 
 # Get summary only (for agents - avoids full test output in context)
-./memogarden-api/run_tests.sh --tb=no -q 2>&1 | tail -n 6
+./memogarden-api/run_tests.sh --format=md --tb=no -q 2>&1 | grep -A 5 "Test Summary"
 ```
 
 **Why use run_tests.sh:**
@@ -202,6 +202,14 @@ Before working on any task, read these documents in order:
 - Provides grep-able output with test run ID and summary
 - Last 6 lines always contain summary (use `tail -n 6` for quick status)
 - Consistent behavior across all MemoGarden projects
+- Centralized implementation via `scripts/test_entrypoint.sh` (easy to update globally)
+
+**Format options for agents:**
+- `--format=markdown` (or `--format=md`) - Markdown output, easier for parsing
+- `--format=plaintext` - Plain text without borders
+- `--format=textbox` (default) - Unicode bordered box
+
+**Agent note:** If you need functionality not supported by `run_tests.sh`, alert a human to improve `scripts/test_entrypoint.sh` centrally rather than using ad-hoc bash commands.
 
 **Legacy method (deprecated):**
 The old `scripts/test.sh` script still exists but is deprecated. It will be removed in a future version.
