@@ -175,37 +175,36 @@ Before working on any task, read these documents in order:
 
 ### Running Tests
 
-**STANDARD WAY:** Use `poetry run pytest` for all packages (ensures correct Poetry environment).
-
-**MemoGarden API Tests:**
+**STANDARD WAY:** Use the standardized `run_tests.sh` script for each project. This ensures consistent behavior and provides grep-able output for automation.
 
 ```bash
-# Option 1: Use test script (recommended)
-./scripts/test.sh
+# MemoGarden API Tests
+./memogarden-api/run_tests.sh
 
-# Option 2: Change directory first
-cd memogarden-api && poetry run pytest
+# MemoGarden System Tests
+./memogarden-system/run_tests.sh
 
-# With verbose output
-./scripts/test.sh -xvs
-# or
-cd memogarden-api && poetry run pytest -xvs
+# MemoGarden Client Tests
+./memogarden-client/run_tests.sh
+
+# With pytest arguments (passed through)
+./memogarden-api/run_tests.sh -xvs
+./memogarden-api/run_tests.sh tests/test_specific.py
+./memogarden-api/run_tests.sh --cov=api --cov-report=html
+
+# Get summary only (for agents - avoids full test output in context)
+./memogarden-api/run_tests.sh --tb=no -q 2>&1 | tail -n 6
 ```
 
-**MemoGarden System Tests:**
+**Why use run_tests.sh:**
+- Ensures correct Poetry environment is used (doesn't rely on venv activation)
+- Works from any directory (changes to project dir automatically)
+- Provides grep-able output with test run ID and summary
+- Last 6 lines always contain summary (use `tail -n 6` for quick status)
+- Consistent behavior across all MemoGarden projects
 
-```bash
-# Change directory first
-cd memogarden-system
-
-# Run tests with Poetry
-poetry run pytest
-
-# With verbose output
-poetry run pytest -xvs
-```
-
-**Why:** Running from root causes pytest to collect tests from other directories (e.g., `hacm/tests/`), leading to import errors. The `memogarden-api/pyproject.toml` configures test discovery correctly.
+**Legacy method (deprecated):**
+The old `scripts/test.sh` script still exists but is deprecated. It will be removed in a future version.
 
 See [`memogarden-api/tests/README.md`](memogarden-api/tests/README.md) for complete testing documentation.
 

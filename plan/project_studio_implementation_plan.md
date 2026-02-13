@@ -423,69 +423,255 @@ delta = client.semantic.commit_artifact_delta(
 
 **Goal**: Enable observe mode (operator watches agent work in real-time)
 
-**Estimated**: 10-15 hours
+**Estimated**: 12-18 hours (split across two sessions)
 
-#### Session 20: SSE Endpoint for Observe Mode
+#### Session 20A: SSE Infrastructure and Event Publishing ✅ COMPLETE (2026-02-13)
+
+**Tests:** 20/20 passing (251 total tests)
 
 **Deliverables**:
-1. Add `/events` endpoint to Flask app
-2. Implement SSE response format
-3. Event types for:
-   - `artifact_delta` - Artifact modified
-   - `message_sent` - New message in scope
-   - `context_updated` - ContextFrame changed
-   - `frame_updated` - Participant frame changed
-4. Client-side EventSource implementation
-5. Test reconnection and error handling
+1. ✅ Create `api/events.py` module with SSE infrastructure
+2. ✅ Implement `SSEManager` class for connection management
+3. ✅ Add `/events` endpoint to Flask app
+4. ✅ Implement event publishing framework
+5. ✅ Add authentication for SSE connections (JWT/API key)
+6. ✅ Test SSE endpoint and connection management
 
-**SSE Endpoint**:
+**Implementation:**
+- Created [`api/events.py`](memogarden-api/api/events.py) with:
+  - `SSEConnection` dataclass for connection state
+  - `SSEManager` for thread-safe connection management
+  - `/mg/events` endpoint with SSE streaming
+  - `/mg/events/stats` endpoint for connection statistics
+  - Event publishing helpers: `publish_event()`, `publish_artifact_delta()`, etc.
+- Registered events blueprint in [`api/main.py`](memogarden-api/api/main.py)
+- 20 tests in [`tests/test_sse.py`](memogarden-api/tests/test_sse.py) covering:
+  - SSEManager unit tests (register, unregister, publish)
+  - SSEConnection unit tests (subscription filtering)
+  - Event publishing tests (all event types)
+  - Endpoint integration tests (auth, stats)
+  - Threading tests (concurrent operations)
+
+**SSE Infrastructure**:
 ```python
 # memogarden-api/api/events.py (new)
-from flask import Response, stream_with_context
+from flask import Response, stream_with_context, request
 import json
+import queue
+import threading
+from dataclasses import dataclass
+from typing import Dict, Set
+
+@dataclass
+class SSEConnection:
+    """Represents an active SSE connection."""
+    client_id: str
+    user_id: str
+    subscribed_scopes: Set[str]
+    queue: queue.Queue
+
+class SSEManager:
+    """Manages active SSE connections and event broadcasting."""
+    def __init__(self):
+        self._connections: Dict[str, SSEConnection] = {}
+        self._lock = threading.Lock()
+        self._client_id_counter = 0
+
+    def register(self, user_id: str, scopes: Set[str]) -> tuple[str, SSEConnection]:
+        """Register a new SSE connection."""
+        with self._lock:
+            self._client_id_counter += 1
+            client_id = f"sse_{self._client_id_counter}"
+            conn = SSEConnection(
+                client_id=client_id,
+                user_id=user_id,
+                subscribed_scopes=scopes,
+                queue=queue.Queue()
+            )
+            self._connections[client_id] = conn
+            return client_id, conn
+
+    def unregister(self, client_id: str):
+        """Remove an SSE connection."""
+        with self._lock:
+            self._connections.pop(client_id, None)
+
+    def publish(self, event_type: str, data: dict, scope_uuid: str = None):
+        """Publish event to relevant connections."""
+        with self._lock:
+            for conn in self._connections.values():
+                if scope_uuid is None or scope_uuid in conn.subscribed_scopes:
+                    conn.queue.put({"type": event_type, "data": data}, block=False)
+
+# Global SSE manager
+sse_manager = SSEManager()
 
 @events_bp.route("/events", methods=["GET"])
 @auth_required
 def events_stream():
     """Server-Sent Events stream for real-time updates."""
+    from api.auth import get_current_user
+
+    user_id = get_current_user()
+    scopes = parse_scope_subscription(request)
+
+    client_id, conn = sse_manager.register(user_id, scopes)
+
     def generate():
-        while True:
-            event = sse_queue.get(timeout=30)  # Block for 30s
-            if event is None:
-                break  # Client disconnect
-            yield f"event: {event['type']}\n"
-            yield f"data: {json.dumps(event['data'])}\n\n"
+        try:
+            while True:
+                try:
+                    event = conn.queue.get(timeout=30)
+                    yield f"event: {event['type']}\n"
+                    yield f"data: {json.dumps(event['data'])}\n\n"
+                except queue.Empty:
+                    # Send keepalive comment
+                    yield ": keepalive\n\n"
+        except GeneratorExit:
+            sse_manager.unregister(client_id)
 
-    return Response(generate(), mimetype="text/event-stream")
-
-# Event publishing (from Semantic API handlers)
-def publish_event(event_type: str, data: dict, scope_uuid: str):
-    """Broadcast event to all clients in scope."""
-    for client_id, client_scopes in active_connections.items():
-        if scope_uuid in client_scopes:
-            sse_queue.put({"type": event_type, "data": data})
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
 ```
 
-**Client-side EventSource**:
+**Event Publishing Helpers**:
+```python
+# Event types
+EVENT_TYPES = {
+    "artifact_delta",     # Artifact modified
+    "message_sent",       # New message in scope
+    "context_updated",     # ContextFrame changed
+    "frame_updated",      # Participant frame changed
+    "scope_created",      # New scope created
+    "scope_modified",     # Scope metadata changed
+}
+
+def publish_event(event_type: str, data: dict, scope_uuid: str = None):
+    """
+    Publish event to all clients subscribed to scope.
+
+    Called from Semantic API handlers after state changes.
+    """
+    if event_type not in EVENT_TYPES:
+        raise ValueError(f"Unknown event type: {event_type}")
+
+    sse_manager.publish(event_type, data, scope_uuid)
+```
+
+#### Session 20B: Event Integration and Client-Side Support
+
+**Deliverables**:
+1. Integrate event publishing into existing Semantic API handlers
+2. Add event publishing to artifact delta operations
+3. Add event publishing to message/conversation handlers
+4. Add event publishing to context frame operations
+5. Create JavaScript/TypeScript EventSource wrapper
+6. Test end-to-end event flow
+7. Add reconnection handling
+
+**Integration Points**:
+```python
+# api/handlers/artifact.py - Add event publishing
+def handle_commit_artifact(request: CommitArtifactRequest) -> SemanticResponse:
+    # ... existing commit logic ...
+
+    # Publish event
+    publish_event(
+        "artifact_delta",
+        {
+            "artifact_uuid": artifact.uuid,
+            "commit_hash": delta.commit_hash,
+            "ops": delta.ops,
+            "author": request.actor
+        },
+        scope_uuid=artifact.data.get("scope_uuid")
+    )
+
+    return SemanticResponse(ok=True, result=...)
+
+# api/handlers/conversation.py - Add event publishing
+def handle_send_message(request: SendMessageRequest) -> SemanticResponse:
+    # ... existing send logic ...
+
+    # Publish event
+    publish_event(
+        "message_sent",
+        {
+            "log_uuid": log_uuid,
+            "message_uuid": message.uuid,
+            "sender": message.data["sender"],
+            "content": message.data["description"],
+            "fragments": message.data.get("fragments", [])
+        },
+        scope_uuid=log.data.get("scope_uuid")
+    )
+
+    return SemanticResponse(ok=True, result=...)
+```
+
+**Client-side EventSource Wrapper**:
 ```javascript
-// Project Studio app (Svelte)
-const eventSource = new EventSource('/mg/events?token=...');
+// mg_client/sse.js (in memogarden-client or Project Studio)
+export class MemoGardenEventSource {
+  constructor(baseUrl, token, scopes = []) {
+    this.url = `${baseUrl}/events?token=${token}&scopes=${scopes.join(',')}`;
+    this.eventSource = null;
+    this.listeners = new Map();
+    this.reconnectDelay = 1000;
+  }
 
-eventSource.addEventListener('artifact_delta', (e) => {
-  const delta = JSON.parse(e.data);
-  updateArtifactUI(delta);
-});
+  connect() {
+    this.eventSource = new EventSource(this.url);
 
-eventSource.addEventListener('message_sent', (e) => {
-  const message = JSON.parse(e.data);
-  appendToConversation(message);
-});
+    this.eventSource.onopen = () => {
+      console.log('SSE connected');
+      this.reconnectDelay = 1000;
+    };
 
-eventSource.onerror = (err) => {
-  console.error('SSE error:', err);
-  // Auto-reconnect after 3s
-  setTimeout(() => eventSource = new EventSource('/mg/events?token=...'), 3000);
-};
+    this.eventSource.onerror = (err) => {
+      console.error('SSE error:', err);
+      this.reconnect();
+    };
+
+    // Route events to registered listeners
+    EVENT_TYPES.forEach(type => {
+      this.eventSource.addEventListener(type, (e) => {
+        const data = JSON.parse(e.data);
+        this.notify(type, data);
+      });
+    });
+  }
+
+  on(eventType, callback) {
+    if (!this.listeners.has(eventType)) {
+      this.listeners.set(eventType, []);
+    }
+    this.listeners.get(eventType).push(callback);
+  }
+
+  notify(eventType, data) {
+    const callbacks = this.listeners.get(eventType) || [];
+    callbacks.forEach(cb => cb(data));
+  }
+
+  reconnect() {
+    this.eventSource?.close();
+    setTimeout(() => {
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
+      this.connect();
+    }, this.reconnectDelay);
+  }
+
+  disconnect() {
+    this.eventSource?.close();
+  }
+}
 ```
 
 ### Phase 3: Letta Integration and Memory Blocks
@@ -973,8 +1159,11 @@ project-studio/
 
 ---
 
-**Status:** Phase 0 Complete ✅ (5/5 sessions complete) - Ready for Phase 1
+**Status:** Phase 0 Complete ✅ (5/6 sessions complete) - Ready for Phase 1
 **Documentation:**
 - Added [`docs/testing-guide.md`](docs/testing-guide.md) for test patterns and fixtures
+
+**Recent Progress:**
+- Session 20A (2026-02-13): SSE Infrastructure - 20 tests added, 251 total tests passing
 
 **END OF DOCUMENT**

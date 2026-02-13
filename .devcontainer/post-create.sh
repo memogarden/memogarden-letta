@@ -95,9 +95,9 @@ cat >> /home/vscode/.bashrc << 'EOF'
 
 # MemoGarden Development Aliases
 alias mg-api='cd /workspaces/memogarden/memogarden-api && poetry run flask --app api/main run --debug'
-alias mg-test='cd /workspaces/memogarden/memogarden-api && poetry run pytest'
-alias mg-test-system='cd /workspaces/memogarden/memogarden-system && poetry run pytest'
-alias mg-test-client='cd /workspaces/memogarden/memogarden-client && poetry run pytest'
+alias mg-test='/workspaces/memogarden/memogarden-api/run_tests.sh'
+alias mg-test-system='/workspaces/memogarden/memogarden-system/run_tests.sh'
+alias mg-test-client='/workspaces/memogarden/memogarden-client/run_tests.sh'
 alias mg-lint='/workspaces/memogarden/scripts/lint.sh'
 alias mg-root='cd /workspaces/memogarden'
 

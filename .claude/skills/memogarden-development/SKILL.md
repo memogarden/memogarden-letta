@@ -172,65 +172,61 @@ Or use the Bash tool with `run_in_background=True` parameter (when available).
 
 ### ⚠️ STANDARD WAY (Updated for current structure)
 
-**IMPORTANT:** Both packages use the SAME Poetry environment at `/workspaces/memogarden/.venv`. Always use `poetry run pytest` to ensure the correct environment is used.
-
-**MemoGarden API Tests:**
+**IMPORTANT:** Always use the standardized `run_tests.sh` script for test execution. This ensures consistent behavior and provides grep-able output for automation.
 
 ```bash
-# Option 1: Use test script (recommended)
-./scripts/test.sh
+# MemoGarden API Tests
+./memogarden-api/run_tests.sh
 
-# Option 2: Change directory first
-cd memogarden-api && poetry run pytest
+# MemoGarden System Tests
+./memogarden-system/run_tests.sh
 
-# With verbose output
-./scripts/test.sh -xvs
-# or
-cd memogarden-api && poetry run pytest -xvs
+# MemoGarden Client Tests
+./memogarden-client/run_tests.sh
+
+# With pytest arguments (passed through)
+./memogarden-api/run_tests.sh -xvs
+./memogarden-api/run_tests.sh tests/test_specific.py
+./memogarden-api/run_tests.sh --cov=api --cov-report=html
+
+# Get summary only (for agents - avoids full test output in context)
+./memogarden-api/run_tests.sh --tb=no -q 2>&1 | tail -n 7
 ```
 
-**MemoGarden System Tests:**
+**Why use run_tests.sh:**
+- Ensures correct Poetry environment is used (doesn't rely on venv activation)
+- Works from any directory (changes to project dir automatically)
+- Provides grep-able output with test run ID and summary
+- Last 7 lines always contain summary (use `tail -n 7`)
+- Consistent behavior across all MemoGarden projects
 
-```bash
-# Change directory first
-cd memogarden-system
-
-# Run tests with Poetry
-poetry run pytest
-
-# With verbose output
-poetry run pytest -xvs
-```
-
-**Why:**
-- Running from root causes pytest to collect tests from other directories (e.g., `hacm/tests/`), leading to import errors
-- Using `poetry run pytest` ensures the correct Poetry environment is used (doesn't rely on venv activation)
-- Each package's `pyproject.toml` configures test discovery correctly
+**Legacy method (deprecated):**
+The old `scripts/test.sh` script still exists but is deprecated. Use `run_tests.sh` instead.
 
 ### Specific test commands
 
 **API Tests:**
 ```bash
 # Run specific test file
-cd memogarden-api && poetry run pytest tests/test_semantic_api.py
+./memogarden-api/run_tests.sh tests/test_semantic_api.py
 
 # Run specific test
-cd memogarden-api && poetry run pytest tests/test_context.py::test_enter_scope_adds_to_active_set -xvs
+./memogarden-api/run_tests.sh tests/test_context.py::test_enter_scope_adds_to_active_set -xvs
 
 # Run with coverage
-cd memogarden-api && poetry run pytest --cov=api --cov-report=html
+./memogarden-api/run_tests.sh --cov=api --cov-report=html
 ```
 
 **System Tests:**
 ```bash
 # Run specific test file
-cd memogarden-system && poetry run pytest tests/test_core.py
+./memogarden-system/run_tests.sh tests/test_core.py
 
 # Run specific test
-cd memogarden-system && poetry run pytest tests/test_core.py::test_entity_create -xvs
+./memogarden-system/run_tests.sh tests/test_core.py::test_entity_create -xvs
 
 # Run with coverage
-cd memogarden-system && poetry run pytest --cov=system --cov-report=html
+./memogarden-system/run_tests.sh --cov=system --cov-report=html
 ```
 
 For complete testing documentation:
