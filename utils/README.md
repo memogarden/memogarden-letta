@@ -4,7 +4,30 @@ Shared utilities for MemoGarden project.
 
 ## Test Runners
 
-Each MemoGarden project has a `run_tests.sh` script that provides a standardized entrypoint for running tests.
+Each MemoGarden project has a `run_tests.sh` script that provides a standardized entrypoint for running tests. All projects share a common implementation via `scripts/test_entrypoint.sh`.
+
+### Architecture
+
+```
+<memogarden-project>/run_tests.sh
+    │  (Sets PROJECT_NAME, MODULE_NAME, DEPENDENCY_CHECK)
+    │  (Parses --format option)
+    └─> scripts/test_entrypoint.sh  (Centralized implementation)
+            │  (Uses utils/test-runner-functions.sh for formatting)
+            └─> poetry run pytest
+```
+
+### Creating a New Project
+
+Copy any existing `run_tests.sh` and update these variables:
+
+```bash
+export PROJECT_NAME="my-new-project"
+export MODULE_NAME="my_module"
+export DEPENDENCY_CHECK=""  # or "from some.module import something"
+```
+
+**WARNING TO AGENTS:** If you need functionality not supported by `scripts/test_entrypoint.sh`, DO NOT work around it with ad-hoc bash commands. Alert a human to improve the entrypoint centrally instead.
 
 ### Usage
 
@@ -59,7 +82,7 @@ Output:
 
 ## Format Scripts
 
-Direct access to formatting utilities (used by `run_tests.sh`):
+Direct access to formatting utilities (used by `test_entrypoint.sh`):
 
 ```bash
 # Textbox format
