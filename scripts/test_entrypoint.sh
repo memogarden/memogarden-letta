@@ -127,9 +127,8 @@ done
 # Add utils to PATH and source formatting functions
 # Find root: scripts/ is directly under root, so parent is root
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export PATH="$SCRIPT_ROOT/utils:$PATH"
 
-UTILS_FUNCTIONS="$SCRIPT_ROOT/utils/test-runner-functions.sh"
+UTILS_FUNCTIONS="$SCRIPT_ROOT/memogarden-utils/test-runner-functions.sh"
 if [ -f "$UTILS_FUNCTIONS" ]; then
     source "$UTILS_FUNCTIONS"
 else
