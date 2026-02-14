@@ -64,6 +64,11 @@
   // Volumes are managed by docker-compose.yml
   // This keeps workspace mounted at /workspaces/memogarden
 
+  // Forward SSH agent from host to container for git push operations
+  // This allows using the host's SSH keys for GitHub authentication without
+  // copying keys into the container
+  "forwardAgents": true,
+
   "runArgs": [
     "--cap-add=SYS_PTRACE",
     "--security-opt", "seccomp=unconfined"

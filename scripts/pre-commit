@@ -43,7 +43,7 @@ fi
 if [ "$PACKAGE" == "api" ]; then
     echo ""
     echo "Running tests..."
-    poetry run pytest tests/ -q --tb=no
+    ./run_tests.sh tests/ -q --tb=no
 
     if [ $? -ne 0 ]; then
         echo ""

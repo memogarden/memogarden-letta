@@ -16,4 +16,4 @@ echo "   See plan/test_runner_implementation_plan.md for details"
 echo ""
 
 cd "$(dirname "$0")/../memogarden-api"
-poetry run pytest --cov=api --cov-report=term-missing "$@"
+./run_tests.sh --cov=api --cov-report=term-missing "$@"

@@ -49,9 +49,15 @@ The devcontainer uses a **two-layer architecture** with clear separation of conc
 ⚠️ **CRITICAL**: MemoGarden has **three separate git repositories**:
 
 ```bash
+# In devcontainer (where workspaceFolder is /workspaces/memogarden):
 /workspaces/memogarden                    # Root repo (docs, plans, scripts)
 /workspaces/memogarden/memogarden-system  # System repo (db, utils) - SEPARATE GIT!
 /workspaces/memogarden/memogarden-api     # API repo (Flask, tests) - SEPARATE GIT!
+
+# Outside devcontainer, paths may be like:
+/home/user/memogarden                    # Root repo
+/home/user/memogarden/memogarden-system  # System repo
+/home/user/memogarden/memogarden-api     # API repo
 ```
 
 **Before committing, always check:**
@@ -73,26 +79,48 @@ git status             # Check what will be committed
 
 ## Running Tests
 
+**Use the standardized `run_tests.sh` script for all test execution.**
+
 ### API Tests
 ```bash
-cd /workspaces/memogarden/memogarden-api
-poetry run pytest
+cd memogarden/memogarden-api
+./run_tests.sh
 # Or use alias:
 mg-test
 ```
 
 ### System Tests
 ```bash
-cd /workspaces/memogarden/memogarden-system
-poetry run pytest
+cd memogarden/memogarden-system
+./run_tests.sh
 # Or use alias:
 mg-test-system
 ```
 
+### Client Tests
+```bash
+cd memogarden/memogarden-client
+./run_tests.sh
+# Or use alias:
+mg-test-client
+```
+
 ### Specific Test File
 ```bash
-cd /workspaces/memogarden/memogarden-api
-poetry run pytest tests/test_transactions.py
+cd memogarden/memogarden-api
+./run_tests.sh tests/test_transactions.py
+```
+
+### Format Options
+```bash
+# Markdown output (for agents/logs)
+./run_tests.sh --format=markdown
+
+# Plaintext output (for CI/CD)
+./run_tests.sh --format=plaintext
+
+# Default textbox format (human-readable)
+./run_tests.sh
 ```
 
 ## Development Workflow

@@ -25,7 +25,7 @@
 #   MODULE_NAME="api"
 #   DEPENDENCY_CHECK="from system.utils import isodatetime"
 #   export TEST_FORMAT="${TEST_FORMAT:-textbox}"
-#   . /workspaces/memogarden/scripts/test_entrypoint.sh
+#   . $MEMOGARDEN_ROOT/scripts/test_entrypoint.sh
 
 set -e
 
@@ -125,11 +125,15 @@ done
 # ============================================================================
 
 # Add utils to PATH and source formatting functions
-export PATH="/workspaces/memogarden/utils:$PATH"
-if [ -f "/workspaces/memogarden/utils/test-runner-functions.sh" ]; then
-    source /workspaces/memogarden/utils/test-runner-functions.sh
+# Find root: scripts/ is directly under root, so parent is root
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export PATH="$SCRIPT_ROOT/utils:$PATH"
+
+UTILS_FUNCTIONS="$SCRIPT_ROOT/utils/test-runner-functions.sh"
+if [ -f "$UTILS_FUNCTIONS" ]; then
+    source "$UTILS_FUNCTIONS"
 else
-    echo "ERROR: /workspaces/memogarden/utils/test-runner-functions.sh not found" >&2
+    echo "ERROR: $UTILS_FUNCTIONS not found" >&2
     echo "Please ensure MemoGarden utils are available." >&2
     exit 1
 fi

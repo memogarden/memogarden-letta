@@ -207,7 +207,7 @@ git status --short
 - **Git Repository:** Separate from root
 - **Path:** `/home/kureshii/memogarden/memogarden-api`
 - **Focus:** Flask HTTP API implementation
-- **Test before committing:** `cd /home/kureshii/memogarden/memogarden-api && poetry run pytest tests/ -q`
+- **Test before committing:** `cd /home/kureshii/memogarden/memogarden-api && ./run_tests.sh ·ests/ -q`
 - **Includes:**
   - `api/v1/` - REST API endpoints (/api/v1/transactions, etc.)
   - `api/semantic.py` - Semantic API dispatcher (/mg endpoint)

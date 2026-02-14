@@ -85,7 +85,7 @@ rm -f data/memogarden.db
 poetry run python -c "from memogarden_core.db import init_db; init_db()"
 
 # Run tests
-poetry run pytest
+./run_tests.sh
 ```
 
 ## Schema Conventions

@@ -3,7 +3,7 @@
 # Source this file in run_tests.sh scripts.
 #
 # Usage:
-#   source /workspaces/memogarden/utils/test-runner-functions.sh
+#   source $MEMOGARDEN_ROOT/utils/test-runner-functions.sh
 #   TEST_FORMAT=textbox  # or plaintext, markdown
 #   test_header "MemoGarden API" "memogarden-api" "$TEST_RUN_ID"
 #   test_summary "FAILED" "1" "250" "64.21s" "$TEST_RUN_ID"
@@ -15,7 +15,13 @@
 : "${TEST_FORMAT:=textbox}"
 
 # Paths to formatters (relative to repo root)
-FORMATTERS_DIR="/workspaces/memogarden/utils/format"
+# Use SCRIPT_ROOT if set (from test_entrypoint.sh), otherwise try to find it
+if [ -n "$SCRIPT_ROOT" ]; then
+    FORMATTERS_DIR="$SCRIPT_ROOT/utils/format"
+else
+    # Fallback: try to find dynamically
+    FORMATTERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../format" && pwd)"
+fi
 
 # _test_formatter - Get the formatter script for current format
 _test_formatter() {

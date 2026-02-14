@@ -14,7 +14,7 @@ Each MemoGarden project has a `run_tests.sh` script that provides a standardized
     │  (Parses --format option)
     └─> scripts/test_entrypoint.sh  (Centralized implementation)
             │  (Uses utils/test-runner-functions.sh for formatting)
-            └─> poetry run pytest
+            └─> poetry run pytest [internal - use run_tests.sh instead]
 ```
 
 ### Creating a New Project
@@ -86,11 +86,11 @@ Direct access to formatting utilities (used by `test_entrypoint.sh`):
 
 ```bash
 # Textbox format
-/workspaces/memogarden/utils/format/textbox.py --title "Title" --body "Line 1" "Line 2"
+$MEMOGARDEN_ROOT/utils/format/textbox.py --title "Title" --body "Line 1" "Line 2"
 
 # Plaintext format
-/workspaces/memogarden/utils/format/plaintext.py --title "Title" --body "Line 1" "Line 2"
+$MEMOGARDEN_ROOT/utils/format/plaintext.py --title "Title" --body "Line 1" "Line 2"
 
 # Markdown format
-/workspaces/memogarden/utils/format/markdown.py --title "Title" --body "Line 1" "Line 2"
+$MEMOGARDEN_ROOT/utils/format/markdown.py --title "Title" --body "Line 1" "Line 2"
 ```

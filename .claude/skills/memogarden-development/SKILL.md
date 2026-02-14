@@ -74,7 +74,7 @@ poetry install
 poetry run python -m module.name
 
 # Run tests
-poetry run pytest
+./run_tests.sh  # from package directory, uses Poetry internally
 
 # Run the Flask server
 poetry run flask --app api.main run --debug
@@ -99,7 +99,7 @@ While migrating to the new package structure (Phases 1-4 of restructure plan), s
 
 ```bash
 # Add memogarden-system to Python path for testing
-PYTHONPATH=$PWD/memogarden-system:$PYTHONPATH poetry run pytest
+PYTHONPATH=$PWD/memogarden-system:$PYTHONPATH ./run_tests.sh
 ```
 
 **This is temporary** - after Phase 6 (Provider Refactoring), all packages will be properly installed via Poetry.
@@ -134,8 +134,8 @@ poetry show --outdated
 ### Working Directory Reminder
 
 **Always verify your current directory before running commands:**
-- **memogarden-system work**: `memogarden-system/` (for `poetry run pytest`, etc.)
-- **memogarden-api work**: `memogarden-api/` (for `poetry run pytest`, etc.)
+- **memogarden-system work**: `memogarden-system/` (for `./run_tests.sh`, etc.)
+- **memogarden-api work**: `memogarden-api/` (for `./run_tests.sh`, etc.)
 - **Convenience scripts**: `/` (for `./scripts/run.sh`, `./scripts/test.sh`)
 
 Most Poetry commands should be run from the relevant package directory. Scripts are in the root directory.
@@ -485,13 +485,13 @@ Bash(
 **Use `&&` for dependent commands:**
 ```python
 # Commands run sequentially, stops on first failure
-Bash(command="cd memogarden-core && poetry install && poetry run pytest")
+Bash(command="cd memogarden-core && poetry install && ./run_tests.sh")
 ```
 
 **Use `;` for independent commands:**
 ```python
 # Commands run regardless of failures
-Bash(command="mkdir -p data ; poetry run pytest")
+Bash(command="mkdir -p data ; ./run_tests.sh")
 ```
 
 ### Approved Commands (No Approval Needed)
@@ -499,7 +499,7 @@ Bash(command="mkdir -p data ; poetry run pytest")
 The following commands are pre-approved in `.claude/settings.local.json` and won't trigger workflows:
 - `ln`, `ls`, `cat`, `tree` - File operations
 - `poetry --version`, `poetry self`, `poetry install`, `poetry run` - Poetry operations
-- `python`, `poetry run python`, `poetry run pytest` - Python execution
+- `python`, `poetry run python`, `./run_tests.sh` - Python execution
 - `git add`, `git commit`, `git config`, `git status`, `git log` - Git operations
 - `sqlite3`, `find`, `mkdir`, `touch` - Development utilities
 - `curl` - HTTP testing (read-only)

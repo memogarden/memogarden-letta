@@ -84,22 +84,22 @@ def create_transaction(data):
 cd /home/kureshii/memogarden/memogarden-core
 
 # Profile with pytest-durations (slowest 10 tests)
-poetry run pytest --durations=10
+./run_tests.sh --durations=10
 
 # Profile all tests (durations for all)
-poetry run pytest --durations=0
+./run_tests.sh --durations=0
 
 # Profile with detailed timing
-poetry run pytest --setup-show -v
+./run_tests.sh --setup-show -v
 ```
 
 **Identify bottlenecks:**
 ```bash
 # Profile test file loading
-poetry run pytest --collect-only --quiet
+./run_tests.sh --collect-only --quiet
 
 # Profile fixture initialization
-poetry run pytest --setup-show
+./run_tests.sh --setup-show
 ```
 
 ### Optimization Strategies
@@ -292,7 +292,7 @@ def test_uid_generate_unique_ids():
 ## Refactoring Workflow
 
 1. **Profile baseline**
-   - Run `poetry run pytest --durations=10`
+   - Run `./run_tests.sh --durations=10`
    - Identify top 10 slowest tests
    - Document current state
 
@@ -313,7 +313,7 @@ def test_uid_generate_unique_ids():
    - Refactor to remove or justify keeping
 
 5. **Verify improvements**
-   - Rerun profiler: `poetry run pytest --durations=10`
+   - Rerun profiler: `./run_tests.sh --durations=10`
    - Ensure coverage maintained (>80%)
    - Run full test suite to confirm no regressions
 
@@ -334,13 +334,13 @@ def test_uid_generate_unique_ids():
 
 ```bash
 # Profile slowest tests
-poetry run pytest --durations=10
+./run_tests.sh --durations=10
 
 # Profile all tests
-poetry run pytest --durations=0
+./run_tests.sh --durations=0
 
 # Run with coverage
-poetry run pytest --cov=memogarden_core --cov-report=term-missing
+./run_tests.sh --cov=memogarden_core --cov-report=term-missing
 
 # Find duplicated code patterns
 grep -r "pattern" memogarden_core/
@@ -349,8 +349,8 @@ grep -r "pattern" memogarden_core/
 grep -r "mock\|patch\|Mock" tests/
 
 # Run specific test module
-poetry run pytest tests/auth/test_decorators.py -v
+./run_tests.sh tests/auth/test_decorators.py -v
 
 # Run with setup show (debug fixtures)
-poetry run pytest --setup-show
+./run_tests.sh --setup-show
 ```

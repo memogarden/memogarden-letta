@@ -188,7 +188,7 @@ See [deployment.md](deployment.md) for details.
 
 ### Repository Root
 
-- **Development:** `/workspaces/memogarden/`
+- **Development:** `$HOME/memogarden/` (e.g., `/home/user/memogarden/` or `/workspaces/memogarden/` in devcontainer)
 - **Production (RPi):** `/opt/memogarden/`
 - **User:** `$HOME/memogarden/`
 
@@ -226,16 +226,20 @@ By deployment verb:
 
 ### Running Tests
 
+**Use the standardized `run_tests.sh` script for all test execution.**
+
 ```bash
 # System package tests
 cd memogarden-system
-poetry run pytest
+./run_tests.sh
 
 # API package tests
 cd memogarden-api
-poetry run pytest
-# or use script from root:
-./scripts/test.sh
+./run_tests.sh
+
+# Client package tests
+cd memogarden-client
+./run_tests.sh
 ```
 
 ### Starting Development Server

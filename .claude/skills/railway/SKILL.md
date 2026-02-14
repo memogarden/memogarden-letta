@@ -317,7 +317,7 @@ grep ".env" .gitignore
 # Should see: .env
 
 # 4. Run tests or application locally
-poetry run pytest           # Run tests
+./run_tests.sh           # Run tests
 python app.py               # Run application
 ./run.sh                    # Or use project's run script
 ```

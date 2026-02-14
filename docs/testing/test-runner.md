@@ -9,10 +9,10 @@ Standardized test execution across all MemoGarden projects.
     │  (Sets PROJECT_NAME, MODULE_NAME, DEPENDENCY_CHECK)
     │  (Parses --format option)
     │  (cd to project directory)
-    └─> /workspaces/memogarden/scripts/test_entrypoint.sh
+    └─> $MEMOGARDEN_ROOT/scripts/test_entrypoint.sh
             │  (Uses utils/test-runner-functions.sh for formatting)
             │  (Runs poetry install if needed)
-            └─> poetry run pytest
+            └─> ./run_tests.sh [internal - use run_tests.sh instead]
 ```
 
 ## Creating a New Project

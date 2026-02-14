@@ -47,7 +47,7 @@ SELECT * FROM entity_registry WHERE entity_type='transactions';
 
 **"no such table"**
 - Database may not be initialized
-- Run: `cd /home/kureshii/memogarden/memogarden-core && poetry run python -c "from memogarden_core.db import init_db; init_db()"`
+- Run: `cd memogarden-api && poetry run python -c "from memogarden_core.db import init_db; init_db()"`
 
 **Foreign key constraint errors**
 - Check that referenced entities exist in `entity_registry`
@@ -99,27 +99,27 @@ curl -X POST http://localhost:5000/api/v1/transactions \
 ### Run with verbose output
 
 ```bash
-cd /home/kureshii/memogarden/memogarden-core
-poetry run pytest -v
+cd memogarden-api
+./run_tests.sh -v
 ```
 
 ### Run with print statements visible
 
 ```bash
-poetry run pytest -s
+./run_tests.sh -s
 ```
 
 ### Run single test for debugging
 
 ```bash
-poetry run pytest tests/api/test_transactions.py::test_create_transaction -v -s
+./run_tests.sh tests/api/test_transactions.py::test_create_transaction -v -s
 ```
 
 ### Common Test Failures
 
 **ImportError: No module named 'memogarden_core'**
 - You're not in the memogarden-core directory
-- Navigate to: `cd /home/kureshii/memogarden/memogarden-core`
+- Navigate to: `cd memogarden-api`
 
 **"database is locked" in tests**
 - Tests use temp file database via `client` fixture

@@ -145,25 +145,29 @@ def test_with_db(core):
 
 ## Running Tests
 
+**Use the standardized `run_tests.sh` script for all test execution.**
+
 ### All System Tests
 ```bash
 cd memogarden-system
-poetry run pytest
+./run_tests.sh
 ```
 
 ### All API Tests
 ```bash
 cd memogarden-api
-poetry run pytest
+./run_tests.sh
 ```
 
 ### Specific Test Files
 ```bash
 # System tests
-poetry run pytest tests/test_conversation_fold.py
+cd memogarden-system
+./run_tests.sh tests/test_conversation_fold.py
 
 # API tests
-poetry run pytest tests/test_conversation_fold_api.py
+cd memogarden-api
+./run_tests.sh tests/test_conversation_fold_api.py
 ```
 
 ## Key Takeaways

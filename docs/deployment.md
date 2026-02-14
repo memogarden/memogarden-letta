@@ -349,7 +349,7 @@ systemctl --user status memogarden
 
 ```bash
 # From source directory
-cd /workspaces/memogarden/memogarden-api
+cd memogarden/memogarden-api
 ./scripts/run.sh
 ```
 

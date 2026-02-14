@@ -157,13 +157,13 @@ Expanded detail:
 **Running tests:**
 ```bash
 # From memogarden-api directory
-cd memogarden-api && poetry run pytest
+cd memogarden-api && ./run_tests.sh
 
 # From memogarden-system directory
-cd memogarden-system && poetry run pytest
+cd memogarden-system && ./run_tests.sh
 
 # Or use convenience script
-./scripts/test.sh
+./scripts/test.sh (deprecated - use run_tests.sh)
 ```
 
 ### Step 4: Update Implementation Progress
