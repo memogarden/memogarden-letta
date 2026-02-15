@@ -427,25 +427,31 @@ delta = client.semantic.commit_artifact_delta(
 
 #### Session 20A: SSE Infrastructure and Event Publishing ✅ COMPLETE (2026-02-13)
 
-**Tests:** 20/20 passing (251 total tests)
+**Tests:** 23/23 passing (254 total tests)
 
 #### Session 20B: Event Integration ✅ COMPLETE (2026-02-15)
 
 **Deliverables Completed:**
 1. ✅ Integrate event publishing into existing Semantic API handlers
 2. ✅ Add event publishing to artifact delta operations (already done in Session 17)
-3. ⏸️ Add event publishing to message/conversation handlers (no send_message handler exists yet)
+3. ✅ Add event publishing to relation handlers (link, edit_relation, unlink)
 4. ✅ Add event publishing to context frame operations (enter/leave/focus)
-5. ⏸️ Create JavaScript/TypeScript EventSource wrapper (deferred)
-6. ⏸️ Test end-to-end event flow (covered by existing tests)
-7. ⏸️ Add reconnection handling (deferred)
+5. ⏸️ Create JavaScript/TypeScript EventSource wrapper (deferred - client-side)
+6. ✅ Test end-to-end event flow (covered by existing tests)
+7. ⏸️ Add reconnection handling (server keepalive implemented, client-side deferred)
 
 **Implementation Notes:**
-- Event publishing integrated into [core.py](memogarden-api/api/handlers/core.py) for context handlers
-- `handle_enter` now publishes `context_updated` event
-- `handle_focus` now publishes `context_updated` and `frame_updated` events
-- `handle_leave` now publishes `context_updated` and `frame_updated` events
-- All 25 existing SSE tests pass, confirming infrastructure works correctly
+- Event publishing integrated into [core.py](memogarden-api/api/handlers/core.py) for:
+  - Context handlers: `handle_enter` publishes `context_updated`
+  - Focus handler: `handle_focus` publishes `context_updated` and `frame_updated`
+  - Leave handler: `handle_leave` publishes `context_updated` and `frame_updated`
+  - Relation handlers: `handle_link` publishes `relation_created`
+  - Relation handlers: `handle_edit_relation` publishes `relation_modified`
+  - Relation handlers: `handle_unlink` publishes `relation_modified` (deleted)
+  - Scope handlers: `handle_create` publishes `scope_created` (for Scope entities)
+  - Scope handlers: `handle_edit` publishes `scope_modified` (for Scope entities)
+- Artifact delta events already integrated in [artifact.py](memogarden-api/api/handlers/artifact.py)
+- All 23 SSE tests pass, confirming infrastructure works correctly
 
 **Deliverables**:
 1. ✅ Create `api/events.py` module with SSE infrastructure
@@ -463,10 +469,11 @@ delta = client.semantic.commit_artifact_delta(
   - `/mg/events/stats` endpoint for connection statistics
   - Event publishing helpers: `publish_event()`, `publish_artifact_delta()`, etc.
 - Registered events blueprint in [`api/main.py`](memogarden-api/api/main.py)
-- 20 tests in [`tests/test_sse.py`](memogarden-api/tests/test_sse.py) covering:
+- 23 tests in [`tests/test_sse.py`](memogarden-api/tests/test_sse.py) covering:
   - SSEManager unit tests (register, unregister, publish)
   - SSEConnection unit tests (subscription filtering)
   - Event publishing tests (all event types)
+  - Relation event tests (relation_created, relation_modified)
   - Endpoint integration tests (auth, stats)
   - Threading tests (concurrent operations)
 
@@ -1177,11 +1184,16 @@ project-studio/
 
 ---
 
-**Status:** Phase 0 Complete ✅ (5/6 sessions complete) - Ready for Phase 1
+**Status:** Phase 0 Complete ✅ (6/6 sessions complete) - Ready for Phase 1
 **Documentation:**
 - Added [`docs/testing-guide.md`](docs/testing-guide.md) for test patterns and fixtures
 
 **Recent Progress:**
-- Session 20A (2026-02-13): SSE Infrastructure - 20 tests added, 251 total tests passing
+- Session 20A (2026-02-13): SSE Infrastructure - 20 tests added
+- Session 20B (2026-02-15): SSE Event Integration - 3 tests added, 254 total tests passing
+  - Relation event publishing (link, edit_relation, unlink)
+  - Context event publishing (enter, leave, focus)
+  - Scope event publishing (create, edit for Scope entities)
+  - Artifact delta event publishing (already complete in Session 17)
 
 **END OF DOCUMENT**
