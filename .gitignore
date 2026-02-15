@@ -95,3 +95,5 @@ bin/
 
 # Development subdirectory (old structure)
 memogarden/
+letta/
+letta-python/

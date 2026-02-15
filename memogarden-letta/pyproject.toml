@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "mgLetta"
+version = "0.1.0"
+description = "MemoGarden memory blocks for Letta agents"
+authors = ["MemoGarden Project"]
+readme = "README.md"
+packages = [{include = "mgLetta"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+pydantic = "^2.0"
+
+[tool.poetry.dependencies.memogarden-client]
+path = "../memogarden-client"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-asyncio = "^0.23"
+pytest-cov = "^5.0"
+ruff = "^0.7"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
