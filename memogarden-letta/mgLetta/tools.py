@@ -69,7 +69,7 @@ async def memogarden_send_message(
     if log_uuid is None:
         log_uuid = client.config.scope_uuid
 
-    response = await client.semantic.send_message_async(
+    response = await client.semantic.send_message(
         log_uuid=log_uuid,
         content=content,
         sender=sender,
@@ -102,8 +102,7 @@ async def memogarden_create_artifact(
     """
     client = _get_client()
 
-    response = await client.semantic.create_artifact_async(
-        scope_uuid=client.config.scope_uuid,
+    response = await client.semantic.create_artifact(
         label=label,
         content=content,
         content_type=content_type,
@@ -139,12 +138,12 @@ async def memogarden_get_artifact(
 
     if artifact_uuid:
         # Get by UUID
-        response = await client.semantic.get_async(target=artifact_uuid)
+        response = await client.semantic.get(target=artifact_uuid)
     elif label:
         # Search by label
-        response = await client.semantic.search_async(
+        response = await client.semantic.search(
             target_type="entity",
-            term=label,
+            query=label,
             coverage="names",
         )
 
@@ -157,7 +156,7 @@ async def memogarden_get_artifact(
 
         # Get the first matching artifact
         artifact_uuid = results[0].get("uuid")
-        response = await client.semantic.get_async(target=artifact_uuid)
+        response = await client.semantic.get(target=artifact_uuid)
     else:
         raise ValueError("Must provide either artifact_uuid or label")
 
@@ -201,16 +200,16 @@ async def memogarden_commit_artifact(
 
     # Get current artifact hash if based_on_commit not provided
     if based_on_commit is None:
-        response = await client.semantic.get_async(target=artifact_uuid)
+        response = await client.semantic.get(target=artifact_uuid)
         if not response.ok:
             raise ValueError(f"Failed to get artifact: {response.error}")
         based_on_commit = response.result.get("hash")
 
-    response = await client.semantic.commit_artifact_delta_async(
-        artifact_uuid=artifact_uuid,
+    response = await client.semantic.commit_artifact_delta(
+        artifact=artifact_uuid,
         ops=ops,
         references=references or [],
-        based_on_commit=based_on_commit,
+        based_on_hash=based_on_commit,
     )
 
     if not response.ok:
@@ -249,11 +248,11 @@ async def memogarden_search(
     """
     client = _get_client()
 
-    response = await client.semantic.search_async(
+    response = await client.semantic.search(
         target_type=target_type,  # type: ignore
-        term=term,
+        query=term,
         coverage=coverage,  # type: ignore
-        count=limit,
+        limit=limit,
     )
 
     if not response.ok:

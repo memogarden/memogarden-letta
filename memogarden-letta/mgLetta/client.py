@@ -119,7 +119,7 @@ class MemoGardenMemoryClient:
             MemoGardenProjectBlock with scope information
         """
         # Get the Scope entity
-        response = await self.semantic.get_async(target=self.config.scope_uuid)
+        response = await self.semantic.get(target=self.config.scope_uuid)
 
         if not response.ok:
             raise ValueError(f"Failed to get scope: {response.error}")
@@ -150,7 +150,7 @@ class MemoGardenMemoryClient:
         limit = limit or self.config.artifact_limit
 
         # Query for Artifacts in this scope
-        response = await self.semantic.query_async(
+        response = await self.semantic.query(
             type="Artifact",
             filters={"scope_uuid": self.config.scope_uuid},
             count=limit,
@@ -194,7 +194,7 @@ class MemoGardenMemoryClient:
         artifacts = await self.get_artifact_summaries(limit)
 
         # Get total count
-        response = await self.semantic.query_async(
+        response = await self.semantic.query(
             type="Artifact",
             filters={"scope_uuid": self.config.scope_uuid},
             count=1,  # We just need the total

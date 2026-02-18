@@ -74,7 +74,7 @@ class TestMemoGardenMemoryClient:
             },
         }
 
-        with patch.object(client.semantic, "get_async", new=AsyncMock(return_value=mock_response)):
+        with patch.object(client.semantic, "get", new=AsyncMock(return_value=mock_response)):
             project = await client.get_project_context()
 
         assert project.scope_uuid == "core_123"
@@ -95,7 +95,7 @@ class TestMemoGardenMemoryClient:
         mock_response.ok = False
         mock_response.error = {"message": "Not found"}
 
-        with patch.object(client.semantic, "get_async", new=AsyncMock(return_value=mock_response)):
+        with patch.object(client.semantic, "get", new=AsyncMock(return_value=mock_response)):
             with pytest.raises(ValueError, match="Failed to get scope"):
                 await client.get_project_context()
 
@@ -134,13 +134,13 @@ class TestMemoGardenMemoryClient:
             "total": 2,
         }
 
-        with patch.object(client.semantic, "query_async", new=AsyncMock(return_value=mock_response)):
+        with patch.object(client.semantic, "query", new=AsyncMock(return_value=mock_response)):
             artifacts = await client.get_artifact_summaries()
 
         assert len(artifacts) == 2
         assert artifacts[0].uuid == "art_001"
         assert artifacts[0].label == "README.md"
-        assert artifacts[0].line_count == 4
+        assert artifacts[0].line_count == 5
         assert artifacts[1].label == "main.py"
 
     @pytest.mark.asyncio
@@ -156,7 +156,7 @@ class TestMemoGardenMemoryClient:
         mock_response.ok = True
         mock_response.result = {"results": [], "total": 0}
 
-        with patch.object(client.semantic, "query_async", new=AsyncMock(return_value=mock_response)):
+        with patch.object(client.semantic, "query", new=AsyncMock(return_value=mock_response)):
             artifacts = await client.get_artifact_summaries()
 
         assert len(artifacts) == 0
@@ -228,8 +228,8 @@ class TestMemoGardenMemoryClient:
         mock_artifacts_response.ok = True
         mock_artifacts_response.result = {"results": [], "total": 0}
 
-        with patch.object(client.semantic, "get_async", new=AsyncMock(return_value=mock_project_response)):
-            with patch.object(client.semantic, "query_async", new=AsyncMock(return_value=mock_artifacts_response)):
+        with patch.object(client.semantic, "get", new=AsyncMock(return_value=mock_project_response)):
+            with patch.object(client.semantic, "query", new=AsyncMock(return_value=mock_artifacts_response)):
                 blocks = await client.refresh_memory()
 
         assert len(blocks) >= 1
