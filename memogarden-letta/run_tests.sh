@@ -14,6 +14,7 @@
 #   ./run_tests.sh --format=plaintext     # Plain text output
 #   ./run_tests.sh -xvs                   # Verbose, stop on first failure
 #   ./run_tests.sh tests/test_blocks.py   # Run specific test file
+#   ./run_tests.sh --cov=mgLetta --cov-report=term-missing
 
 # ============================================================================
 # PROJECT CONFIGURATION
@@ -27,14 +28,14 @@
 # ============================================================================
 
 # Project name (for display)
-export PROJECT_NAME="mgLetta"
+export PROJECT_NAME="memogarden-letta"
 
 # Python module name for coverage (e.g., "api", "system", "mg_client")
 export MODULE_NAME="mgLetta"
 
 # Dependency check: Python import to verify (empty = no check)
-# We check for mg_client which is a dependency of this package
-export DEPENDENCY_CHECK="from mg_client import MemoGardenClient"
+# Check that letta_client is available for integration tests
+export DEPENDENCY_CHECK="from letta_client import Block"
 
 # Optional: Additional environment variables for tests
 # export MY_VAR="value"
@@ -61,9 +62,6 @@ done
 # ============================================================================
 # INVOKE CENTRALIZED ENTRYPOINT
 # ============================================================================
-
-# Add Poetry to PATH (devcontainer installs it to ~/.local/bin)
-export PATH="$HOME/.local/bin:$PATH"
 
 # Get this script's directory before changing directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
