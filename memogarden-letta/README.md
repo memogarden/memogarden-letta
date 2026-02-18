@@ -88,11 +88,52 @@ poetry install
 
 # Run tests
 poetry run pytest
+# Or use the standardized test runner
+./run_tests.sh
 
 # Format code
 poetry run ruff check .
 poetry run ruff format .
 ```
+
+## Testing
+
+The test suite has three levels:
+
+| Level | Focus | Tests | Requirements |
+|-------|-------|-------|--------------|
+| **Level 1** | Schema validation | 5 tests | letta-client installed |
+| **Level 2** | Content invariants | 6 tests | letta-client installed |
+| **Level 3** | Live API tests | 2 tests | LETTA_API_KEY environment variable |
+
+### Key Invariants Tested
+
+| Invariant | Test | Rationale |
+|-----------|------|-----------|
+| Block schema compatibility | `test_*_valid_letta_schema` | `Block(**our_dict)` must not raise ValidationError |
+| Required fields present | `test_all_blocks_have_required_fields` | Every block has `value`, `label` |
+| read_only flag | `test_all_blocks_marked_read_only` | All MemoGarden blocks are read-only |
+| Unique labels | `test_all_blocks_have_unique_labels` | No duplicate labels (Letta requirement) |
+| block_type in metadata | `test_all_blocks_have_metadata_block_type` | Identifiable as MemoGarden blocks |
+| JSON serializable | `test_blocks_are_json_serializable` | Can be sent to Letta API |
+
+### Letta Block Schema Reference
+
+From `letta-client==0.1.324`:
+```python
+Block(*, value: str, limit: Optional[int] = None, project_id: Optional[str] = None,
+       name: Optional[str] = None, is_template: Optional[bool] = None,
+       base_template_id: Optional[str] = None, deployment_id: Optional[str] = None,
+       entity_id: Optional[str] = None, preserve_on_migration: Optional[bool] = None,
+       label: Optional[str] = None, read_only: Optional[bool] = None,
+       description: Optional[str] = None,
+       metadata: Optional[Dict[str, Optional[Any]]] = None,
+       hidden: Optional[bool] = None, id: Optional[str] = None,
+       created_by_id: Optional[str] = None, last_updated_by_id: Optional[str] = None,
+       **extra_data: Any) -> None
+```
+
+Our block format (`label`, `value`, `description`, `read_only`, `limit`, `metadata`) is fully compatible.
 
 ## Architecture
 
@@ -112,16 +153,12 @@ poetry run ruff format .
 └─────────────────┘
 ```
 
-## Session 21 Status
+## Session History
 
-**Status**: In Progress
-
-Deliverables:
-- [x] Create `memogarden-letta/` package structure
-- [x] Implement memory projection functions
-- [x] Define memory block schema (Letta-compatible)
-- [x] Toolcall wrappers for agent operations
-- [ ] Integration tests
+| Session | Description | Status |
+|---------|-------------|--------|
+| 21 | Letta Memory Block Projections | ✅ Complete |
+| 22 | Integration Tests (schema validation, invariants, live API) | ✅ Complete |
 
 ## See Also
 
